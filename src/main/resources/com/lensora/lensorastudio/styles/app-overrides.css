@@ -1,0 +1,7 @@
+/* ─── Global font size override ─────────────────────────────────────────────
+   AtlantaFX scales everything from the .root -fx-font-size value.
+   Change this single number to resize all text in the application.
+   Default AtlantaFX value is 14px. Adjust to taste (12px–13px is typical). */
+.root {
+    -fx-font-size: 12px;
+}

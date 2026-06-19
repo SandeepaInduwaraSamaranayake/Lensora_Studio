@@ -1,0 +1,15 @@
+-- env variables
+$env:JAVA_HOME="D:\JDK26" 
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+
+-- change directory
+cd Lensora_Studio
+
+--run
+.\mvnw clean javafx:run
+
+-- build
+.\mvnw compile
+
+-- Windows Registry Path
+Computer\HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\com\lensora\lensorastudio\services
