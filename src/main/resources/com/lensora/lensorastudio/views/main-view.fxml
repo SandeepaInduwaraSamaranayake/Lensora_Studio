@@ -451,7 +451,7 @@
     BOTTOM - status bar
     =============================================================== -->
     <bottom>
-<HBox spacing="0" alignment="CENTER_LEFT">
+        <HBox spacing="0" alignment="CENTER_LEFT" style="-fx-padding: 3 5 3 5;">
             <Label fx:id="lblStatusText"   text="Ready"/>
             <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
             <Label fx:id="lblStatusProjects" text="Projects: 0"/>

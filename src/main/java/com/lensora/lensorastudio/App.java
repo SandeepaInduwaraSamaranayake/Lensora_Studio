@@ -2,9 +2,14 @@ package com.lensora.lensorastudio;
 
 import atlantafx.base.theme.CupertinoDark;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 import com.lensora.lensorastudio.services.DatabaseManager;
 import com.lensora.lensorastudio.services.LayoutPersistence;
+import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.Resources;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -28,6 +33,8 @@ import javafx.stage.StageStyle;
  */
 public class App extends Application 
 {
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+
     /**
      * Runs <strong>before</strong> the JavaFX toolkit starts.
      * Used for heavy initialisation that doesn't need the UI thread.
@@ -55,15 +62,15 @@ public class App extends Application
             stage.initStyle(StageStyle.EXTENDED);
             
             //------------------------------------- Load FXML -------------------------------------------
-            FXMLLoader fxmlLoader = new FXMLLoader(App.class.getResource("views/main-view.fxml"));
+            FXMLLoader fxmlLoader = new FXMLLoader(Resources.MAIN_VIEW.url());
             Parent root = fxmlLoader.load();
 
             //------------------------------------- Scene ----------------------------------------------
             Scene scene = new Scene(root);
             // Load font-size override after the AtlantaFX stylesheet so it wins
-            scene.getStylesheets().add(
-                App.class.getResource("styles/app-overrides.css").toExternalForm()
-            );
+            // scene.getStylesheets().add(
+            //     App.class.getResource("styles/app-overrides.css").toExternalForm()
+            // );
 
             //------------------------------------- Stage Setup ---------------------------------------
             // Clear any default icons just in case
@@ -72,7 +79,7 @@ public class App extends Application
             // Add multiple resolutions for Windows Taskbar scaling (Highly Recommended)
             // Windows uses 16x16 for the top corner, 32x32 for the taskbar / minimize state
             stage.getIcons().addAll(
-                new Image(getClass().getResourceAsStream("images/lensora_32x32.png"))
+                new Image(Resources.APP_ICON.getResourceAsStream())
             );
             stage.setTitle("Lensora Studio");
             stage.setScene(scene);
@@ -87,12 +94,15 @@ public class App extends Application
                 stage.setOpacity(1.0);
             });
 
+            // Apply saved theme and font size
+            ThemeManager.apply(scene);
+
             stage.show();
             
 
             // centralized close request handler for all windows (e.g. to prompt "Save changes?" on exit)
             stage.setOnCloseRequest(event -> {
-                System.out.println("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
+                logger.info("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
                 
                 // 1. Check for unsaved work here if needed (uncomment below to test)
                 /*
@@ -109,7 +119,7 @@ public class App extends Application
         }
         catch (Exception e)
         {
-            System.err.println("[Lensora] Failed to start application: " + e.getMessage());
+            logger.error("[Lensora] Failed to start application: " + e.getMessage());
             // Show the error dialog before giving up — the stage may not be
             // visible yet so we pass null as the owner.
             ErrorHandler.show(null, "Lensora Studio failed to start.", e);
@@ -118,7 +128,8 @@ public class App extends Application
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) 
+    {
         App.launch();
     }
 }

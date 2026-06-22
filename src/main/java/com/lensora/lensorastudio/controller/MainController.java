@@ -1,6 +1,9 @@
 package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.services.LayoutPersistence;
+import com.lensora.lensorastudio.services.ThemeManager;
+import com.lensora.lensorastudio.util.DialogBuilder;
+import com.lensora.lensorastudio.util.Resources;
 
 import javafx.fxml.FXML;
 import javafx.geometry.Rectangle2D;
@@ -19,8 +22,13 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 public class MainController
 {
+    private static final Logger logger = LoggerFactory.getLogger(MainController.class);
+
     // ─── Constants ────────────────────────────────────────────────────────────
 
     /** Fraction of the primary screen used for the restored window size. */
@@ -93,8 +101,6 @@ public class MainController
     @FXML 
     private SplitPane fileSplitPane;        // folder tree | file table
 
-    @FXML
-    private HBox aboutHeaderBar;
 
 
     // ─── Initialisation ───────────────────────────────────────────────────────
@@ -107,11 +113,11 @@ public class MainController
          * ######################### TITLE BAR INIT ###########################
          * ####################################################################
          */
-        System.out.println("[Lensora] Initializing native window style handlers...");
+        logger.info("[Lensora] Initializing native window style handlers...");
 
         if (headerBar == null)
         {
-            System.err.println("[Lensora] ERROR: headerBar FXML injection failed!");
+            logger.error("[Lensora] ERROR: headerBar FXML injection failed!");
             return;
         }
 
@@ -144,7 +150,7 @@ public class MainController
         if (mnu_btn_exit != null)
         {
             mnu_btn_exit.setOnAction(e -> {
-                System.out.println("[Lensora] Exit menu item clicked, forwarding close request...");
+                logger.info("[Lensora] Exit menu item clicked, forwarding close request...");
                 
                 // Get the window instance safely
                 var window = headerBar.getScene().getWindow();
@@ -422,7 +428,6 @@ public class MainController
         return false;
     }
 
-
     /**
      * #######################################################################
      * #######################################################################
@@ -431,78 +436,12 @@ public class MainController
      * #######################################################################
      */
 
-/**
-     * Loads and displays the application preferences window.
-     * Configured as a non-blocking utility window that centers on the main application.
-     */
     private void showPreferencesWindow()
     {
-        try
-        {
-            System.out.println("[Lensora] Loading preferences window panel...");
-            
-            // Load the FXML file (absolute resource path)
-            var url = getClass().getResource("/com/lensora/lensorastudio/views/settings-view.fxml");
-            System.out.println("[Lensora] FXML URL = " + url);
-
-            if (url == null)
-            {
-                System.err.println("[Lensora] ERROR: settings-view.fxml resource not found at /com/lensora/lensorastudio/views/settings-view.fxml");
-                return;
-            }
-
-            FXMLLoader loader = new FXMLLoader(url);
-            Parent root = loader.load();
-
-            
-            // Create a new secondary stage (window)
-            Stage prefsStage = new Stage();
-            prefsStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
-            prefsStage.initModality(Modality.APPLICATION_MODAL);
-            prefsStage.setTitle("Preferences");
-            prefsStage.setScene(new Scene(root));
-            
-            // Configure window behavior properties
-            Stage mainStage = (Stage) headerBar.getScene().getWindow();
-            prefsStage.initOwner(mainStage); // Anchors this window directly to your main app window
-            
-            
-            // Center the preferences window relative to the main application frame
-            prefsStage.setOnShowing(windowEvent -> {
-                prefsStage.setX(mainStage.getX() + (mainStage.getWidth() - prefsStage.getWidth()) / 2.0);
-                prefsStage.setY(mainStage.getY() + (mainStage.getHeight() - prefsStage.getHeight()) / 2.0);
-            });
-
-            // set centered
-            prefsStage.setResizable(false);
-
-            // --- DRAG SETUP ---
-            // Find the pref window header bar by its fx:id
-            HBox prefHeaderBar = (HBox) root.lookup("#prefHeaderBar");
-            if (prefHeaderBar != null) 
-            {
-                final double[] dragDelta = {0, 0};
-                prefHeaderBar.setOnMousePressed(e -> { dragDelta[0] = e.getSceneX(); dragDelta[1] = e.getSceneY();
-                });
-                prefHeaderBar.setOnMouseDragged(e -> {
-                    prefsStage.setX(e.getScreenX() - dragDelta[0]);
-                    prefsStage.setY(e.getScreenY() - dragDelta[1]);
-                });
-            } 
-            else
-            {
-                System.err.println("[Lensora] Warning: #prefHeaderBar not found in about-view.fxml");
-            }
-            
-            // Show the window
-            prefsStage.show();
-            prefsStage.centerOnScreen(); // Keep the preferences window above the main window
-        }
-        catch (java.io.IOException ex)
-        {
-            System.out.println("[Lensora] ERROR: Failed to load settings-view.fxml!");
-            ex.printStackTrace();
-        }
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of( Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
+            .resizable(false)
+            .build();
     }
 
     /**
@@ -514,70 +453,9 @@ public class MainController
      */
     private void showAboutWindow()
     {
-        try
-        {
-            System.out.println("[Lensora] Loading about window panel...");
-            
-            // 1. Load the FXML file (absolute resource path)
-            var url = getClass().getResource("/com/lensora/lensorastudio/views/about-view.fxml");
-            System.out.println("[Lensora] FXML URL = " + url);
-
-            if (url == null)
-            {
-                System.err.println("[Lensora] ERROR: about-view.fxml resource not found at /com/lensora/lensorastudio/views/about-view.fxml");
-                return;
-            }
-
-            FXMLLoader loader = new FXMLLoader(url);
-            Parent root = loader.load();
-
-            // 2. Create a new secondary stage (window)
-            Stage aboutStage = new Stage();
-            aboutStage.initStyle(javafx.stage.StageStyle.UNDECORATED);
-            aboutStage.initModality(Modality.APPLICATION_MODAL);
-            aboutStage.setTitle("About Lensora Studio");
-            aboutStage.setScene(new Scene(root));
-            
-            // 3. Configure window behavior properties
-            Stage mainStage = (Stage) headerBar.getScene().getWindow();
-            aboutStage.initOwner(mainStage); // Anchors this window directly to your main app window
-            
-            // 4. Center the about window relative to the main application frame
-            aboutStage.setOnShowing(windowEvent -> {
-                aboutStage.setX(mainStage.getX() + (mainStage.getWidth() - aboutStage.getWidth()) / 2.0);
-                aboutStage.setY(mainStage.getY() + (mainStage.getHeight() - aboutStage.getHeight()) / 2.0);
-            });
-
-            // set not resizable
-            aboutStage.setResizable(false);
-
-            // --- DRAG SETUP ---
-            // Find the about window header bar by its fx:id
-            HBox aboutHeaderBar = (HBox) root.lookup("#aboutHeaderBar");
-            if (aboutHeaderBar != null) 
-            {
-                final double[] dragDelta = {0, 0};
-                aboutHeaderBar.setOnMousePressed(e -> { dragDelta[0] = e.getSceneX(); dragDelta[1] = e.getSceneY();
-                });
-                aboutHeaderBar.setOnMouseDragged(e -> {
-                    aboutStage.setX(e.getScreenX() - dragDelta[0]);
-                    aboutStage.setY(e.getScreenY() - dragDelta[1]);
-                });
-            } 
-            else
-            {
-                System.err.println("[Lensora] Warning: #aboutHeaderBar not found in about-view.fxml");
-            }
-
-            // Show the window
-            aboutStage.show();
-            // Keep the about window above the main window
-            aboutStage.centerOnScreen(); 
-        }
-        catch (java.io.IOException ex)
-        {
-            System.out.println("[Lensora] ERROR: Failed to load about-view.fxml!");
-            ex.printStackTrace();
-        }
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of( Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
+            .resizable(false)
+            .build();
     }
 }

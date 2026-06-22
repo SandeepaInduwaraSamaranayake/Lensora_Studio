@@ -6,15 +6,24 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import java.util.jar.Manifest;
+
 import java.util.jar.Attributes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.lensora.lensorastudio.util.Resources;
 
 
-public class AboutController 
+public class AboutController implements DialogController
 {
+    private static final Logger logger = LoggerFactory.getLogger(AboutController.class);
+
     @FXML 
     private Label productVersionLabel;
 
@@ -37,13 +46,16 @@ public class AboutController
     private Button closeButton;
 
     @FXML
+    private HBox aboutHeaderBar;
+
+    @FXML
     public void initialize()
     {
         // Read version & build from MANIFEST.MF
         String version = "Unknown";
         String build = "Unknown";
 
-        try (InputStream is = getClass().getResourceAsStream("/META-INF/MANIFEST.MF")) 
+        try (InputStream is = Resources.MANIFEST.getResourceAsStream())
         {
             if (is != null) 
             {
@@ -54,10 +66,10 @@ public class AboutController
                 String implBuild = attrs.getValue("Implementation-Build");
                 if (implBuild != null) build = implBuild;
             }
-        } 
+        }
         catch (IOException e) 
         {
-            System.err.println("Failed to read manifest: " + e.getMessage());
+            logger.error("Failed to read manifest: " + e.getMessage());
         }
 
         // Fallback if running from IDE (no manifest)
@@ -94,6 +106,12 @@ public class AboutController
     {
         Stage stage = (Stage) closeButton.getScene().getWindow();
         stage.close();
+    }
+
+    @Override
+    public Node getHeaderNode() 
+    {
+        return aboutHeaderBar;
     }
 }
 

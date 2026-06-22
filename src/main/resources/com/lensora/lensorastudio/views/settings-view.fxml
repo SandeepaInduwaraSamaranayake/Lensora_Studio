@@ -22,11 +22,15 @@
    <children>
       <VBox prefWidth="687.0">
          <children>
-         <!-- Title Bar -->
+            <!-- Title Bar -->
             <HBox fx:id="prefHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" prefWidth="833.0" spacing="8.0">
                <children>
-                  <Label text="🛈" />
-                  <Label text="About Lensora Studio" />
+                  <Label text="⚙">
+                     <font>
+                        <Font size="25.0" />
+                     </font>
+                  </Label>
+                  <Label text="Lensora Studio Preferences" />
                   <Region HBox.hgrow="ALWAYS" />
                   <Button onAction="#closeWindow" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕">
                      <font>
@@ -41,7 +45,7 @@
             <!-- Main Content Container -->
             <TabPane fx:id="settingsTabPane" prefWidth="687.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
                   
-                  <!-- Tab 1: Appearance -->
+                  <!-- Tab 1: General -->
                   <tabs>
                      <Tab text="General">
                         <content>
@@ -72,7 +76,7 @@
                         </content>
                      </Tab>
 
-                     <!-- Tab 2: Project Defaults -->
+                     <!-- Tab 2: Appearance -->
                      <Tab text="Appearance">
                         <content>
                            <VBox prefHeight="380.0" prefWidth="665.0" spacing="15">
@@ -85,7 +89,7 @@
                                        <GridPane hgap="15" vgap="12">
       
                                           <Label text="Theme" />
-                                    <ComboBox fx:id="themeCombo" prefWidth="200" GridPane.columnIndex="1" />
+                                          <ComboBox fx:id="themeCombo" prefWidth="200" GridPane.columnIndex="1" />
       
                                           <Label text="Font Size" GridPane.rowIndex="1" />
       
@@ -113,7 +117,7 @@
                         </content>
                      </Tab>
                
-                     <!-- Tab 3: Storage & Backup -->
+                     <!-- Tab 3: Projects -->
                      <Tab text="Projects">
                      <content>
                         <VBox spacing="15">
@@ -155,7 +159,7 @@
                      </content>
                      </Tab>
 
-                     <!-- Tab 4: Folder Templates -->
+                     <!-- Tab 4: File Management -->
                      <Tab text="File Management">
                         <content>
                               <VBox spacing="15.0">

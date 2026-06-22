@@ -2,12 +2,21 @@
 
     <property name="LOG_DIR" value="${user.home}/.lensorastudio/logs" />
 
+    <!-- Console appender (default, colored) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%d{HH:mm:ss} %highlight(%-5level) %cyan(%logger{36}) - %msg%n</pattern>
         </encoder>
     </appender>
 
+    <!-- Console appender for DatabaseManager (magenta logger name) -->
+    <appender name="DB_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss} %highlight(%-5level) %magenta(%logger{36}) - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- File appender (no colors, rolling) -->
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_DIR}/app.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -20,6 +29,13 @@
         </encoder>
     </appender>
 
+    <!-- Logger for DatabaseManager – uses DB_CONSOLE and does NOT propagate to root -->
+    <logger name="com.lensora.lensorastudio.services.DatabaseManager" level="INFO" additivity="false">
+        <appender-ref ref="DB_CONSOLE" />
+        <appender-ref ref="FILE" />    <!-- also write to file (optional) -->
+    </logger>
+
+    <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />

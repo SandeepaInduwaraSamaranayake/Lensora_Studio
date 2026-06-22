@@ -15,13 +15,13 @@ public class AppSettings
 {
     // ─── Preference keys ──────────────────────────────────────────────────────
 
-    private static final String KEY_THEME      = "theme";
-    private static final String KEY_FONT_SIZE  = "font_size";
+    private static final String KEY_THEME      = "appearance.theme";
+    private static final String KEY_FONT_SIZE  = "appearance.font_size";
 
     // ─── Defaults ─────────────────────────────────────────────────────────────
 
     public static final Theme  DEFAULT_THEME     = Theme.CUPERTINO_DARK;
-    public static final double DEFAULT_FONT_SIZE = 13.0;
+    public static final double DEFAULT_FONT_SIZE = 12.0;
 
     // ─── Supported themes ─────────────────────────────────────────────────────
 

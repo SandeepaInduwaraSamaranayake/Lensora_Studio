@@ -14,6 +14,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.util.Resources;
+
 public class DatabaseManager
 {
     private static final String DB_URL;
@@ -42,7 +44,7 @@ public class DatabaseManager
             boolean created = databaseFolder.mkdirs();
             if (created)
             {
-                logger.info("Created data directory at: " + databaseFolder.getAbsolutePath());
+                logger.info("[DatabaseManager] Created data directory at: " + databaseFolder.getAbsolutePath());
             }
         }
 
@@ -50,7 +52,7 @@ public class DatabaseManager
         File databaseFile = new File(databaseFolder, "lensora_studio.db");
         DB_URL = "jdbc:sqlite:" + databaseFile.getAbsolutePath();
 
-        logger.info("Database path configured to: " + DB_URL);
+        logger.info("[DatabaseManager] Database path configured to: " + DB_URL);
     }
 
     /**
@@ -66,6 +68,7 @@ public class DatabaseManager
      */
     public static void initializeDatabase()
     {
+        logger.info("[DatabaseManager] Database Initialization Started...");
         try (Connection conn = connect();
             Statement stmt = conn.createStatement())
         {
@@ -75,7 +78,7 @@ public class DatabaseManager
             // Turn off auto-commit to run everything inside a single database transaction
             conn.setAutoCommit(false);
 
-            InputStream is = DatabaseManager.class.getResourceAsStream("/com/lensora/lensorastudio/database/schema.sql");
+            InputStream is = Resources.SQL_SCHEMA.getResourceAsStream();
             if (is == null) throw new RuntimeException("Error: Database Schema file is missing.");
 
             String schemaScript = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))
@@ -98,12 +101,12 @@ public class DatabaseManager
 
             // Commit the transaction to save changes permanently
             conn.commit();
-            System.out.println("Whole schema script executed together successfully!");
+            logger.info("[DatabaseManager] Whole schema script executed together successfully!");
 
         }
         catch (Exception e)
         {
-            System.err.println("Failed to execute batch schema: " + e.getMessage());
+            logger.error("[DatabaseManager] Failed to execute batch schema: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -122,12 +125,12 @@ public class DatabaseManager
             pstmt.setString(1, name);
             pstmt.setString(2, client);
             pstmt.executeUpdate();
-            System.out.println("Project inserted successfully!");
+            logger.info("[DatabaseManager] Project inserted successfully!");
 
         }
         catch (SQLException e)
         {
-            System.err.println("Insert failed: " + e.getMessage());
+            logger.error("[DatabaseManager] Insert failed: " + e.getMessage());
         }
     }
 }

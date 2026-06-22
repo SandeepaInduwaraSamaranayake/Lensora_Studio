@@ -3,6 +3,11 @@ package com.lensora.lensorastudio.services;
 import atlantafx.base.theme.*;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 /**
  * Applies and live-swaps AtlantaFX themes and font size on a {@link Scene}.
@@ -12,7 +17,11 @@ import javafx.scene.Scene;
  */
 public class ThemeManager
 {
+    private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
+
     private ThemeManager() {}
+
+    // ==================================== PUBLIC API ===============================================
 
     /**
      * Reads current settings and applies the theme + font size to the scene.
@@ -20,9 +29,11 @@ public class ThemeManager
      */
     public static void apply(Scene scene)
     {
+        logger.info("[ThemeManager.apply] Called with scene: " + scene);
         AppSettings settings = AppSettings.getInstance();
         applyTheme(settings.getTheme());
-        applyFontSize(scene, settings.getFontSize());
+        applyFontSizeToScene(scene, settings.getFontSize()); // direct application
+        applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
     }
 
     /**
@@ -32,6 +43,7 @@ public class ThemeManager
      */
     public static void applyTheme(AppSettings.Theme theme)
     {
+        logger.info("[ThemeManager.applyTheme] Applying theme: " + theme);
         String stylesheet = switch (theme)
         {
             case CUPERTINO_DARK  -> new CupertinoDark().getUserAgentStylesheet();
@@ -40,25 +52,57 @@ public class ThemeManager
             case PRIMER_DARK     -> new PrimerDark().getUserAgentStylesheet();
             case PRIMER_LIGHT    -> new PrimerLight().getUserAgentStylesheet();
         };
+        // call atlantafx
         Application.setUserAgentStylesheet(stylesheet);
     }
 
     /**
-     * Updates the font-size override stylesheet on the given scene.
-     * Uses an inline data URI so no external CSS file is needed at runtime.
+     * Applies the font size to ALL currently open windows.
+     * Useful after the user saves new font size settings.
      */
-    public static void applyFontSize(Scene scene, double size)
+    public static void applyFontSizeToAllWindows(double size) 
     {
-        // Remove any previously injected font-size override
-        scene.getStylesheets().removeIf(s -> s.startsWith("data:text/css"));
+        logger.info("[ThemeManager] Applying font size " + size + " to all open windows");
+        int count = 0;
+        for (Window window : Window.getWindows()) 
+        {
+            if (window instanceof Stage) 
+            {
+                Scene scene = ((Stage) window).getScene();
+                if (scene != null) 
+                {
+                    applyFontSizeToScene(scene, size);
+                    count++;
+                }
+            }
+        }
+        if (count == 0) 
+        {
+            logger.info("[ThemeManager] No open windows found – font size will be applied when windows appear (ensure you call applyFontSizeToScene for the initial scene)");
+        }
+    }
 
-        // Inject new override as an inline data URI — always wins the cascade
-        String css = ".root { -fx-font-size: " + size + "px; }";
-        String uri = "data:text/css," + css.replace(" ", "%20")
-                                           .replace("{", "%7B")
-                                           .replace("}", "%7D")
-                                           .replace(":", "%3A")
-                                           .replace(";", "%3B");
-        scene.getStylesheets().add(uri);
+    /**
+     * Applies the font size by directly setting the style on the root node.
+     * This is much more reliable than using a data‑URI stylesheet.
+     */
+    public static void applyFontSizeToScene(Scene scene, double size) 
+    {
+        if (scene == null || scene.getRoot() == null) 
+        {
+            logger.info("[ThemeManager] Cannot apply font size: scene or root is null");
+            return;
+        }
+        scene.getRoot().setStyle("-fx-font-size: " + size + "px;");
+        logger.info("[ThemeManager] Applied font size " + size + " to scene: " + scene);
+    }
+
+    /**
+     * Convenience method
+     * @param scene specific scene
+     */
+    public static void applyCurrentFontSizeToScene(Scene scene) 
+    {
+        applyFontSizeToScene(scene, AppSettings.getInstance().getFontSize());
     }
 }

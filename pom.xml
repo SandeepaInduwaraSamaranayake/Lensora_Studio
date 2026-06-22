@@ -54,7 +54,7 @@
         <dependency>
             <groupId>io.github.mkpaz</groupId>
             <artifactId>atlantafx-base</artifactId>
-            <version>2.0.1</version> <!-- Use the latest version -->
+            <version>2.0.1</version>
         </dependency>
 
         <dependency>
@@ -82,10 +82,10 @@
         </dependency>
 
         <dependency>
-    <groupId>net.java.dev.jna</groupId>
-    <artifactId>jna-platform</artifactId>
-    <version>5.14.0</version>
-</dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
 
     </dependencies>
 
@@ -98,9 +98,6 @@
                 <configuration>
                     <source>26</source>
                     <target>26</target>
-                    <archive>
-                        <manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
                 </configuration>
             </plugin>
             <plugin>
@@ -116,6 +113,7 @@
                             <options>
                                 <option>-Djavafx.enablePreview=true</option>
                                 <option>-Djavafx.suppressPreviewWarning=true</option>
+                                <option>--enable-native-access=javafx.graphics,ALL-UNNAMED</option>
                             </options>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
@@ -126,6 +124,16 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifestFile> src/main/resources/META-INF/MANIFEST.MF </manifestFile>
+                    </archive>
+                </configuration>
             </plugin>
         </plugins>
     </build>

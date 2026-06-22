@@ -5,83 +5,143 @@ import com.lensora.lensorastudio.services.ThemeManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.Slider;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
+import javafx.scene.Node;
 
-public class SettingsController
+public class SettingsController implements DialogController
 {
-    // @FXML 
-    // private ComboBox<AppSettings.Theme> themeCombo;
+    @FXML 
+    private ComboBox<AppSettings.Theme> themeCombo;
 
-    // @FXML 
-    // private Slider fontSizeSlider;
-
-    // @FXML 
-    // private Label fontSizeLabel;
+    @FXML 
+    private Spinner<Double> fontSizeSpinner;
 
     @FXML
-    private Button btnCancel;
+    private Button btnCancel,  btnSave, btnApply, btnrestoreDefaults;
 
-    // private final AppSettings settings = AppSettings.getInstance();
+    @FXML 
+    private HBox prefHeaderBar;
+
+    private final AppSettings settings = AppSettings.getInstance();
+
+    // Temporary copies to revert on Cancel
+    private AppSettings.Theme tempTheme;
+    private double tempFontSize;
 
     @FXML
     public void initialize()
     {
-        // // ── Theme combo ───────────────────────────────────────────────────────
-        // themeCombo.getItems().addAll(AppSettings.Theme.values());
+        //------------------------ Theme combo ---------------------------------------
+        themeCombo.getItems().addAll(AppSettings.Theme.values());
 
-        // // Show displayName instead of enum name in the dropdown
-        // themeCombo.setConverter(new StringConverter<>()
-        // {
-        //     @Override public String toString(AppSettings.Theme t)   { return t == null ? "" : t.displayName; }
-        //     @Override public AppSettings.Theme fromString(String s) { return null; }
-        // });
+        // Show displayName instead of enum name in the dropdown
+        themeCombo.setConverter(new StringConverter<>()
+        {
+            @Override 
+            public String toString(AppSettings.Theme t)   
+            { 
+                return t == null ? "" : t.displayName; 
+            }
 
-        // themeCombo.setValue(settings.getTheme());
+            @Override 
+            public AppSettings.Theme fromString(String s) 
+            { 
+                return null; 
+            }
+        });
 
-        // // Live preview on selection change
-        // themeCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
-        //     if (newVal == null) return;
-        //     settings.setTheme(newVal);
-        //     ThemeManager.applyTheme(newVal);
-        // });
+        // Load current settings into temp variables
+        tempTheme = settings.getTheme();
+        tempFontSize = settings.getFontSize();
+        themeCombo.setValue(tempTheme);
 
-        btnCancel.setOnAction(e -> closeWindow());
+        // Apply current font size to this scene (so the initial state matches)
+        ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
 
-        // // ── Font size slider (10–18px range) ──────────────────────────────────
-        // fontSizeSlider.setMin(10);
-        // fontSizeSlider.setMax(18);
-        // fontSizeSlider.setValue(settings.getFontSize());
-        // fontSizeSlider.setMajorTickUnit(2);
-        // fontSizeSlider.setMinorTickCount(1);
-        // fontSizeSlider.setSnapToTicks(true);
+        // ----------------------- Font Size Spinner ----------------------------------
+        // Set range and step
+        SpinnerValueFactory<Double> valueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(8, 24, tempFontSize, 0.5);
+        fontSizeSpinner.setValueFactory(valueFactory);
+        // Optionally add a custom converter to show "12 px"
+        fontSizeSpinner.getEditor().setText(String.format("%.1f px", tempFontSize));
+        // Update the temporary value on spinner changes (but don't persist yet)
+        fontSizeSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            tempFontSize = newVal;
+            // Live preview: apply to the current settings window only
+            ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
+        });
 
-        // updateFontLabel(settings.getFontSize());
-
-        // fontSizeSlider.valueProperty().addListener((obs, oldVal, newVal) -> {
-        //     double size = newVal.doubleValue();
-        //     updateFontLabel(size);
-        //     settings.setFontSize(size);
-
-        //     // Live preview — apply to the scene this node belongs to
-        //     if (fontSizeSlider.getScene() != null)
-        //         ThemeManager.applyFontSize(fontSizeSlider.getScene(), size);
-        // });
-
+        // ------------------------ Button Actions ------------------------------------
+        btnCancel.setOnAction(e -> cancelAndClose());
+        btnSave.setOnAction(e -> saveAndClose());
+        btnApply.setOnAction(e -> applyChanges());
+        btnrestoreDefaults.setOnAction(e -> restoreDefaults());
 
     }
 
-    // private void updateFontLabel(double size)
-    // {
-    //     fontSizeLabel.setText(String.format("%.0fpx", size));
-    // }
+    // -------- Save changes to preferences and apply to all windows ----------------
+    private void applyChanges() 
+    {
+        // Save theme if changed
+        AppSettings.Theme selectedTheme = themeCombo.getValue();
+        if (selectedTheme != null && !selectedTheme.equals(settings.getTheme())) 
+        {
+            settings.setTheme(selectedTheme);
+            ThemeManager.applyTheme(selectedTheme);
+            ThemeManager.applyFontSizeToAllWindows(tempFontSize);
+        }
+
+        // Save font size (already stored in tempFontSize)
+        if (tempFontSize != settings.getFontSize()) 
+        {
+            settings.setFontSize(tempFontSize);
+            // Apply to all open windows
+            ThemeManager.applyFontSizeToAllWindows(tempFontSize);
+        }
+    }
+
+    private void saveAndClose() 
+    {
+        applyChanges();
+        closeWindow();
+    }
+
+    private void cancelAndClose() 
+    {
+        // Revert any live preview back to the saved settings
+        ThemeManager.applyFontSizeToAllWindows(settings.getFontSize());
+        ThemeManager.applyTheme(settings.getTheme()); // revert theme if live preview changed
+        closeWindow();
+    }
+
+    private void restoreDefaults() 
+    {
+        // Reset temporary values to defaults
+        tempTheme = AppSettings.DEFAULT_THEME;
+        tempFontSize = AppSettings.DEFAULT_FONT_SIZE;
+        themeCombo.setValue(tempTheme);
+        fontSizeSpinner.getValueFactory().setValue(tempFontSize);
+        // Immediately preview the defaults
+        ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
+        // Also apply default theme to this window (but not save)
+        ThemeManager.applyTheme(tempTheme);
+        ThemeManager.applyFontSizeToAllWindows(tempFontSize);
+    }
 
     @FXML
     private void closeWindow() 
     {
         Stage stage = (Stage) btnCancel.getScene().getWindow();
         stage.close();
+    }
+
+    @Override
+    public Node getHeaderNode()
+    {
+        return prefHeaderBar;
     }
 }

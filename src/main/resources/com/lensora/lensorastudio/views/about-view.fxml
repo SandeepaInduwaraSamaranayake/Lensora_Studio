@@ -20,7 +20,11 @@
       <!-- Title Bar -->
       <HBox fx:id="aboutHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" prefWidth="833.0" spacing="8.0">
          <children>
-            <Label text="🛈" />
+            <Label text="🛈">
+               <font>
+                  <Font size="25.0" />
+               </font>
+            </Label>
             <Label text="About Lensora Studio" />
             <Region HBox.hgrow="ALWAYS" />
             <Button onAction="#handleClose" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕">

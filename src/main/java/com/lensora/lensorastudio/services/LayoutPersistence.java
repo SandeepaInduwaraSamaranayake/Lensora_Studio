@@ -17,6 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.prefs.Preferences;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /* ------------------------------ Usage ------------------------------------------
  * In MainController.initialize():
  *   LayoutPersistence.bindSplitPane("main.horizontal", mainSplitPane);
@@ -28,6 +31,8 @@ import java.util.prefs.Preferences;
  */
 public class LayoutPersistence 
 {
+    private static final Logger logger = LoggerFactory.getLogger(LayoutPersistence.class);
+
     // --------------------- Preference key namespace ---------------------------
 
     private static final String PREFIX_SPLIT  = "layout.split.";
@@ -73,7 +78,7 @@ public class LayoutPersistence
     public static void markStartupComplete()
     {
         startupComplete = true;
-        System.out.println("[Layout] startup complete — user-drag saves enabled.");
+        logger.info("[Layout] startup complete — user-drag saves enabled.");
     }
 
     // =========================================================================
@@ -93,7 +98,7 @@ public class LayoutPersistence
     public static void bindSplitPane(String key, SplitPane splitPane)
     {
         var dividers = splitPane.getDividers();
-        System.out.println("[Layout] bindSplitPane key=" + key + " dividers=" + dividers.size() + " visible=" + splitPane.isVisible());
+        logger.info("[Layout] bindSplitPane key=" + key + " dividers=" + dividers.size() + " visible=" + splitPane.isVisible());
 
         for (int i = 0; i < dividers.size(); i++)
         {
@@ -105,7 +110,7 @@ public class LayoutPersistence
                 ? saved
                 : dividers.get(i).getPosition();
 
-            System.out.printf("[Layout]   divider[%d] saved=%.4f seed=%.4f%n", i, saved, seed);
+            logger.info("[Layout] divider[{}] saved={} seed={}",i,"%.4f".formatted(saved),"%.4f".formatted(seed));
 
             DoubleProperty prop = new SimpleDoubleProperty(seed);
             dividerProps.put(propKey, prop);
@@ -124,11 +129,11 @@ public class LayoutPersistence
                 // or maximise animation from overwriting the real saved value.
                 if (!startupComplete || isMaximising || v < MIN_SAVE || v > MAX_SAVE) 
                 {
-                    System.out.printf("[Layout] SAVE BLOCKED key=%s divider[%d] %.4f%n", propKey, idx, v);
+                    logger.info("[Layout] SAVE BLOCKED key={} divider[{}] {}",propKey,idx,"%.4f".formatted(v));
                     return;  // ignore transient or invalid values
                 }
 
-                System.out.printf("[Layout] SAVE key=%s divider[%d] %.4f%n", propKey, idx, v);
+                logger.info("[Layout] SAVE key={} divider[{}] {}",propKey,idx,"%.4f".formatted(v));
                 PREFS.putDouble(PREFIX_SPLIT + propKey, v);
             });
         }
@@ -240,7 +245,7 @@ public class LayoutPersistence
     private static void restoreWindow(Stage stage)
     {
         boolean wasMaximised = PREFS.getBoolean(KEY_WIN_MAX, true);
-        System.out.println("[Layout] restoreWindow() - wasMaximised=" + wasMaximised);
+        logger.info("[Layout] restoreWindow() - wasMaximised=" + wasMaximised);
 
         if (wasMaximised)
         {
@@ -253,12 +258,16 @@ public class LayoutPersistence
         double savedW = PREFS.getDouble(KEY_WIN_W, Double.NaN);
         double savedH = PREFS.getDouble(KEY_WIN_H, Double.NaN);
 
-        System.out.printf("[Layout] restoreWindow() - saved x=%.1f y=%.1f w=%.1f h=%.1f%n",
-            savedX, savedY, savedW, savedH);
+        logger.info("[Layout] restoreWindow() - saved x={} y={} w={} h={}",
+        "%.1f".formatted(savedX),
+        "%.1f".formatted(savedY),
+        "%.1f".formatted(savedW),
+        "%.1f".formatted(savedH)
+        );
 
         if (Double.isNaN(savedX) || Double.isNaN(savedY) || Double.isNaN(savedW) || Double.isNaN(savedH))
         {
-            System.out.println("[Layout] restoreWindow() - no saved geometry, skipping.");
+            logger.info("[Layout] restoreWindow() - no saved geometry, skipping.");
             return; // No saved state — leave JavaFX defaults
         }
 
@@ -270,13 +279,13 @@ public class LayoutPersistence
             javafx.geometry.Rectangle2D primary = Screen.getPrimary().getVisualBounds();
             stage.setX((primary.getWidth()  - savedW) / 2.0);
             stage.setY((primary.getHeight() - savedH) / 2.0);
-            System.out.println("[Layout] restoreWindow() - saved position off-screen, centered instead.");
+            logger.info("[Layout] restoreWindow() - saved position off-screen, centered instead.");
         }
         else
         {
             stage.setX(savedX);
             stage.setY(savedY);
-            System.out.println("[Layout] restoreWindow() - position restored to saved values.");
+            logger.info("[Layout] restoreWindow() - position restored to saved values.");
         }
         stage.setWidth(savedW);
         stage.setHeight(savedH);
