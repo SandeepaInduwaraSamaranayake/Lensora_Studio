@@ -13,6 +13,7 @@ import java.util.Map;
  */
 public class FolderTemplateRepository
 {
+    
     public record FolderTemplate(int id, String name, String description) {}
 
     /** Returns all templates. */

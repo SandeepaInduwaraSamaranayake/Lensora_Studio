@@ -13,17 +13,23 @@ import java.util.prefs.Preferences;
  */
 public class AppSettings
 {
-    // ─── Preference keys ──────────────────────────────────────────────────────
+    // ---------------------------- Preference keys ----------------------------------
 
-    private static final String KEY_THEME      = "appearance.theme";
-    private static final String KEY_FONT_SIZE  = "appearance.font_size";
+    private static final String KEY_THEME                   = "appearance.theme";
+    private static final String KEY_FONT_SIZE               = "appearance.font_size";
+    private static final String KEY_DEFAULT_PROJECT_ROOT    = "project.default_root";
+    private static final String KEY_DEFAULT_LOG_DIR         = "general.default_log_directory";
+    private static final String KEY_OPEN_ON_STARTUP         = "general.open_on_startup";
 
-    // ─── Defaults ─────────────────────────────────────────────────────────────
+    // ------------------------------- Defaults --------------------------------------
 
-    public static final Theme  DEFAULT_THEME     = Theme.CUPERTINO_DARK;
-    public static final double DEFAULT_FONT_SIZE = 12.0;
+    public static final Theme   DEFAULT_THEME               = Theme.CUPERTINO_DARK;
+    public static final double  DEFAULT_FONT_SIZE           = 12.0;
+    public static final String  DEFAULT_PROJECT_ROOT        = System.getProperty("user.home") + "/LensoraProjects";
+    public static final String  DEFAULT_LOG_DIR             = System.getProperty("user.home") + "/.lensorastudio/logs";
+    public static final boolean DEFAULT_OPEN_ON_STARTUP     = false;
 
-    // ─── Supported themes ─────────────────────────────────────────────────────
+    // --------------------------- Supported themes ----------------------------------
 
     public enum Theme
     {
@@ -37,7 +43,7 @@ public class AppSettings
         Theme(String displayName) { this.displayName = displayName; }
     }
 
-    // ─── Singleton ────────────────────────────────────────────────────────────
+    // ----------------------------- Singleton ---------------------------------------
 
     private static AppSettings instance;
 
@@ -55,7 +61,7 @@ public class AppSettings
         prefs = Preferences.userNodeForPackage(AppSettings.class);
     }
 
-    // ─── Theme ────────────────────────────────────────────────────────────────
+    // ------------------------------ Theme -------------------------------------------
 
     public Theme getTheme()
     {
@@ -75,7 +81,7 @@ public class AppSettings
         prefs.put(KEY_THEME, theme.name());
     }
 
-    // ─── Font size ────────────────────────────────────────────────────────────
+    // ---------------------------- Font size ---------------------------------------
 
     public double getFontSize()
     {
@@ -85,5 +91,41 @@ public class AppSettings
     public void setFontSize(double size)
     {
         prefs.putDouble(KEY_FONT_SIZE, size);
+    }
+
+    // --------------------- Default Project Root ------------------------------------
+
+    public String getDefaultProjectRoot() 
+    {
+        return prefs.get(KEY_DEFAULT_PROJECT_ROOT, DEFAULT_PROJECT_ROOT);
+    }
+
+    public void setDefaultProjectRoot(String path) 
+    {
+        prefs.put(KEY_DEFAULT_PROJECT_ROOT, path);
+    }
+
+    // -------------------- Default Log Directory -----------------------------------
+
+    public String getDefaultLogDir() 
+    {
+        return prefs.get(KEY_DEFAULT_LOG_DIR, DEFAULT_LOG_DIR);
+    }
+
+    public void setDefaultLogDir(String path) 
+    {
+        prefs.put(KEY_DEFAULT_LOG_DIR, path);
+    }
+
+    // -------------------- Open on Startup  -----------------------------------
+
+    public boolean getOpenOnStartup() 
+    {
+        return prefs.getBoolean(KEY_OPEN_ON_STARTUP, DEFAULT_OPEN_ON_STARTUP);
+    }
+
+    public void setOpenOnStartup(boolean enabled) 
+    {
+        prefs.putBoolean(KEY_OPEN_ON_STARTUP, enabled);
     }
 }

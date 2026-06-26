@@ -107,7 +107,6 @@ public class DatabaseManager
         catch (Exception e)
         {
             logger.error("[DatabaseManager] Failed to execute batch schema: " + e.getMessage());
-            e.printStackTrace();
         }
     }
 

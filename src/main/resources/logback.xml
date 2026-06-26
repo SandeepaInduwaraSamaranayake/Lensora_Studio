@@ -1,6 +1,7 @@
 <configuration>
 
-    <property name="LOG_DIR" value="${user.home}/.lensorastudio/logs" />
+    <!-- Use system property LOG_DIR, fallback to default -->
+    <property name="LOG_DIR" value="${LOG_DIR:-${user.home}/.lensorastudio/logs}" />
 
     <!-- Console appender (default, colored) -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">

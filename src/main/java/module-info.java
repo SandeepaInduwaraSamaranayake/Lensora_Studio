@@ -7,6 +7,7 @@ module com.lensora.lensorastudio{
     requires org.slf4j;
     requires java.prefs;
     requires transitive javafx.graphics;
+    requires java.management;
 
     opens com.lensora.lensorastudio to javafx.fxml;
 

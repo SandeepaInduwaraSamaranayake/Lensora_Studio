@@ -3,8 +3,14 @@ package com.lensora.lensorastudio;
 import atlantafx.base.theme.CupertinoDark;
 
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import org.slf4j.Logger;
 
+import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.DatabaseManager;
 import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.services.ThemeManager;
@@ -33,6 +39,22 @@ import javafx.stage.StageStyle;
  */
 public class App extends Application 
 {
+    static
+    {
+        // Set log directory before ANY loggers are created
+        String logDir = AppSettings.getInstance().getDefaultLogDir();
+        System.setProperty("LOG_DIR", logDir);
+        try
+        {
+            // Ensure the directory exists
+            Files.createDirectories(Paths.get(logDir));
+        } 
+        catch (IOException e) 
+        {
+            e.printStackTrace();
+        }
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     /**
@@ -123,13 +145,20 @@ public class App extends Application
             // Show the error dialog before giving up — the stage may not be
             // visible yet so we pass null as the owner.
             ErrorHandler.show(null, "Lensora Studio failed to start.", e);
-            e.printStackTrace();
             Platform.exit();
         }
     }
 
-    public static void main(String[] args) 
+    public static void main(String[] args)
     {
-        App.launch();
+        try
+        {
+            App.launch();
+        }
+        catch(Throwable t)
+        {
+            System.err.println("Fatal error during launch: " + t.getMessage());
+            t.printStackTrace();
+        }
     }
 }

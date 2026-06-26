@@ -33,7 +33,7 @@ public class ThemeManager
         AppSettings settings = AppSettings.getInstance();
         applyTheme(settings.getTheme());
         applyFontSizeToScene(scene, settings.getFontSize()); // direct application
-        applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
+        //applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
     }
 
     /**

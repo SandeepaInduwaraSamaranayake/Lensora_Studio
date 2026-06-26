@@ -55,12 +55,8 @@
                </padding>
                <children>
                   <!-- App Name -->
-                  <Label style="-fx-font-weight: bold;" text="Lensora Studio">
-                     <font>
-                        <Font size="50.0" />
-                     </font>
-                  </Label>
-      
+                  <Label style="-fx-font-weight: bold; -fx-font-size: 25px;" text="Lensora Studio"/>
+
                   <Separator prefWidth="300.0" />
       
                   <!-- Info Grid -->

@@ -25,28 +25,19 @@ public class AboutController implements DialogController
     private static final Logger logger = LoggerFactory.getLogger(AboutController.class);
 
     @FXML 
-    private Label productVersionLabel;
-
-    @FXML 
-    private Label buildInfoLabel;
-    
-    @FXML 
-    private Label javafxVersionLabel;
-    
-    @FXML 
-    private Label javaVersionLabel;
-    
-    @FXML 
-    private Label osLabel;
-    
-    @FXML 
-    private Label loggingLabel;
+    private Label productVersionLabel, buildInfoLabel, javafxVersionLabel, javaVersionLabel, osLabel, loggingLabel;
     
     @FXML 
     private Button closeButton;
 
     @FXML
     private HBox aboutHeaderBar;
+
+    @Override
+    public Node getHeaderNode() 
+    {
+        return aboutHeaderBar;
+    }
 
     @FXML
     public void initialize()
@@ -97,8 +88,8 @@ public class AboutController implements DialogController
         osLabel.setText(osName + " " + osArch + " " + osVersion);
 
         // 5. Logging (example)
-        String userHome = System.getProperty("user.home");
-        loggingLabel.setText("Logs stored in " + userHome + "/.lensora/logs");
+        String logDir = com.lensora.lensorastudio.services.AppSettings.getInstance().getDefaultLogDir();
+        loggingLabel.setText("Logs stored in " + logDir);
     }
 
     @FXML
@@ -106,12 +97,6 @@ public class AboutController implements DialogController
     {
         Stage stage = (Stage) closeButton.getScene().getWindow();
         stage.close();
-    }
-
-    @Override
-    public Node getHeaderNode() 
-    {
-        return aboutHeaderBar;
     }
 }
 

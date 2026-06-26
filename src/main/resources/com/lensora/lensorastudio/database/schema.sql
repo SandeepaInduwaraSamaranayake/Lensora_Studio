@@ -198,6 +198,7 @@ INSERT OR IGNORE INTO folder_template (template_name, description) VALUES
     ('Event Standard',      'Standard event photography folder layout'),
     ('Graduation Standard', 'Standard graduation photography folder layout');
 
+
 -- Wedding Standard folders
 INSERT OR IGNORE INTO folder_template_item (template_id, folder_name, sequence_no)
 SELECT t.template_id, f.folder_name, f.seq
@@ -227,3 +228,7 @@ FROM folder_template t,
       SELECT '03_PRINTS',   3 UNION ALL
       SELECT '04_DELIVERED',4) f
 WHERE t.template_name = 'Graduation Standard';
+
+-- Add unique constraint to prevent duplicate folders per template
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_template_folder 
+    ON folder_template_item(template_id, folder_name);

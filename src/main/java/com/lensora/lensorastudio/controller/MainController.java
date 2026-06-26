@@ -1,7 +1,6 @@
 package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.services.LayoutPersistence;
-import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.DialogBuilder;
 import com.lensora.lensorastudio.util.Resources;
 
@@ -15,12 +14,8 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import javafx.stage.Modality;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -84,23 +79,10 @@ public class MainController
     private HBox headerBar;
 
     @FXML
-    private MenuItem mnu_btn_exit;
-
-    @FXML
-    private MenuItem mnu_btn_preferences;
-
-    @FXML
-    private MenuItem mnu_btn_about;
+    private MenuItem mnu_btn_exit , mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences;
 
     @FXML 
-    private SplitPane mainSplitPane;        // the root SplitPane
-
-    @FXML 
-    private SplitPane projectWorkspace;     // vertical split in right panel
-
-    @FXML 
-    private SplitPane fileSplitPane;        // folder tree | file table
-
+    private SplitPane mainSplitPane, projectWorkspace, fileSplitPane;
 
 
     // ─── Initialisation ───────────────────────────────────────────────────────
@@ -108,11 +90,23 @@ public class MainController
     @FXML
     public void initialize()
     {
-        /**
-         * ####################################################################
-         * ######################### TITLE BAR INIT ###########################
-         * ####################################################################
-         */
+        setupTitleBarDrag();
+        setupMenuItems();
+        setupKeyboardShortcuts();
+        registerSplitPanes();   
+    }
+
+    /**
+     * ####################################################################
+     * #################### INITIALIZATION HELPERS ########################
+     * ####################################################################
+     */
+
+    /** 
+     * Sets up the borderless window dragging and snap/maximise behaviour
+     */
+    private void setupTitleBarDrag() 
+    {
         logger.info("[Lensora] Initializing native window style handlers...");
 
         if (headerBar == null)
@@ -139,13 +133,16 @@ public class MainController
                 bindDragHandlers(stage);
             });
         });
+    }
 
-        /**
-         * ####################################################################
-         * ######################### MENU BTN EXIT ############################
-         * ####################################################################
-         */
-
+    /**
+     * Sets up the main menu item actions.
+     * MENU BTN EXIT
+     * MENU BTN PREFERENCES
+     * MENU BTN ABOUT 
+     */
+    private void setupMenuItems() 
+    {
         // Exit menu item handler
         if (mnu_btn_exit != null)
         {
@@ -161,59 +158,73 @@ public class MainController
             });
         }
 
-        
-        /**
-         * ####################################################################
-         * ######################### MENU BTN PREFERENCES #####################
-         * ####################################################################
-         */
-
         // Preferences menu item handler
         if (mnu_btn_preferences != null)
         {
             mnu_btn_preferences.setOnAction(e -> showPreferencesWindow());
         }
 
-        /**
-         * ####################################################################
-         * ######################### ABOUT BTN  ###############################
-         * ####################################################################
-         */
-
-        // Preferences menu item handler
+        // About menu item handler
         if (mnu_btn_about != null)
         {
             mnu_btn_about.setOnAction(e -> showAboutWindow());
         }
 
+        // New Project item handler
+        if (mnu_btn_new_project != null) 
+        {
+            mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
+        }
+    }
 
-        /**
-         * ####################################################################
-         * ######################### KEYBOARD SHORTCUTS  ######################
-         * ####################################################################
-         */
+    /**
+     * Sets up keyboard shortcuts (accelerators) for menu items.
+     */
+    private void setupKeyboardShortcuts() 
+    {
+        // Preferences: Ctrl + P
+        if (mnu_btn_preferences != null) 
+        {
+            mnu_btn_preferences.setAccelerator(
+                new KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN)
+            );
+        }
 
-        // Preferences: Ctrl + N
-        mnu_btn_preferences.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
-
-        // Exit: Ctrl + Q (or Ctrl+W, Alt+F4 – choose common)
-        mnu_btn_exit.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN));
+        // Exit: Ctrl + W
+        if (mnu_btn_exit != null) 
+        {
+            mnu_btn_exit.setAccelerator(
+                new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN)
+            );
+        }
 
         // About: Ctrl + Shift + A
-        mnu_btn_about.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
+        if (mnu_btn_about != null) 
+        {
+            mnu_btn_about.setAccelerator(
+                new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
+            );
+        }
 
+        // New Project: Ctrl + N
+        if (mnu_btn_new_project != null) 
+        {
+            mnu_btn_new_project.setAccelerator(
+                new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN)
+            );
+        }
+    }
 
-
-        /**
-         * ####################################################################
-         * ############  REGISTER SPLITPANES FOR LAYOUT SAVING   ##############
-         * ####################################################################
-         */
-
+    /**
+     * Registers all split panes for layout persistence.
+     */
+    private void registerSplitPanes() 
+    {
         LayoutPersistence.bindSplitPane("main.horizontal", mainSplitPane);
         LayoutPersistence.bindSplitPane("detail.vertical", projectWorkspace);
         LayoutPersistence.bindSplitPane("file.horizontal", fileSplitPane);
     }
+
 
     /**
      * #######################################################################
@@ -457,5 +468,21 @@ public class MainController
         DialogBuilder.of( Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
             .resizable(false)
             .build();
+    }
+
+
+    /**
+     * #######################################################################
+     * #######################################################################
+     * ########################### New Project ###############################
+     * #######################################################################
+     * #######################################################################
+     */
+    private void showNewProjectDialog() 
+    {
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
+                .resizable(false)
+                .build();
     }
 }

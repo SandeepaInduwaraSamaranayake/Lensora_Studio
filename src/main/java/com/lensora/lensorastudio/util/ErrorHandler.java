@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -114,6 +115,7 @@ public final class ErrorHandler
         titleBar.setPadding(new Insets(8, 12, 8, 14));
 
         Label titleIcon = new Label("⚠");
+        titleIcon.setFont(Font.font(25));
         Label titleLabel = new Label("Error");
 
         Region titleSpacer = new Region();

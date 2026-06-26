@@ -49,7 +49,7 @@
                 <children>
                         <ImageView fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true">
                             <image>
-                                <Image url="@../images/lensora_24x24.png" />
+                                <Image url="@../images/lensora_32x32.png" />
                             </image>
                             <HBox.margin>
                                 <Insets top="8.0" right="5.0" bottom="8.0" left="8.0" />
