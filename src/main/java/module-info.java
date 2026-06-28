@@ -9,9 +9,10 @@ module com.lensora.lensorastudio{
     requires transitive javafx.graphics;
     requires java.management;
 
-    opens com.lensora.lensorastudio to javafx.fxml;
-
+    
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;
+
+    opens com.lensora.lensorastudio to javafx.fxml;
     opens com.lensora.lensorastudio.controller to javafx.fxml;
 }

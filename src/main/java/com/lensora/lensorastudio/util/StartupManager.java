@@ -333,4 +333,23 @@ public final class StartupManager {
         log.warn("Could not determine executable path; auto-start may not work.");
         return null;
     }
+
+    /**
+     * Returns true if the application is running from an IDE (not a packaged JAR or native launcher).
+     */
+    public static boolean isDevelopmentMode() 
+    {
+        // Check if the command is "java" (or javaw) and the code source is not a .jar
+        String command = ProcessHandle.current()
+                .info()
+                .command()
+                .orElse("");
+        if (command.toLowerCase().contains("java")) 
+        {
+            String jarPath = StartupManager.class.getProtectionDomain()
+                    .getCodeSource().getLocation().getPath();
+            return jarPath == null || !jarPath.endsWith(".jar");
+        }
+        return false;
+    }
 }

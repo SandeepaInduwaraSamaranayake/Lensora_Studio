@@ -1,6 +1,10 @@
 package com.lensora.lensorastudio.controller;
 
 import java.io.File;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.Dialogs;
@@ -21,6 +25,8 @@ import javafx.scene.Node;
 
 public class SettingsController implements DialogController
 {
+    private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
+
     @FXML 
     private ComboBox<AppSettings.Theme> themeCombo;
 
@@ -168,10 +174,21 @@ public class SettingsController implements DialogController
             {
                 settings.setOpenOnStartup(newValue);
                 tempOpenOnStartup = newValue;
-            } 
+                logger.info(newValue ? " [Settings Controller] Lensora Studio will now start automatically when you log in."
+                        : "[Settings Controller] Lensora Studio will no longer start automatically.");
+            }
             else 
             {
                 openOnStartupCheck.setSelected(settings.getOpenOnStartup());
+                // If in development mode, provide a helpful message
+                if (StartupManager.isDevelopmentMode()) 
+                {
+                    logger.info("This feature is only available after packaging the application. Please use the installed version to enable automatic startup.");
+                }
+                else
+                {
+                    logger.error("Failed to update startup setting. Please check permissions and try again.");
+                }
             }
         }
     }

@@ -11,6 +11,9 @@ cd Lensora_Studio
 -- build
 .\mvnw compile
 
+-- package
+.\mvnw clean package
+
 -- Windows Registry Path
 Computer\HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\com\lensora\lensorastudio\services
 

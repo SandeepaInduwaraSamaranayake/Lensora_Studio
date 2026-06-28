@@ -33,6 +33,10 @@ build/
 
 ### VS Code ###
 .vscode/
+.repomix
 
 ### Mac OS ###
 .DS_Store
+
+### Distribute ###
+.dist
