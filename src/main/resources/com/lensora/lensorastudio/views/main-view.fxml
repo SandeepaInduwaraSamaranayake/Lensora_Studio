@@ -81,8 +81,8 @@
                                 </Menu>
                                 <Menu text="View" >
                                     <items>
-                                        <MenuItem text="View Logs" />
-                                        <MenuItem text="File Explorer" />
+                                        <MenuItem fx:id="mnu_btn_view_logs" text="View Logs" />
+                                        <MenuItem fx:id="mnu_btn_open_file_explorer" text="File Explorer" />
                                     </items>
                                 </Menu>
                                 <Menu text="Tools" />

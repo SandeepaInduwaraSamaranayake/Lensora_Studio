@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane prefWidth="800" prefHeight="600" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.LogViewerController">
+
+    <!-- Title Bar -->
+    <top>
+        <HBox fx:id="logHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" spacing="8.0">
+            <children>
+                <Label text="📄">
+                    <font>
+                        <Font size="25.0" />
+                    </font>
+                </Label>
+                <Label text="Application Log"/>
+                <Region HBox.hgrow="ALWAYS" />
+                <Button fx:id="closeButton" onAction="#handleClose" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕"/>
+            </children>
+            <padding>
+                <Insets bottom="8.0" left="8.0" right="10.0" top="8.0" />
+            </padding>
+        </HBox>
+    </top>
+
+    <!-- Center: Log content -->
+    <center>
+        <VBox spacing="10" style="-fx-padding: 12 16 12 16;">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Log file:" style="-fx-font-weight: bold;" />
+                <Label fx:id="logPathLabel" text="" />
+                <Region HBox.hgrow="ALWAYS" />
+                <Label fx:id="logSizeLabel" text="" />
+            </HBox>
+            <TextArea fx:id="logTextArea" editable="false" wrapText="false" VBox.vgrow="ALWAYS" maxHeight="Infinity" />
+        </VBox>
+    </center>
+
+    <!-- Bottom: Action buttons -->
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="12" style="-fx-padding: 12 16 16 16;">
+            <Button fx:id="refreshButton" text="Refresh" onAction="#handleRefresh" />
+            <Button fx:id="copyButton" text="Copy to Clipboard" onAction="#handleCopy" />
+            <Button fx:id="closeButtonBottom" text="Close" onAction="#handleClose" defaultButton="true" />
+        </HBox>
+    </bottom>
+</BorderPane>

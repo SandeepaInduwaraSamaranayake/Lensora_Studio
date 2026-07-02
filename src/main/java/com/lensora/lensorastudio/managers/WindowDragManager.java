@@ -13,7 +13,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 /**

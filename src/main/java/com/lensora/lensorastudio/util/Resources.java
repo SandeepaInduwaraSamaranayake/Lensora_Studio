@@ -11,6 +11,7 @@ public enum Resources
     SETTINGS_VIEW("/com/lensora/lensorastudio/views/settings-view.fxml"),
     ABOUT_VIEW("/com/lensora/lensorastudio/views/about-view.fxml"),
     NEW_PROJECT_VIEW("/com/lensora/lensorastudio/views/new-project-view.fxml"),
+    LOG_VIEWER_VIEW("/com/lensora/lensorastudio/views/log-viewer.fxml"),
 
     //########################################### SQL Scripts ####################################################
     SQL_SCHEMA("/com/lensora/lensorastudio/database/schema.sql"),

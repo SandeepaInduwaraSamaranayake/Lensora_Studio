@@ -185,7 +185,7 @@ public class ProjectManager
         // just show status as a label, later we can create a visual stepper.
         progressStepper.getChildren().clear();
         Label statusLabel = new Label("Status: " + status);
-        statusLabel.setStyle("-fx-font-weight: bold; -fx-text-fill: -color-accent;");
+        statusLabel.setStyle("-fx-font-weight: bold;");
         progressStepper.getChildren().add(statusLabel);
     }
 

@@ -63,6 +63,7 @@ public class SettingsController implements DialogController
     @FXML
     public void initialize()
     {
+        logger.info("Initializing SettingsController...");
         //------------------------ Theme combo ---------------------------------------
         themeCombo.getItems().addAll(AppSettings.Theme.values());
 
@@ -117,6 +118,7 @@ public class SettingsController implements DialogController
         // ------------------------ Open On Starup -----------------------------------
         boolean startupEnabled = StartupManager.isStartupEnabled();
         openOnStartupCheck.setSelected(startupEnabled);
+
         // Sync preferences with reality
         settings.setOpenOnStartup(startupEnabled);
         tempOpenOnStartup = startupEnabled;

@@ -5,6 +5,8 @@ import com.lensora.lensorastudio.repository.FolderTemplateRepository;
 import com.lensora.lensorastudio.repository.ProjectRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 
+import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -81,6 +83,7 @@ public class NewProjectController implements DialogController
     @FXML
     public void initialize() 
     {
+        logger.info("Initializing NewProjectController...");
         setupTypeGroup();
         setupStatusCombo();
         setupFolderTemplates();
@@ -283,43 +286,62 @@ public class NewProjectController implements DialogController
     {
         if (!validateForm()) return;
 
-        try 
-        {
-            // Build project
-            Project project = buildProjectFromForm();
+        // Disable the Create button to prevent double-click
+        btnCreateProject.setDisable(true);
+        btnCreateProject.setText("Creating...");
 
-            // Get root path and project number
-            String root = fldProjectPath.getText().trim();
-            String projectNumber = fldProjectNumber.getText().trim();
-            // Build the actual project folder path
-            String projectFolderPath = root + File.separator + projectNumber;
-            project.setProjectPath(projectFolderPath);
+        // Build project
+        Project project = buildProjectFromForm();
 
-            // Insert into database
-            int projectId = ProjectRepository.insert(project);
-            if (projectId < 0) {
-                showFormError("Failed to save project to database.");
-                return;
+        // Get root path and project number
+        String root = fldProjectPath.getText().trim();
+        String projectNumber = fldProjectNumber.getText().trim();
+        // Build the actual project folder path
+        String projectFolderPath = root + File.separator + projectNumber;
+        project.setProjectPath(projectFolderPath);
+
+        // Run the heavy operations in a background thread
+        Task<Integer> createTask = new Task<>() {
+            @Override
+            protected Integer call() throws Exception 
+            {
+                // Insert into database
+                int projectId = ProjectRepository.insert(project);
+                if (projectId < 0) 
+                {
+                    throw new SQLException("Failed to save project to database.");
+                }
+
+                // Create folders inside the project folder
+                createProjectFolders(projectFolderPath, currentTemplateFolders);
+                return projectId;
             }
-            // Create folders inside the project folder
-            createProjectFolders(projectFolderPath, currentTemplateFolders);
+        };
 
+        createTask.setOnSucceeded(event -> {
+            int projectId = createTask.getValue();
             logger.info("Project created with ID: {}", projectId);
 
-            // Notify MainController
+            // Notify MainController on the FX thread
             if (onProjectCreated != null) 
             {
-                onProjectCreated.accept(projectId);
+                Platform.runLater(() -> onProjectCreated.accept(projectId));
             }
             closeDialog();
+        });
 
-        } 
-        catch (SQLException | IOException e) 
-        {
-            logger.error("Error creating project", e);
-            showFormError("Error creating project: " + e.getMessage());
-        }
-    }
+        createTask.setOnFailed(event -> {
+            Throwable ex = createTask.getException();
+            logger.error("Error creating project", ex);
+            btnCreateProject.setDisable(false);
+            btnCreateProject.setText("Create Project");
+            showFormError("Error creating project: " + ex.getMessage());
+        });
+
+        // Start the background thread
+        new Thread(createTask).start();
+    } 
+
 
     @FXML
     private void onRegenNumber() 

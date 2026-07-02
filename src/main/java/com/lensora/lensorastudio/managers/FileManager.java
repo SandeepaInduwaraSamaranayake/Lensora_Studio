@@ -342,7 +342,7 @@ public class FileManager
         if (!dir.isDirectory()) return;
         File[] children = dir.listFiles(File::isDirectory);
         if (children == null) return;
-        for (File child : children) 
+        for (File child : children)
         {
             TreeItem<File> item = new TreeItem<>(child);
             parent.getChildren().add(item);

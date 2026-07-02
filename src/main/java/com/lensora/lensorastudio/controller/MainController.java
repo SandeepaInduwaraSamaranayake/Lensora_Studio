@@ -28,6 +28,7 @@ import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
 
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class MainController
     // ─── FXML injected fields ──────────────────────────────────────────────
 
     @FXML private HBox headerBar;
-    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences;
+    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences, mnu_btn_view_logs;
     @FXML private SplitPane mainSplitPane, projectWorkspace, fileSplitPane;
 
     // Project list
@@ -85,10 +86,12 @@ public class MainController
     @FXML
 public void initialize() 
 {
-    // 1. Split panes persistence
+    logger.info("Initializing MainController...");
+    
+    // Split panes persistence
     registerSplitPanes();
 
-    // 2. Project manager
+    // Project manager
     projectManager = new ProjectManager
     (
             projectTable,
@@ -119,7 +122,7 @@ public void initialize()
             emptyStatePane
     );
 
-    // 3. File manager
+    // File manager
     fileManager = new FileManager
     (
             folderTree, 
@@ -144,7 +147,7 @@ public void initialize()
             ctxFileShowInExplorer
     );
 
-    // 4. Wire project selection to file manager
+    // Wire project selection to file manager
     projectManager.setOnProjectSelected(() -> {
         Project current = projectManager.getCurrentProject();
         if (current != null) 
@@ -153,18 +156,18 @@ public void initialize()
         }
     });
 
-    // 5. Menu actions
+    // Menu actions
     setupMenuItems();
 
     setupKeyboardShortcuts();
 
-    // 6. Button actions
+    // Button actions
     setupButtonActions();
 
-    // 7. Window drag manager
+    // Window drag manager
     WindowDragManager.attach(headerBar);
 
-    // 8. Load projects
+    // Load projects
     projectManager.refreshProjectList();
 }
 
@@ -209,6 +212,12 @@ public void initialize()
         if (mnu_btn_new_project != null)
         {
             mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
+        }
+
+        // View Logs item handler
+        if (mnu_btn_view_logs != null) 
+        {
+            mnu_btn_view_logs.setOnAction(e -> showLogViewer());
         }
     }
 
@@ -292,7 +301,15 @@ public void initialize()
                 new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN)
             );
         }
-    }
+
+        // View Logs: Ctrl + Shift + L
+        if (mnu_btn_view_logs != null) 
+        {
+            mnu_btn_view_logs.setAccelerator(
+                new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
+            );
+        }
+}
 
     /**
      * Registers all split panes for layout persistence.
@@ -344,6 +361,21 @@ public void initialize()
                             }
                             logger.info("Project list refreshed after creation.");
                         });
+                    }
+                })
+                .build();
+    }
+
+    private void showLogViewer() 
+    {
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of(Resources.LOG_VIEWER_VIEW.url(), "Lensora Studio Log", mainStage)
+                .resizable(true)  // allow resizing
+                .modality(Modality.NONE)     // non‑modal so user can keep it open
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof LogViewerController)
+                    {
+                        ((LogViewerController) controller).setStage(mainStage);
                     }
                 })
                 .build();

@@ -42,6 +42,7 @@ public class AboutController implements DialogController
     @FXML
     public void initialize()
     {
+        logger.info("Initializing AboutController...");
         // Read version & build from MANIFEST.MF
         String version = "Unknown";
         String build = "Unknown";
