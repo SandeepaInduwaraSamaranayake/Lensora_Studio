@@ -19,6 +19,7 @@
 <?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.ToolBar?>
 <?import javafx.scene.control.TreeView?>
 <?import javafx.scene.layout.BorderPane?>
@@ -151,9 +152,9 @@
 
                             <TableView fx:id="projectTable" VBox.vgrow="ALWAYS">
                                 <columns>
-                                    <TableColumn prefWidth="120" text="Project No" />
-                                    <TableColumn prefWidth="180" text="Client" />
-                                    <TableColumn prefWidth="100" text="Status" />
+                                    <TableColumn fx:id="colProjectNumber" prefWidth="120" text="Project No" />
+                                    <TableColumn fx:id="colClientName" prefWidth="180" text="Client" />
+                                    <TableColumn fx:id="colStatus" prefWidth="100" text="Status" />
                                 </columns>
                                 <columnResizePolicy>
                                     <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
@@ -208,7 +209,7 @@
                     style="-fx-padding: 40;">
                     <FontIcon iconLiteral="fas-folder-open" iconSize="48"/>
                     <Label text="Select a project to get started"/>
-                    <Button fx:id="btnEmptyNewProject" text="＋ New Project"/>
+                    <Button fx:id="btnEmptyNewProject" text="+ New Project"/>
                 </VBox>
 
             <!-- Project workspace - visible when a project is selected -->
@@ -363,7 +364,7 @@
                                     <HBox alignment="CENTER_LEFT" spacing="8" style="-fx-padding: 8 10;">
                                         <Label text="Payment History" style="-fx-font-weight: bold;"/>
                                         <Pane HBox.hgrow="ALWAYS"/>
-                                        <Button fx:id="btnAddPayment" text="＋ Add Payment"/>
+                                        <Button fx:id="btnAddPayment" text="+ Add Payment"/>
                                     </HBox>
                                     <Separator/>
                                     <TableView fx:id="paymentTable" VBox.vgrow="ALWAYS">
@@ -392,7 +393,7 @@
                     <VBox spacing="0">
                         <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
                             <FontIcon iconLiteral="fas-folder" iconSize="13"/>
-                            <Label text="Folders" style="-fx-font-weight: bold;"/>
+                            <Label fx:id="lblFolderHeader" text="Folders" style="-fx-font-weight: bold;"/>
                         </HBox>
                         <Separator/>
                         <TreeView fx:id="folderTree" VBox.vgrow="ALWAYS" showRoot="false"/>
@@ -460,6 +461,14 @@
             <Pane HBox.hgrow="ALWAYS"/>
             <!-- Clickable project path — opens folder in Explorer -->
             <Label fx:id="lblStatusPath" text="" style="-fx-cursor: hand;"/>
+
+            <!-- Progress area – hidden initially -->
+            <HBox fx:id="progressContainer" spacing="10" alignment="CENTER_LEFT" visible="false" managed="false">
+                <ProgressBar fx:id="progressBar" prefWidth="200" progress="0"/>
+                <Label fx:id="progressLabel" text="0%"/>
+                <Label fx:id="progressSpeedLabel" text="0 KB/s"/>
+                <Label fx:id="progressEtaLabel" text="ETA: --"/>
+            </HBox>
         </HBox>
     </bottom>
 

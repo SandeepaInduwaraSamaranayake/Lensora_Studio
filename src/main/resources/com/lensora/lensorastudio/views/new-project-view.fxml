@@ -117,12 +117,14 @@
                             <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
                                 <Label style="-fx-font-weight: bold;" text="Phone Number" />
                                 <TextField fx:id="fldClientPhone" promptText="+94 77 000 0000" />
+                                <Label fx:id="errClientPhone" style="-fx-text-fill: red;" visible="false" />
                             </VBox>
 
                             <!-- Email -->
                             <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
                                 <Label style="-fx-font-weight: bold;" text="Email Address" />
                                 <TextField fx:id="fldClientEmail" promptText="client@email.com" />
+                                <Label fx:id="errClientEmail" style="-fx-text-fill: red;" visible="false" />
                             </VBox>
 
                             <!-- Package -->
@@ -189,7 +191,7 @@
 
                             <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
                                 <Label style="-fx-font-weight: bold;" text="Balance (auto)" />
-                                <TextField fx:id="fldBalanceAmount" editable="false" promptText="0.00" style="-fx-background-color: #f0f0f0;" />
+                                <TextField fx:id="fldBalanceAmount" editable="false" promptText="0.00" />
                             </VBox>
                     <rowConstraints>
                         <RowConstraints />

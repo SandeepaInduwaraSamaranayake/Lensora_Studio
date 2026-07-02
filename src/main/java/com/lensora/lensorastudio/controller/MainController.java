@@ -1,139 +1,174 @@
 package com.lensora.lensorastudio.controller;
 
+import com.lensora.lensorastudio.managers.FileManager;
+import com.lensora.lensorastudio.managers.ProjectManager;
+import com.lensora.lensorastudio.managers.WindowDragManager;
+import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.util.DialogBuilder;
+import com.lensora.lensorastudio.util.Dialogs;
+import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.Resources;
 
+import java.awt.Desktop;
+
 import javafx.fxml.FXML;
-import javafx.geometry.Rectangle2D;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.SplitPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import javafx.stage.Screen;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-public class MainController
+import java.io.File;
+import java.io.IOException;
+
+
+public class MainController 
 {
+
     private static final Logger logger = LoggerFactory.getLogger(MainController.class);
 
-    // ─── Constants ────────────────────────────────────────────────────────────
+    // ─── FXML injected fields ──────────────────────────────────────────────
 
-    /** Fraction of the primary screen used for the restored window size. */
-    private static final double WINDOW_SCALE      = 0.70;
+    @FXML private HBox headerBar;
+    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences;
+    @FXML private SplitPane mainSplitPane, projectWorkspace, fileSplitPane;
 
-    /** Pixels from the top edge that trigger a snap-maximise on drag. */
-    private static final double SNAP_THRESHOLD    = 4.0;
+    // Project list
+    @FXML private TableView<Project> projectTable;
+    @FXML private TableColumn<Project, String> colProjectNumber, colClientName, colStatus;
+    @FXML private Label lblProjectCount, lblStatusProjects, lblStatusText, lblStatusPath, lblFolderHeader;
+    @FXML private HBox progressStepper;
+    @FXML private VBox emptyStatePane;
 
-    /** Pixels the cursor must travel below the top edge to trigger pull-down restore. */
-    private static final double RESTORE_THRESHOLD = 15.0;
+    // Project details
+    @FXML private TextField detProjectNumber, detClientName, detClientPhone, detClientEmail,
+            detEventType, detEventDate, detDueDate, detStatus, detPackage, detProjectPath,
+            detTotalAmount, detAdvanceAmount, detBalanceAmount;
+    @FXML private TextArea detRemarks;
 
-    /**
-     * Fixed Y anchor used when placing the restored window under the cursor
-     * after a pull-down.  Chosen to feel like the cursor is sitting in the
-     * middle of a typical title bar regardless of DPI or OS theme changes.
-     */
-    private static final double RESTORED_Y_ANCHOR = 15.0;
+    // File browser
+    @FXML private TreeView<File> folderTree;
+    @FXML private TableView<File> fileTable;
+    @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize, colFileModified;
+    @FXML private Label lblCurrentFolder, lblFileCount;
+    @FXML private HBox progressContainer;
+    @FXML private ProgressBar progressBar;
+    @FXML private Label progressLabel, progressSpeedLabel, progressEtaLabel;
 
-    // ─── State ────────────────────────────────────────────────────────────────
+    @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileMove,
+            ctxFileDelete, ctxFileShowInExplorer;
 
-    /** Saved width / height of the window before it was maximised. */
-    private double savedWidth, savedHeight;
+    @FXML private Button btnNewProject, btnEmptyNewProject, btnDetailOpenFolder;
 
-    /** Saved X / Y position of the window before it was maximised. */
-    private double savedX, savedY;
+    // ─── Managers ───────────────────────────────────────────────────────────
 
-    /**
-     * Offset between the cursor's scene-local position and the window origin
-     * at the moment a drag begins.
-     */
-    private double dragOffsetX, dragOffsetY;
+    private ProjectManager projectManager;
+    private FileManager fileManager;
 
-    /** Whether the window is currently in the maximised state. */
-    private boolean isMaximised = false;
-
-    /**
-     * Guard flag that blocks re-entry into {@link #snapToMaximise} while a
-     * snap operation is already in flight.
-     *
-     * <p>On Linux/Wayland and macOS, {@code stage.maximizedProperty()} fires
-     * asynchronously — there can be several frames between us calling
-     * {@code stage.setMaximized(true)} and the listener setting
-     * {@code isMaximised = true}.  During that window, {@code onDragged} would
-     * otherwise see {@code isMaximised == false} and call {@code snapToMaximise}
-     * again, overwriting the correct {@code savedWidth/savedHeight} with the
-     * already-maximised dimensions.
-     */
-    private boolean isSnapping = false;
-
-    // ─── FXML ─────────────────────────────────────────────────────────────────
+    // ─── Initialisation ─────────────────────────────────────────────────────
 
     @FXML
-    private HBox headerBar;
+public void initialize() 
+{
+    // 1. Split panes persistence
+    registerSplitPanes();
 
-    @FXML
-    private MenuItem mnu_btn_exit , mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences;
+    // 2. Project manager
+    projectManager = new ProjectManager
+    (
+            projectTable,
+            colProjectNumber,
+            colClientName, 
+            colStatus,
+            detProjectNumber,
+            detClientName,
+            detClientPhone,
+            detClientEmail,
+            detEventType,
+            detEventDate,
+            detDueDate,
+            detStatus,
+            detPackage,
+            detProjectPath,
+            detTotalAmount,
+            detAdvanceAmount, 
+            detBalanceAmount,
+            detRemarks,
+            progressStepper,
+            lblStatusPath,
+            lblFolderHeader,
+            lblStatusProjects, 
+            lblProjectCount,
+            lblStatusText,
+            projectWorkspace,
+            emptyStatePane
+    );
 
-    @FXML 
-    private SplitPane mainSplitPane, projectWorkspace, fileSplitPane;
+    // 3. File manager
+    fileManager = new FileManager
+    (
+            folderTree, 
+            fileTable,
+            colFileName, 
+            colFileType, 
+            colFileSize, 
+            colFileModified,
+            lblCurrentFolder, 
+            lblFileCount, 
+            lblFolderHeader,
+            progressContainer, 
+            progressBar, 
+            progressLabel,
+            progressSpeedLabel, 
+            progressEtaLabel,
+            ctxFileOpen, 
+            ctxFileRename, 
+            ctxFileCopy, 
+            ctxFileMove,
+            ctxFileDelete, 
+            ctxFileShowInExplorer
+    );
 
-
-    // ─── Initialisation ───────────────────────────────────────────────────────
-
-    @FXML
-    public void initialize()
-    {
-        setupTitleBarDrag();
-        setupMenuItems();
-        setupKeyboardShortcuts();
-        registerSplitPanes();   
-    }
-
-    /**
-     * ####################################################################
-     * #################### INITIALIZATION HELPERS ########################
-     * ####################################################################
-     */
-
-    /** 
-     * Sets up the borderless window dragging and snap/maximise behaviour
-     */
-    private void setupTitleBarDrag() 
-    {
-        logger.info("[Lensora] Initializing native window style handlers...");
-
-        if (headerBar == null)
+    // 4. Wire project selection to file manager
+    projectManager.setOnProjectSelected(() -> {
+        Project current = projectManager.getCurrentProject();
+        if (current != null) 
         {
-            logger.error("[Lensora] ERROR: headerBar FXML injection failed!");
-            return;
+            fileManager.loadProjectPath(current.getProjectPath());
         }
+    });
 
-        // Walk scene → window once both are available
-        headerBar.sceneProperty().addListener((obsScene, oldScene, newScene) -> {
-            if (newScene == null) return;
+    // 5. Menu actions
+    setupMenuItems();
 
-            newScene.windowProperty().addListener((obsWindow, oldWindow, newWindow) -> {
-                if (!(newWindow instanceof Stage stage)) return;
+    setupKeyboardShortcuts();
 
-                // Keep our flag in sync with the native maximised state, and
-                // clear the snap guard once the OS confirms the transition.
-                stage.maximizedProperty().addListener((obsMax, wasMax, isNowMax) -> {
-                    isMaximised = isNowMax;
-                    isSnapping  = false;   // OS has acknowledged — safe to snap again
-                });
+    // 6. Button actions
+    setupButtonActions();
 
-                initSavedBounds(stage);
-                bindDragHandlers(stage);
-            });
-        });
-    }
+    // 7. Window drag manager
+    WindowDragManager.attach(headerBar);
+
+    // 8. Load projects
+    projectManager.refreshProjectList();
+}
+
+    // ─── Menu Actions ──────────────────────────────────────────────────────
 
     /**
      * Sets up the main menu item actions.
@@ -144,36 +179,80 @@ public class MainController
     private void setupMenuItems() 
     {
         // Exit menu item handler
-        if (mnu_btn_exit != null)
+        if (mnu_btn_exit != null) 
         {
             mnu_btn_exit.setOnAction(e -> {
                 logger.info("[Lensora] Exit menu item clicked, forwarding close request...");
-                
-                // Get the window instance safely
-                var window = headerBar.getScene().getWindow();
-                if (window != null) {
+
+                Stage stage = (Stage) headerBar.getScene().getWindow();
+                if (stage != null)
+                {
                     // Fire a formal close request to simulate the user clicking the OS close button
-                    window.fireEvent(new javafx.stage.WindowEvent(window, javafx.stage.WindowEvent.WINDOW_CLOSE_REQUEST));
+                    stage.fireEvent(new javafx.stage.WindowEvent(stage,
+                            javafx.stage.WindowEvent.WINDOW_CLOSE_REQUEST));
                 }
             });
         }
-
         // Preferences menu item handler
-        if (mnu_btn_preferences != null)
+        if (mnu_btn_preferences != null) 
         {
             mnu_btn_preferences.setOnAction(e -> showPreferencesWindow());
         }
 
         // About menu item handler
-        if (mnu_btn_about != null)
+        if (mnu_btn_about != null) 
         {
             mnu_btn_about.setOnAction(e -> showAboutWindow());
         }
 
         // New Project item handler
-        if (mnu_btn_new_project != null) 
+        if (mnu_btn_new_project != null)
         {
             mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
+        }
+    }
+
+    // ─── Button Actions ─────────────────────────────────────────────────────
+
+    /**
+     * Sets up button actions (New Project, Open Folder, etc.)
+     */
+    private void setupButtonActions() 
+    {
+        if (btnNewProject != null) 
+        {
+            btnNewProject.setOnAction(e -> showNewProjectDialog());
+        }
+        if (btnEmptyNewProject != null) 
+        {
+            btnEmptyNewProject.setOnAction(e -> showNewProjectDialog());
+        }
+        if (btnDetailOpenFolder != null) 
+        {
+            btnDetailOpenFolder.setOnAction(e -> {
+                Project current = projectManager.getCurrentProject();
+                if (current != null && current.getProjectPath() != null) 
+                {
+                    try 
+                    {
+                        if (Desktop.isDesktopSupported()) 
+                        {
+                            Desktop.getDesktop().open(new File(current.getProjectPath()));
+                        } 
+                        else 
+                        {
+                            Dialogs.showInfo(null, 
+                                            "Not Supported", 
+                                            null,
+                                            "Cannot open folder on this system.");
+                        }
+                    } 
+                    catch (IOException ex) 
+                    {
+                        ErrorHandler.show(null, "Could not open folder", ex);
+                    }
+                }
+            });
         }
     }
 
@@ -225,264 +304,48 @@ public class MainController
         LayoutPersistence.bindSplitPane("file.horizontal", fileSplitPane);
     }
 
+    // ─── Dialog Show Methods ───────────────────────────────────────────────
 
-    /**
-     * #######################################################################
-     * #######################################################################
-     * ######################### TITLE BAR CONTROLS ##########################
-     * #######################################################################
-     * #######################################################################
-     */
-
-    /**
-     * Seeds {@code savedWidth/Height/X/Y} from the primary screen so the
-     * window always has a sensible restored size before the user has
-     * manually resized or moved it.
-     */
-    private void initSavedBounds(Stage stage)
-    {
-        Rectangle2D screen = Screen.getPrimary().getVisualBounds();
-        savedWidth  = screen.getWidth()  * WINDOW_SCALE;
-        savedHeight = screen.getHeight() * WINDOW_SCALE;
-        savedX      = (screen.getWidth()  - savedWidth)  / 2.0;
-        savedY      = (screen.getHeight() - savedHeight) / 2.0;
-    }
-
-    // ─── Drag Handlers ────────────────────────────────────────────────────────
-
-    /**
-     * Attaches all mouse-event handlers to {@code headerBar} for borderless
-     * window dragging, snap-maximise, and double-click toggle.
-     */
-    private void bindDragHandlers(Stage stage)
-    {
-        headerBar.setOnMousePressed(e  -> onPressed(e, stage));
-        headerBar.setOnMouseDragged(e  -> onDragged(e, stage));
-        headerBar.setOnMouseReleased(e -> onReleased(e, stage));
-        headerBar.setOnMouseClicked(e  -> onClicked(e, stage));
-    }
-
-    private void onPressed(MouseEvent e, Stage stage)
-    {
-        if (!e.isPrimaryButtonDown() || isInteractiveControl(e)) return;
-
-        if (isMaximised)
-        {
-            // dragOffsetX will be re-anchored to savedWidth/2 the moment a
-            // drag is confirmed in onDragged.  dragOffsetY is intentionally
-            // NOT captured here because the scene-Y coordinate is invalid the
-            // instant the window un-maximises (DPI/border recalculation).
-            // It is set to RESTORED_Y_ANCHOR at restore time instead.
-            dragOffsetX = savedWidth / 2.0;
-            dragOffsetY = RESTORED_Y_ANCHOR;
-        }
-        else
-        {
-            dragOffsetX = e.getSceneX();
-            dragOffsetY = e.getSceneY();
-
-            // Cache current bounds so we can restore them later
-            savedWidth  = stage.getWidth();
-            savedHeight = stage.getHeight();
-            savedX      = stage.getX();
-            savedY      = stage.getY();
-        }
-    }
-
-
-    private void onDragged(MouseEvent e, Stage stage)
-    {
-        if (!e.isPrimaryButtonDown() || isInteractiveControl(e)) return;
- 
-        Rectangle2D screen = screenFor(e.getScreenX(), e.getScreenY());
- 
-        // ── Pull-down restore ──────────────────────────────────────────────
-        if (isMaximised && e.getScreenY() > screen.getMinY() + RESTORE_THRESHOLD)
-        {
-            // Map the cursor's horizontal position proportionally from the
-            // maximised width to the restored width, so the window appears
-            // directly under where the user was holding it — matching native
-            // Windows title-bar drag-restore behaviour.
-            double proportionalX = e.getSceneX() / stage.getWidth();
-            dragOffsetX = savedWidth * proportionalX;
- 
-            // Y uses a fixed anchor: scene-Y is invalid the instant the window
-            // un-maximises due to DPI/border recalculation.
-            dragOffsetY = RESTORED_Y_ANCHOR;
- 
-            restoreToNormal(stage);
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-            return;
-        }
- 
-        // ── Top-edge snap ──────────────────────────────────────────────────
-        // isSnapping guards against re-entry on platforms where
-        // maximizedProperty fires asynchronously (Wayland, macOS).
-        if (!isMaximised && !isSnapping && e.getScreenY() <= screen.getMinY() + SNAP_THRESHOLD)
-        {
-            snapToMaximise(stage, screen);
-            return;
-        }
- 
-        // ── Free movement ──────────────────────────────────────────────────
-        if (!isMaximised && !isSnapping)
-        {
-            stage.setX(e.getScreenX() - dragOffsetX);
-            stage.setY(e.getScreenY() - dragOffsetY);
-        }
-    }
-
-
-    /** Cleans up any transient drag state when the primary button is released. */
-    private void onReleased(MouseEvent e, Stage stage)
-    {
-        if (e.getButton() != MouseButton.PRIMARY) return;
-        dragOffsetX = 0;
-        dragOffsetY = 0;
-    }
-
-    private void onClicked(MouseEvent e, Stage stage)
-    {
-        if (e.getClickCount() != 2
-                || e.getButton() != MouseButton.PRIMARY
-                || isInteractiveControl(e)) return;
-
-        if (isMaximised)
-        {
-            restoreToNormal(stage);
-        }
-        else
-        {
-            Rectangle2D screen = screenFor(e.getScreenX(), e.getScreenY());
-            snapToMaximise(stage, screen);
-        }
-    }
-
-    // ─── Window State Transitions ─────────────────────────────────────────────
-
-    /**
-     * Expands the window to fill {@code screen} and marks it as maximised.
-     *
-     * <p>Sets {@code isSnapping = true} immediately so that subsequent
-     * {@code onDragged} events (which can fire before the OS confirms the
-     * maximised state) do not re-enter this method and corrupt
-     * {@code savedWidth/savedHeight}.  The flag is cleared by the
-     * {@code maximizedProperty} listener once the OS acknowledges the change.
-     */
-    private void snapToMaximise(Stage stage, Rectangle2D screen)
-    {
-        // Persist bounds only if transitioning from normal → maximised
-        if (!isMaximised)
-        {
-            savedWidth  = stage.getWidth();
-            savedHeight = stage.getHeight();
-            savedX      = stage.getX();
-            savedY      = stage.getY();
-        }
-
-        isSnapping  = true;   // block re-entry before the async listener fires
-
-        stage.setX(screen.getMinX());
-        stage.setY(screen.getMinY());
-        stage.setWidth(screen.getWidth());
-        stage.setHeight(screen.getHeight());
-        isMaximised = true;
-        stage.setMaximized(true);
-    }
-
-    /** Restores the window to the last saved bounds. */
-    private void restoreToNormal(Stage stage)
-    {
-        isMaximised = false;
-        isSnapping  = false;
-        stage.setMaximized(false);
-        stage.setWidth(savedWidth);
-        stage.setHeight(savedHeight);
-        stage.setX(savedX);
-        stage.setY(savedY);
-    }
-
-    // ─── Helpers ─────────────────────────────────────────────────────────────
-
-    /**
-     * Returns the {@link Rectangle2D} visual bounds of the screen containing
-     * the given point, falling back to the primary screen if none is found.
-     */
-    private static Rectangle2D screenFor(double screenX, double screenY)
-    {
-        var screens = Screen.getScreensForRectangle(screenX, screenY, 1, 1);
-        Screen target = screens.isEmpty() ? Screen.getPrimary() : screens.get(0);
-        return target.getVisualBounds();
-    }
-
-    /**
-     * Returns {@code true} when the event originates from an interactive
-     * control (menus, buttons, text fields) that should not trigger window
-     * drag behaviour.
-     */
-    private static boolean isInteractiveControl(MouseEvent e)
-    {
-        if (!(e.getTarget() instanceof javafx.scene.Node node)) return false;
-
-        javafx.scene.Node current = node;
-        while (current != null)
-        {
-            if (current instanceof javafx.scene.control.MenuButton
-                    || current instanceof javafx.scene.control.Button
-                    || current instanceof javafx.scene.control.TextField)
-            {
-                return true;
-            }
-            current = current.getParent();
-        }
-        return false;
-    }
-
-    /**
-     * #######################################################################
-     * #######################################################################
-     * ######################### PREFERENCES WINDOW ##########################
-     * #######################################################################
-     * #######################################################################
-     */
-
-    private void showPreferencesWindow()
+    private void showPreferencesWindow() 
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
-        DialogBuilder.of( Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
-            .resizable(false)
-            .build();
+        DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
+                .resizable(false)
+                .build();
     }
 
-    /**
-     * #######################################################################
-     * #######################################################################
-     * ########################### About WINDOW ##############################
-     * #######################################################################
-     * #######################################################################
-     */
-    private void showAboutWindow()
+    private void showAboutWindow() 
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
-        DialogBuilder.of( Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
-            .resizable(false)
-            .build();
+        DialogBuilder.of(Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
+                .resizable(false)
+                .build();
     }
 
-
-    /**
-     * #######################################################################
-     * #######################################################################
-     * ########################### New Project ###############################
-     * #######################################################################
-     * #######################################################################
-     */
     private void showNewProjectDialog() 
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
                 .resizable(false)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof NewProjectController) 
+                    {
+                        ((NewProjectController) controller).setOnProjectCreated(projectId -> {
+                            // Refresh the project list after creation
+                            projectManager.refreshProjectList();
+                            // select the new project
+                            for (Project p : projectTable.getItems()) 
+                            {
+                                if (p.getProjectId() == projectId)
+                                {
+                                    projectTable.getSelectionModel().select(p);
+                                    break;
+                                }
+                            }
+                            logger.info("Project list refreshed after creation.");
+                        });
+                    }
+                })
                 .build();
     }
 }

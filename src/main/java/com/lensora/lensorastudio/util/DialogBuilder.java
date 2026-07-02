@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.function.Consumer;
 
 /**
  * Builder for creating undecorated modal dialogs with drag support and font-size inheritance.
@@ -25,6 +26,8 @@ public class DialogBuilder
     private final URL fxmlUrl;
     private final String title;
     private final Stage owner;
+
+    private Consumer<Object> controllerConsumer;
 
     private boolean resizable = false;
     private Modality modality = Modality.APPLICATION_MODAL;
@@ -75,6 +78,8 @@ public class DialogBuilder
             FXMLLoader loader = new FXMLLoader(fxmlUrl);
             Parent root = loader.load();
             Object controller = loader.getController();
+            if (controllerConsumer != null) controllerConsumer.accept(controller);
+
 
             // Create a new secondary stage (window)
             Stage stage = new Stage();
@@ -149,6 +154,12 @@ public class DialogBuilder
             logger.error("Failed to load FXML: {}", fxmlUrl, ex);
             return null;
         }
+    }
+
+    public DialogBuilder withControllerConsumer(Consumer<Object> consumer) 
+    {
+        this.controllerConsumer = consumer;
+        return this;
     }
 
     // --- DRAG SETUP ---

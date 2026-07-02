@@ -5,6 +5,9 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
 public class Project
 {
 
@@ -144,5 +147,20 @@ public class Project
     public String toString()
     {
         return projectNumber + " — " + clientName;
+    }
+
+    // ─── Property Getters ──────────────────────────────────────────────────────
+    public StringProperty projectNumberProperty() 
+    {
+        return new SimpleStringProperty(projectNumber);
+    }
+
+    public StringProperty clientNameProperty() 
+    {
+        return new SimpleStringProperty(clientName);
+    }
+    public StringProperty projectStatusProperty() 
+    {
+        return new SimpleStringProperty(projectStatus);
     }
 }

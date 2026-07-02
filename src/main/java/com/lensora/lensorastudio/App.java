@@ -41,14 +41,14 @@ public class App extends Application
 {
     static
     {
-        // Set log directory before ANY loggers are created
-        String logDir = AppSettings.getInstance().getDefaultLogDir();
-        System.setProperty("LOG_DIR", logDir);
         try
         {
+            // Set log directory before ANY loggers are created
+            String logDir = AppSettings.getInstance().getDefaultLogDir();
+            System.setProperty("LOG_DIR", logDir);
             // Ensure the directory exists
             Files.createDirectories(Paths.get(logDir));
-        } 
+        }
         catch (IOException e) 
         {
             e.printStackTrace();

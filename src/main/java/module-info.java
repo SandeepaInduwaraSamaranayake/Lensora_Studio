@@ -1,15 +1,23 @@
-module com.lensora.lensorastudio{
+module com.lensora.lensorastudio
+{
+    requires java.desktop;
     requires javafx.controls;
     requires javafx.fxml;
 
-    requires atlantafx.base;
+    
     requires java.sql;
-    requires org.slf4j;
     requires java.prefs;
     requires transitive javafx.graphics;
     requires java.management;
 
-    
+    // Logging
+    requires org.slf4j;
+    requires ch.qos.logback.classic;
+
+    // UI
+    requires atlantafx.base;
+    requires javafx.base;
+
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;
 

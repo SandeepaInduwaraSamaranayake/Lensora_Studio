@@ -3,6 +3,8 @@ package com.lensora.lensorastudio.controller;
 import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.repository.FolderTemplateRepository;
 import com.lensora.lensorastudio.repository.ProjectRepository;
+import com.lensora.lensorastudio.services.AppSettings;
+
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.*;
@@ -22,6 +24,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 
 import java.util.List;
+import java.util.function.Consumer;
 
 public class NewProjectController implements DialogController 
 {
@@ -52,7 +55,7 @@ public class NewProjectController implements DialogController
 
     @FXML 
     private Label errProjectNumber, errStatus, errClientName, errEventDate,
-                    errTotalAmount, errProjectPath;
+                    errTotalAmount, errProjectPath, errClientEmail, errClientPhone;
 
     @FXML 
     private Button btnCancel, btnCreateProject, btnRegenNumber, btnBrowsePath;
@@ -63,6 +66,7 @@ public class NewProjectController implements DialogController
     private ToggleGroup typeGroup;
     private String selectedPrefix = "CUS"; // default
     private List<String> currentTemplateFolders;
+    private Consumer<Integer> onProjectCreated;
 
     // -------------------------- DialogController implementation ----------------------------------
 
@@ -246,7 +250,10 @@ public class NewProjectController implements DialogController
         dpEventDate.setValue(LocalDate.now().plusDays(7));
         fldProjectPath.setEditable(false);
         fldBalanceAmount.setEditable(false);
-        fldBalanceAmount.setStyle("-fx-background-color: #f0f0f0;");
+
+        // Set default root from settings
+        String defaultRoot = AppSettings.getInstance().getDefaultProjectRoot();
+        if (defaultRoot != null && !defaultRoot.isEmpty()) fldProjectPath.setText(defaultRoot);
     }
 
     // --------------------------------Event Handlers ------------------------------------------
@@ -278,17 +285,32 @@ public class NewProjectController implements DialogController
 
         try 
         {
+            // Build project
             Project project = buildProjectFromForm();
+
+            // Get root path and project number
+            String root = fldProjectPath.getText().trim();
+            String projectNumber = fldProjectNumber.getText().trim();
+            // Build the actual project folder path
+            String projectFolderPath = root + File.separator + projectNumber;
+            project.setProjectPath(projectFolderPath);
+
+            // Insert into database
             int projectId = ProjectRepository.insert(project);
             if (projectId < 0) {
                 showFormError("Failed to save project to database.");
                 return;
             }
-
-            String rootPath = fldProjectPath.getText();
-            createProjectFolders(rootPath, currentTemplateFolders);
+            // Create folders inside the project folder
+            createProjectFolders(projectFolderPath, currentTemplateFolders);
 
             logger.info("Project created with ID: {}", projectId);
+
+            // Notify MainController
+            if (onProjectCreated != null) 
+            {
+                onProjectCreated.accept(projectId);
+            }
             closeDialog();
 
         } 
@@ -366,11 +388,35 @@ public class NewProjectController implements DialogController
             lblFormError.setText("Please fix the errors above.");
             lblFormError.setVisible(true);
         }
+
+        // Validate email format
+        String email = fldClientEmail.getText().trim();
+        if (!email.isEmpty() && !email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) 
+        {
+            showFieldError(errClientEmail, "Invalid email address.");
+            valid = false;
+        }
+
+        // Validate phone
+        String phone = fldClientPhone.getText().trim();
+        if (!phone.isEmpty() && !phone.matches("^[+0-9\\\\s()\\\\-]{7,20}$")) 
+        {
+            showFieldError(errClientPhone, "Invalid phone number.");
+            valid = false;
+        }
         return valid;
     }
 
     private void showFieldError(Label errorLabel, String message) 
     {
+        if (errorLabel == null) return;
+        if (message == null || message.isBlank())
+        {
+            errorLabel.setVisible(false);
+            errorLabel.setManaged(false);
+            return;
+        }
+
         errorLabel.setText(message);
         errorLabel.setVisible(true);
         errorLabel.setManaged(true);
@@ -384,6 +430,8 @@ public class NewProjectController implements DialogController
         errEventDate.setVisible(false);
         errTotalAmount.setVisible(false);
         errProjectPath.setVisible(false);
+        errClientEmail.setVisible(false);
+        errClientPhone.setVisible(false);
         lblFormError.setVisible(false);
     }
 
@@ -425,7 +473,7 @@ public class NewProjectController implements DialogController
 
     // ------------------------------- Folder Creation ---------------------------------------
 
-    private void createProjectFolders(String rootPath, List<String> subfolders) throws IOException 
+    private void createProjectFolders(String rootPath, List<String> subfolders) throws IOException
     {
         Path root = Paths.get(rootPath);
         if (!Files.exists(root)) 
@@ -448,5 +496,10 @@ public class NewProjectController implements DialogController
     {
         Stage stage = (Stage) fldProjectNumber.getScene().getWindow();
         if (stage != null) stage.close();
+    }
+
+    public void setOnProjectCreated(Consumer<Integer> callback) 
+    {
+        this.onProjectCreated = callback;
     }
 }

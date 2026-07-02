@@ -20,6 +20,7 @@ public class AppSettings
     private static final String KEY_DEFAULT_PROJECT_ROOT    = "project.default_root";
     private static final String KEY_DEFAULT_LOG_DIR         = "general.default_log_directory";
     private static final String KEY_OPEN_ON_STARTUP         = "general.open_on_startup";
+    private static final String KEY_LAST_PROJECT_ID         = "project.last_opened_id";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -28,6 +29,7 @@ public class AppSettings
     public static final String  DEFAULT_PROJECT_ROOT        = System.getProperty("user.home") + "/LensoraProjects";
     public static final String  DEFAULT_LOG_DIR             = System.getProperty("user.home") + "/.lensorastudio/logs";
     public static final boolean DEFAULT_OPEN_ON_STARTUP     = false;
+    public static final int DEFAULT_LAST_PROJECT_ID         = -1;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -127,5 +129,17 @@ public class AppSettings
     public void setOpenOnStartup(boolean enabled) 
     {
         prefs.putBoolean(KEY_OPEN_ON_STARTUP, enabled);
+    }
+
+    // -------------------- Last Project ID  ----------------------------------
+
+    public int getLastProjectId() 
+    {
+        return prefs.getInt(KEY_LAST_PROJECT_ID, DEFAULT_LAST_PROJECT_ID);
+    }
+
+    public void setLastProjectId(int id) 
+    {
+        prefs.putInt(KEY_LAST_PROJECT_ID, id);
     }
 }
