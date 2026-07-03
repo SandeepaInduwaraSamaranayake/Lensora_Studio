@@ -86,7 +86,7 @@ public class MainController
     @FXML
 public void initialize() 
 {
-    logger.info("Initializing MainController...");
+    logger.info("[MainController] Initializing MainController...");
     
     // Split panes persistence
     registerSplitPanes();

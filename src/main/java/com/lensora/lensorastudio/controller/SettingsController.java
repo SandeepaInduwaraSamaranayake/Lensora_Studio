@@ -63,7 +63,7 @@ public class SettingsController implements DialogController
     @FXML
     public void initialize()
     {
-        logger.info("Initializing SettingsController...");
+        logger.info("[SettingsController] Initializing SettingsController...");
         //------------------------ Theme combo ---------------------------------------
         themeCombo.getItems().addAll(AppSettings.Theme.values());
 

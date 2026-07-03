@@ -83,7 +83,7 @@ public class NewProjectController implements DialogController
     @FXML
     public void initialize() 
     {
-        logger.info("Initializing NewProjectController...");
+        logger.info("[NewProjectController] Initializing NewProjectController...");
         setupTypeGroup();
         setupStatusCombo();
         setupFolderTemplates();

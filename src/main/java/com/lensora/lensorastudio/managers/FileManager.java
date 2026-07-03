@@ -354,16 +354,23 @@ public class FileManager
         }
     }
 
-    public void loadProjectPath(String path) {
-        if (path == null || path.isEmpty()) {
+    public void loadProjectPath(String path)
+    {
+        if (path == null || path.isEmpty()) 
+        {
+            logger.warn("[FileManager] Project path is null or empty - clearing tree.");
             folderTree.setRoot(null);
             return;
         }
+
         File rootDir = new File(path);
-        if (!rootDir.exists() || !rootDir.isDirectory()) {
+        if (!rootDir.exists() || !rootDir.isDirectory()) 
+        {
+            logger.warn("[FileManager] Project path does not exist or not a directory: {}", path);
             folderTree.setRoot(null);
             return;
         }
+
         TreeItem<File> rootItem = new TreeItem<>(rootDir);
         rootItem.setExpanded(true);
         addChildren(rootItem);
@@ -417,7 +424,7 @@ public class FileManager
         folderTree.setContextMenu(contextMenu);
     }
 
-        /**
+    /**
      * Copies the selected folder to the system clipboard.
      * Uses a custom DataFormat to store the File object.
      */
@@ -454,15 +461,18 @@ public class FileManager
         for (File child : children) 
         {
             File destChild = new File(dest, child.getName());
-            if (child.isDirectory()) {
+            if (child.isDirectory()) 
+            {
                 copyDirectory(child, destChild);
-            } else {
+            } 
+            else 
+            {
                 Files.copy(child.toPath(), destChild.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
         }
     }
 
-        /**
+    /**
      * Pastes a folder/file from the clipboard into the selected folder.
      * Supports both files and folders (recursive copy).
      */
@@ -518,7 +528,7 @@ public class FileManager
         }
 
         // Prevent pasting into itself
-        if (source.getAbsolutePath().startsWith(targetFolder.getAbsolutePath())) 
+        if (isRecursivePaste(source, targetFolder)) 
         {
             Dialogs.showInfo(null, "Paste", null, "Cannot paste a folder into itself or its subfolder.");
             return;
@@ -630,12 +640,14 @@ public class FileManager
     private void pasteIntoSelectedFolderMulti() 
     {
         TreeItem<File> selectedItem = folderTree.getSelectionModel().getSelectedItem();
-        if (selectedItem == null) {
+        if (selectedItem == null) 
+        {
             Dialogs.showInfo(null, "Paste", null, "Please select a destination folder.");
             return;
         }
         File targetFolder = selectedItem.getValue();
-        if (targetFolder == null || !targetFolder.isDirectory()) {
+        if (targetFolder == null || !targetFolder.isDirectory()) 
+        {
             Dialogs.showInfo(null, "Paste", null, "Please select a valid folder.");
             return;
         }
@@ -644,22 +656,33 @@ public class FileManager
         List<File> sourceFiles = null;
 
         Object obj = clipboard.getContent(FILE_LIST_FORMAT);
-        if (obj instanceof List) {
+        if (obj instanceof List) 
+        {
             sourceFiles = (List<File>) obj;
-        } else {
+        } 
+        else 
+        {
             Object filesObj = clipboard.getContent(DataFormat.FILES);
-            if (filesObj instanceof List) {
+            if (filesObj instanceof List) 
+            {
                 sourceFiles = (List<File>) filesObj;
             }
         }
 
-        if (sourceFiles == null || sourceFiles.isEmpty()) {
+        if (sourceFiles == null || sourceFiles.isEmpty()) 
+        {
             Dialogs.showInfo(null, "Paste", null, "Clipboard does not contain any files/folders.");
             return;
         }
 
-        for (File src : sourceFiles) {
-            if (src.getAbsolutePath().startsWith(targetFolder.getAbsolutePath())) {
+        for (File src : sourceFiles) 
+        {
+            if (isRecursivePaste(src, targetFolder)) 
+            {
+                Dialogs.showInfo(null, "Paste", null, "Cannot paste a folder into itself or its subfolder.");
+                return;
+            }
+            {
                 Dialogs.showInfo(null, "Paste", null, "Cannot paste a folder into itself or its subfolder.");
                 return;
             }
@@ -695,6 +718,25 @@ public class FileManager
 
         showProgress("Copying...");
         new Thread(currentCopyTask).start();
+    }
+
+    private boolean isRecursivePaste(File source, File target) 
+    {
+        if (!source.isDirectory()) return false;
+        // If target is inside source OR source is inside target (should not happen but guard)
+        String srcPath = source.getAbsolutePath();
+        String tgtPath = target.getAbsolutePath();
+        // Prevent: target is inside source (copying a folder into its own subfolder)
+        if (tgtPath.startsWith(srcPath) && !tgtPath.equals(srcPath)) 
+        {
+            return true;
+        }
+        // Prevent: source is inside target (copying a folder into itself)
+        if (srcPath.startsWith(tgtPath) && !srcPath.equals(tgtPath))
+        {
+            return true;
+        }
+        return false;
     }
 
     // ─── Progress UI helpers ─────────────────────────────────────────────────────
@@ -767,12 +809,4 @@ public class FileManager
         }
     });
     }
-
-
-
-
-
-
-
-
 }

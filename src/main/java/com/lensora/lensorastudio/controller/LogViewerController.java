@@ -2,7 +2,6 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.Dialogs;
-import com.lensora.lensorastudio.util.ErrorHandler;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -45,7 +44,7 @@ public class LogViewerController implements DialogController
     @FXML
     public void initialize() 
     {
-        logger.info("Initializing LogViewerController...");
+        logger.info("[LogViewerController] Initializing LogViewerController...");
         loadLogFile();
     }
 
