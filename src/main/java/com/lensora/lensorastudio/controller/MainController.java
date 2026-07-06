@@ -15,17 +15,22 @@ import java.awt.Desktop;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
@@ -65,16 +70,28 @@ public class MainController
     // File browser
     @FXML private TreeView<File> folderTree;
     @FXML private TableView<File> fileTable;
-    @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize, colFileModified;
+    @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize ,colFileDimensions, colFileModified;
     @FXML private Label lblCurrentFolder, lblFileCount;
     @FXML private HBox progressContainer;
     @FXML private ProgressBar progressBar;
     @FXML private Label progressLabel, progressSpeedLabel, progressEtaLabel;
 
+
+    @FXML private HBox breadcrumbContainer;
+    @FXML private Button btnFolderBack, btnFolderForward;
+    @FXML private TextField searchField;
+    @FXML private ToggleGroup viewToggleGroup;
+    @FXML private ToggleButton btnDetails, btnList, btnIcons, btnThumbnails;
+    @FXML private ListView<File> fileListView;
+    @FXML private ScrollPane iconScrollPane;
+    @FXML private FlowPane iconFlowPane;
+
     @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileMove,
             ctxFileDelete, ctxFileShowInExplorer;
 
     @FXML private Button btnNewProject, btnEmptyNewProject, btnDetailOpenFolder;
+
+
 
     // ─── Managers ───────────────────────────────────────────────────────────
 
@@ -130,6 +147,7 @@ public void initialize()
             colFileName, 
             colFileType, 
             colFileSize, 
+            colFileDimensions,
             colFileModified,
             lblCurrentFolder, 
             lblFileCount, 
@@ -144,7 +162,11 @@ public void initialize()
             ctxFileCopy, 
             ctxFileMove,
             ctxFileDelete, 
-            ctxFileShowInExplorer
+            ctxFileShowInExplorer,
+            // ─── New parameters ───
+        breadcrumbContainer, btnFolderBack, btnFolderForward, searchField,
+        viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
+        fileListView, iconScrollPane, iconFlowPane
     );
 
     // Wire project selection to file manager
@@ -263,6 +285,15 @@ public void initialize()
                 }
             });
         }
+
+        if (btnFolderBack != null) 
+        {
+            btnFolderBack.setOnAction(e -> fileManager.goBack());
+        }
+        if (btnFolderForward != null) 
+        {
+            btnFolderForward.setOnAction(e -> fileManager.goForward());
+        }
     }
 
     /**
@@ -308,6 +339,17 @@ public void initialize()
             mnu_btn_view_logs.setAccelerator(
                 new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
             );
+        }
+
+        // setup filemanager keyboard shortcuts ctrl + c / ctrl + v / ctrl + x
+        if (fileManager != null)
+        {
+            headerBar.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) 
+                {
+                    fileManager.setupCopyPasteShortcuts(newScene);
+                }       
+            });
         }
 }
 

@@ -127,7 +127,7 @@ $JpackageArgs = @(
     "--win-shortcut-prompt"
     "--win-per-user-install"
     "--description", "Lensora Studio - Studio Project & File Management System"
-    "--copyright", "Copyright 2026 Lensora Foundation. All Rights Reserved"
+    "--copyright", "Copyright Ⓒ 2026 Lensora Foundation. All Rights Reserved"
     "--resource-dir", "src\main\resources\com\lensora\lensorastudio\installer"
     "--verbose"
 )

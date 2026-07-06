@@ -18,6 +18,11 @@ module com.lensora.lensorastudio
     requires atlantafx.base;
     requires javafx.base;
 
+    requires org.kordamp.ikonli.core;
+    requires org.kordamp.ikonli.javafx;
+    // add icon pack modules
+    requires org.kordamp.ikonli.fontawesome5;
+
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;
 
