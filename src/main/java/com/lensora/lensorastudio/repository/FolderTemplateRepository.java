@@ -22,8 +22,8 @@ public class FolderTemplateRepository
         String sql = "SELECT * FROM folder_template ORDER BY template_name";
         List<FolderTemplate> list = new ArrayList<>();
         try (Connection conn = DatabaseManager.connect();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery())
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery())
         {
             while (rs.next())
                 list.add(new FolderTemplate(
@@ -41,10 +41,10 @@ public class FolderTemplateRepository
     public static List<String> getFolderNames(int templateId) throws SQLException
     {
         String sql = "SELECT folder_name FROM folder_template_item " +
-                     "WHERE template_id=? ORDER BY sequence_no";
+                    "WHERE template_id=? ORDER BY sequence_no";
         List<String> names = new ArrayList<>();
         try (Connection conn = DatabaseManager.connect();
-             PreparedStatement ps = conn.prepareStatement(sql))
+            PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setInt(1, templateId);
             try (ResultSet rs = ps.executeQuery())

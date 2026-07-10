@@ -4,6 +4,11 @@ import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.repository.ProjectRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.ErrorHandler;
+
+import javafx.collections.FXCollections;
+import java.util.function.Predicate;
+import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.scene.control.Label;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableColumn;
@@ -18,73 +23,106 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.List;
 
+
 public class ProjectManager 
 {
     private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
 
-    private final TableView<Project> projectTable;
-    private final TableColumn<Project, String> colProjectNumber, colClientName, colStatus;
-    private final TextField detProjectNumber, detClientName, detClientPhone,
-            detClientEmail, detEventType, detEventDate, detDueDate,
-            detStatus, detPackage, detProjectPath, detTotalAmount,
-            detAdvanceAmount, detBalanceAmount;
-    private final TextArea detRemarks;
-    private final HBox progressStepper;
-    private final Label lblStatusPath, lblFolderHeader, lblStatusProjects, lblProjectCount, lblStatusText;
-    private final SplitPane projectWorkspace;
-    private final VBox emptyStatePane;
-    private final AppSettings settings;
+    private final TableView<Project>                projectTable;
 
-    private Project currentProject;
-    private Runnable onProjectSelected;
+    private final TableColumn<Project, String>      colProjectNumber, 
+                                                    colClientName, 
+                                                    colStatus;
+
+    private final TextField                         detProjectNumber, 
+                                                    detClientName, 
+                                                    detClientPhone,
+                                                    detClientEmail, 
+                                                    detEventType, 
+                                                    detEventDate, 
+                                                    detDueDate,
+                                                    detStatus, 
+                                                    detPackage, 
+                                                    detProjectPath, 
+                                                    detTotalAmount,
+                                                    detAdvanceAmount, 
+                                                    detBalanceAmount;
+
+    private final TextArea                          detRemarks;
+
+    private final HBox                              progressStepper;
+
+    private final Label                             lblStatusPath, 
+                                                    lblFolderHeader, 
+                                                    lblStatusProjects, 
+                                                    lblProjectCount, 
+                                                    lblStatusText;
+
+    private final SplitPane                         projectWorkspace;
+
+    private final VBox                              emptyStatePane;
 
 
-        public ProjectManager(TableView<Project> projectTable,
-                        TableColumn<Project, String> colProjectNumber,
-                        TableColumn<Project, String> colClientName,
-                        TableColumn<Project, String> colStatus,
-                        TextField detProjectNumber, TextField detClientName,
-                        TextField detClientPhone, TextField detClientEmail,
-                        TextField detEventType, TextField detEventDate,
-                        TextField detDueDate, TextField detStatus,
-                        TextField detPackage, TextField detProjectPath,
-                        TextField detTotalAmount, TextField detAdvanceAmount,
-                        TextField detBalanceAmount, TextArea detRemarks,
-                        HBox progressStepper,
-                        Label lblStatusPath, Label lblFolderHeader,
-                        Label lblStatusProjects, Label lblProjectCount,
-                        Label lblStatusText,
-                        SplitPane projectWorkspace, VBox emptyStatePane) {
-        this.projectTable = projectTable;
-        this.colProjectNumber = colProjectNumber;
-        this.colClientName = colClientName;
-        this.colStatus = colStatus;
-        this.detProjectNumber = detProjectNumber;
-        this.detClientName = detClientName;
-        this.detClientPhone = detClientPhone;
-        this.detClientEmail = detClientEmail;
-        this.detEventType = detEventType;
-        this.detEventDate = detEventDate;
-        this.detDueDate = detDueDate;
-        this.detStatus = detStatus;
-        this.detPackage = detPackage;
-        this.detProjectPath = detProjectPath;
-        this.detTotalAmount = detTotalAmount;
-        this.detAdvanceAmount = detAdvanceAmount;
-        this.detBalanceAmount = detBalanceAmount;
-        this.detRemarks = detRemarks;
-        this.progressStepper = progressStepper;
-        this.lblStatusPath = lblStatusPath;
-        this.lblFolderHeader = lblFolderHeader;
-        this.lblStatusProjects = lblStatusProjects;
-        this.lblProjectCount = lblProjectCount;
-        this.lblStatusText = lblStatusText;
-        this.projectWorkspace = projectWorkspace;
-        this.emptyStatePane = emptyStatePane;
-        this.settings = AppSettings.getInstance();
+    private final AppSettings                       settings;
+    private Project                                 currentProject;
+    private Runnable                                onProjectSelected;
+    private String                                  currentSearchQuery = null;
+    private final FilteredList<Project>             filteredProjects;
 
-        setupSelectionListener();
-        setupCellFactories();
+    private final ObservableList<Project> allProjects = FXCollections.observableArrayList();
+    private String currentStatusFilter= "All Statuses";
+
+
+        public ProjectManager(  TableView<Project> projectTable,
+                                TableColumn<Project, String> colProjectNumber,
+                                TableColumn<Project, String> colClientName,
+                                TableColumn<Project, String> colStatus,
+                                TextField detProjectNumber, TextField detClientName,
+                                TextField detClientPhone, TextField detClientEmail,
+                                TextField detEventType, TextField detEventDate,
+                                TextField detDueDate, TextField detStatus,
+                                TextField detPackage, TextField detProjectPath,
+                                TextField detTotalAmount, TextField detAdvanceAmount,
+                                TextField detBalanceAmount, TextArea detRemarks,
+                                HBox progressStepper,
+                                Label lblStatusPath, Label lblFolderHeader,
+                                Label lblStatusProjects, Label lblProjectCount,
+                                Label lblStatusText,
+                                SplitPane projectWorkspace, VBox emptyStatePane) 
+        {
+            this.projectTable = projectTable;
+            this.colProjectNumber = colProjectNumber;
+            this.colClientName = colClientName;
+            this.colStatus = colStatus;
+            this.detProjectNumber = detProjectNumber;
+            this.detClientName = detClientName;
+            this.detClientPhone = detClientPhone;
+            this.detClientEmail = detClientEmail;
+            this.detEventType = detEventType;
+            this.detEventDate = detEventDate;
+            this.detDueDate = detDueDate;
+            this.detStatus = detStatus;
+            this.detPackage = detPackage;
+            this.detProjectPath = detProjectPath;
+            this.detTotalAmount = detTotalAmount;
+            this.detAdvanceAmount = detAdvanceAmount;
+            this.detBalanceAmount = detBalanceAmount;
+            this.detRemarks = detRemarks;
+            this.progressStepper = progressStepper;
+            this.lblStatusPath = lblStatusPath;
+            this.lblFolderHeader = lblFolderHeader;
+            this.lblStatusProjects = lblStatusProjects;
+            this.lblProjectCount = lblProjectCount;
+            this.lblStatusText = lblStatusText;
+            this.projectWorkspace = projectWorkspace;
+            this.emptyStatePane = emptyStatePane;
+            this.settings = AppSettings.getInstance();
+
+            setupSelectionListener();
+            setupCellFactories();
+
+            filteredProjects = new FilteredList<>(allProjects);
+            projectTable.setItems(filteredProjects);
     }
 
     /**
@@ -107,9 +145,10 @@ public class ProjectManager
         try 
         {
             List<Project> projects = ProjectRepository.findAll();
-            projectTable.getItems().setAll(projects);
+            allProjects.setAll(projects);  // replace the master list
             updateCounts(projects.size());
             restoreLastProject(projects);
+            applyFilter(); // reapply current filters
         } 
         catch (SQLException e) 
         {
@@ -162,22 +201,13 @@ public class ProjectManager
     // Check and restore last opened project
     private void restoreLastProject(List<Project> projects) 
     {
+        if (!settings.getOpenLastProject() || projects.isEmpty()) return;
         int lastId = settings.getLastProjectId();
-        if (lastId != -1) 
-        {
-            for (Project p : projects) 
-            {
-                if (p.getProjectId() == lastId) 
-                {
-                    projectTable.getSelectionModel().select(p);
-                    return;
-                }
-            }
-        }
-        if (!projects.isEmpty())
-        {
-            projectTable.getSelectionModel().select(0);
-        }
+        Project target = projects.stream()
+            .filter(p -> p.getProjectId() == lastId)
+            .findFirst()
+            .orElse(projects.get(0));
+        projectTable.getSelectionModel().select(target);
     }
 
     private void updateProgressStepper(String status)
@@ -219,6 +249,8 @@ public class ProjectManager
             {
                 showWorkspace(false);
                 currentProject = null;
+                // clears all detail fields and status labels
+                clearProjectDetails();
             }
         });
     }
@@ -242,6 +274,82 @@ public class ProjectManager
                 logger.error("Failed to reload project details", e);
             }
         }
+    }
+
+    public void searchProjects(String query) 
+    {
+        this.currentSearchQuery = (query == null || query.trim().isEmpty()) ? null : query.trim();
+        applyFilter();
+    }
+
+    public void filterByStatus(String status) 
+    {
+        this.currentStatusFilter = status;
+        applyFilter();
+    }
+
+
+    private void applyFilter() 
+    {
+        Predicate<Project> predicate = project -> {
+            // Status filter
+            if (currentStatusFilter != null && !currentStatusFilter.equals("All Statuses") 
+                && !currentStatusFilter.equals(project.getProjectStatus())) 
+            {
+                return false;
+            }
+            // Text search filter
+            return matchesSearch(project, currentSearchQuery);
+        };
+        filteredProjects.setPredicate(predicate);
+        // Update counts based on filtered size
+        int filteredSize = filteredProjects.size();
+        lblStatusProjects.setText("Projects: " + filteredSize);
+        lblProjectCount.setText(filteredSize + " projects");
+        lblStatusText.setText(filteredSize == 0 ? "No projects" : "Ready");
+    }
+
+    private boolean matchesSearch(Project project, String query)
+    {
+        if (query != null && !query.isEmpty()) 
+        {
+            String q = query.toLowerCase();
+            return project.getProjectNumber().toLowerCase().contains(q)
+                    || project.getClientName().toLowerCase().contains(q)
+                    || (project.getClientPhone() != null && project.getClientPhone().toLowerCase().contains(q))
+                    || (project.getProjectStatus() != null && project.getProjectStatus().toLowerCase().contains(q))
+                    || (project.getEventType() != null && project.getEventType().toLowerCase().contains(q))
+                    || (project.getClientEmail() != null && project.getClientEmail().toLowerCase().contains(q))
+                    || (project.getEventDate() != null && project.getEventDate().toString().contains(q));
+        }
+        return true;
+    }
+
+    public void resetSearchWithoutClearingSelection() 
+    {
+        this.currentSearchQuery = null;
+        applyFilter();
+    }
+
+    private void clearProjectDetails() 
+    {
+        detProjectNumber.setText("");
+        detClientName.setText("");
+        detClientPhone.setText("");
+        detClientEmail.setText("");
+        detEventType.setText("");
+        detEventDate.setText("");
+        detDueDate.setText("");
+        detStatus.setText("");
+        detPackage.setText("");
+        detProjectPath.setText("");
+        detTotalAmount.setText("");
+        detAdvanceAmount.setText("");
+        detBalanceAmount.setText("");
+        detRemarks.setText("");
+        progressStepper.getChildren().clear();
+        lblStatusPath.setText("");
+        lblFolderHeader.setText("Folders");
     }
 
     public void setOnProjectSelected(Runnable onProjectSelected) 

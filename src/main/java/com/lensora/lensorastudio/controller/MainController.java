@@ -4,6 +4,7 @@ import com.lensora.lensorastudio.managers.FileManager;
 import com.lensora.lensorastudio.managers.ProjectManager;
 import com.lensora.lensorastudio.managers.WindowDragManager;
 import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.util.DialogBuilder;
 import com.lensora.lensorastudio.util.Dialogs;
@@ -12,8 +13,14 @@ import com.lensora.lensorastudio.util.Resources;
 
 import java.awt.Desktop;
 
+import javafx.animation.PauseTransition;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MenuItem;
@@ -35,6 +42,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -45,53 +53,113 @@ import java.io.IOException;
 
 public class MainController 
 {
-
-    private static final Logger logger = LoggerFactory.getLogger(MainController.class);
+    private static final Logger logger               = LoggerFactory.getLogger(MainController.class);
+    private PauseTransition searchDelay              = new PauseTransition(Duration.millis(50));
+    private boolean isFiltering                      = false;
 
     // ─── FXML injected fields ──────────────────────────────────────────────
 
-    @FXML private HBox headerBar;
-    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_preferences, mnu_btn_view_logs;
-    @FXML private SplitPane mainSplitPane, projectWorkspace, fileSplitPane;
+    @FXML private HBox                          headerBar;
+
+    @FXML private MenuItem                      mnu_btn_exit, 
+                                                mnu_btn_about, 
+                                                mnu_btn_new_project, 
+                                                mnu_btn_preferences, 
+                                                mnu_btn_view_logs;
+
+    @FXML private SplitPane                     mainSplitPane, 
+                                                projectWorkspace, 
+                                                fileSplitPane;
 
     // Project list
-    @FXML private TableView<Project> projectTable;
-    @FXML private TableColumn<Project, String> colProjectNumber, colClientName, colStatus;
-    @FXML private Label lblProjectCount, lblStatusProjects, lblStatusText, lblStatusPath, lblFolderHeader;
-    @FXML private HBox progressStepper;
-    @FXML private VBox emptyStatePane;
+    @FXML private TableView<Project>            projectTable;
+
+    @FXML private TableColumn<Project, String>  colProjectNumber, 
+                                                colClientName, 
+                                                colStatus;
+
+    @FXML private Label                         lblProjectCount, 
+                                                lblStatusProjects, 
+                                                lblStatusText, 
+                                                lblStatusPath, 
+                                                lblFolderHeader;
+
+    @FXML private HBox                          progressStepper;
+    @FXML private VBox                          emptyStatePane;
 
     // Project details
-    @FXML private TextField detProjectNumber, detClientName, detClientPhone, detClientEmail,
-            detEventType, detEventDate, detDueDate, detStatus, detPackage, detProjectPath,
-            detTotalAmount, detAdvanceAmount, detBalanceAmount;
-    @FXML private TextArea detRemarks;
+    @FXML private TextField                     projectSearchField, 
+                                                detProjectNumber, 
+                                                detClientName, 
+                                                detClientPhone, 
+                                                detClientEmail,
+                                                detEventType, 
+                                                detEventDate, 
+                                                detDueDate, 
+                                                detStatus, 
+                                                detPackage, 
+                                                detProjectPath,
+                                                detTotalAmount, 
+                                                detAdvanceAmount, 
+                                                detBalanceAmount;
+
+    @FXML private TextArea                      detRemarks;
 
     // File browser
-    @FXML private TreeView<File> folderTree;
-    @FXML private TableView<File> fileTable;
-    @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize ,colFileDimensions, colFileModified;
-    @FXML private Label lblCurrentFolder, lblFileCount;
-    @FXML private HBox progressContainer;
-    @FXML private ProgressBar progressBar;
-    @FXML private Label progressLabel, progressSpeedLabel, progressEtaLabel;
+    @FXML private TreeView<File>                folderTree;
+
+    @FXML private TableView<File>               fileTable;
+
+    @FXML private TableColumn<File, String>     colFileName, 
+                                                colFileType, 
+                                                colFileSize,
+                                                colFileDimensions,
+                                                colFileModified;
+
+    @FXML private Label                         lblCurrentFolder, 
+                                                lblFileCount;
+
+    @FXML private HBox                          progressContainer;
+
+    @FXML private ProgressBar                   progressBar;
+
+    @FXML private Label                         progressLabel, 
+                                                progressSpeedLabel, 
+                                                progressEtaLabel;
 
 
-    @FXML private HBox breadcrumbContainer;
-    @FXML private Button btnFolderBack, btnFolderForward;
-    @FXML private TextField searchField;
-    @FXML private ToggleGroup viewToggleGroup;
-    @FXML private ToggleButton btnDetails, btnList, btnIcons, btnThumbnails;
-    @FXML private ListView<File> fileListView;
-    @FXML private ScrollPane iconScrollPane;
-    @FXML private FlowPane iconFlowPane;
+    @FXML private HBox                          breadcrumbContainer;
 
-    @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileMove,
-            ctxFileDelete, ctxFileShowInExplorer;
+    @FXML private Button                        btnFolderBack, 
+                                                btnFolderForward;
 
-    @FXML private Button btnNewProject, btnEmptyNewProject, btnDetailOpenFolder;
+    @FXML private TextField                     fileSearchField;
 
+    @FXML private ToggleGroup                   viewToggleGroup;
 
+    @FXML private ToggleButton                  btnDetails, 
+                                                btnList, 
+                                                btnIcons, 
+                                                btnThumbnails;
+
+    @FXML private ListView<File>                fileListView;
+
+    @FXML private ScrollPane                    iconScrollPane;
+
+    @FXML private FlowPane                      iconFlowPane;
+
+    @FXML private MenuItem                      ctxFileOpen, 
+                                                ctxFileRename, 
+                                                ctxFileCopy, 
+                                                ctxFileMove,
+                                                ctxFileDelete, 
+                                                ctxFileShowInExplorer;
+
+    @FXML private Button                        btnNewProject, 
+                                                btnEmptyNewProject, 
+                                                btnDetailOpenFolder;
+
+    @FXML private ComboBox<String>              cmbStatusFilter;
 
     // ─── Managers ───────────────────────────────────────────────────────────
 
@@ -101,97 +169,116 @@ public class MainController
     // ─── Initialisation ─────────────────────────────────────────────────────
 
     @FXML
-public void initialize() 
-{
-    logger.info("[MainController] Initializing MainController...");
-    
-    // Split panes persistence
-    registerSplitPanes();
+    public void initialize() 
+    {
+        logger.info("[MainController] Initializing MainController...");
+        
+        // Split panes persistence
+        registerSplitPanes();
 
-    // Project manager
-    projectManager = new ProjectManager
-    (
-            projectTable,
-            colProjectNumber,
-            colClientName, 
-            colStatus,
-            detProjectNumber,
-            detClientName,
-            detClientPhone,
-            detClientEmail,
-            detEventType,
-            detEventDate,
-            detDueDate,
-            detStatus,
-            detPackage,
-            detProjectPath,
-            detTotalAmount,
-            detAdvanceAmount, 
-            detBalanceAmount,
-            detRemarks,
-            progressStepper,
-            lblStatusPath,
-            lblFolderHeader,
-            lblStatusProjects, 
-            lblProjectCount,
-            lblStatusText,
-            projectWorkspace,
-            emptyStatePane
-    );
+        // Project manager
+        projectManager = new ProjectManager
+        (
+                projectTable,
+                colProjectNumber,
+                colClientName, 
+                colStatus,
+                detProjectNumber,
+                detClientName,
+                detClientPhone,
+                detClientEmail,
+                detEventType,
+                detEventDate,
+                detDueDate,
+                detStatus,
+                detPackage,
+                detProjectPath,
+                detTotalAmount,
+                detAdvanceAmount, 
+                detBalanceAmount,
+                detRemarks,
+                progressStepper,
+                lblStatusPath,
+                lblFolderHeader,
+                lblStatusProjects, 
+                lblProjectCount,
+                lblStatusText,
+                projectWorkspace,
+                emptyStatePane
+        );
 
-    // File manager
-    fileManager = new FileManager
-    (
-            folderTree, 
-            fileTable,
-            colFileName, 
-            colFileType, 
-            colFileSize, 
-            colFileDimensions,
-            colFileModified,
-            lblCurrentFolder, 
-            lblFileCount, 
-            lblFolderHeader,
-            progressContainer, 
-            progressBar, 
-            progressLabel,
-            progressSpeedLabel, 
-            progressEtaLabel,
-            ctxFileOpen, 
-            ctxFileRename, 
-            ctxFileCopy, 
-            ctxFileMove,
-            ctxFileDelete, 
-            ctxFileShowInExplorer,
-            // ─── New parameters ───
-        breadcrumbContainer, btnFolderBack, btnFolderForward, searchField,
-        viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
-        fileListView, iconScrollPane, iconFlowPane
-    );
+        // File manager
+        fileManager = new FileManager
+        (
+                folderTree, 
+                fileTable,
+                colFileName, 
+                colFileType, 
+                colFileSize, 
+                colFileDimensions,
+                colFileModified,
+                lblCurrentFolder, 
+                lblFileCount, 
+                lblFolderHeader,
+                progressContainer, 
+                progressBar, 
+                progressLabel,
+                progressSpeedLabel, 
+                progressEtaLabel,
+                ctxFileOpen, 
+                ctxFileRename, 
+                ctxFileCopy, 
+                ctxFileMove,
+                ctxFileDelete, 
+                ctxFileShowInExplorer,
+                breadcrumbContainer, 
+                btnFolderBack, 
+                btnFolderForward, 
+                fileSearchField,
+                viewToggleGroup, 
+                btnDetails, 
+                btnList, 
+                btnIcons, 
+                btnThumbnails,
+                fileListView, 
+                iconScrollPane, 
+                iconFlowPane
+        );
 
-    // Wire project selection to file manager
-    projectManager.setOnProjectSelected(() -> {
-        Project current = projectManager.getCurrentProject();
-        if (current != null) 
-        {
-            fileManager.loadProjectPath(current.getProjectPath());
-        }
-    });
+        // Populate Defaults
+        populateDefaults();
 
-    // Menu actions
-    setupMenuItems();
+        // Setup listeners
+        setupListeners();
 
-    setupKeyboardShortcuts();
+        // Menu actions
+        setupMenuItems();
 
-    // Button actions
-    setupButtonActions();
+        // Keyboard shortcuts
+        setupKeyboardShortcuts();
 
-    // Window drag manager
-    WindowDragManager.attach(headerBar);
+        // Button actions
+        setupButtonActions();
 
-    // Load projects
-    projectManager.refreshProjectList();
-}
+        // Window drag manager
+        WindowDragManager.attach(headerBar);
+
+        // Search debounce
+        updateSearchDebounce();
+
+        // Load projects
+        projectManager.refreshProjectList();
+    }
+
+
+    // ─── Populate Defaults ────────────────────────────────────────────────
+    private void populateDefaults() 
+    {
+        // Populate status filter
+        cmbStatusFilter.getItems().add("All Statuses");
+        cmbStatusFilter.getItems().addAll(Project.ALL_STATUSES);
+        cmbStatusFilter.setValue("All Statuses");
+    }
 
     // ─── Menu Actions ──────────────────────────────────────────────────────
 
@@ -351,7 +438,77 @@ public void initialize()
                 }       
             });
         }
-}
+
+        // Ctrl + F - Focus search text field
+        projectSearchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) 
+            {
+                newScene.setOnKeyPressed(e -> {
+                    if (e.isControlDown() && e.getCode() == KeyCode.F) 
+                    {
+                        projectSearchField.requestFocus();
+                        projectSearchField.selectAll();
+                        e.consume();
+                    }
+                });
+            }
+        });
+    }
+
+        private void setupListeners() 
+        {
+            // Wire project selection to file manager
+            projectManager.setOnProjectSelected(() -> {
+                Project current = projectManager.getCurrentProject();
+                if (current != null) 
+                {
+                    fileManager.loadProjectPath(current.getProjectPath());
+                }
+            });
+
+            // Immediate listener for empty text (resets status filter if enabled)
+            projectSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null && newVal.trim().isEmpty()) 
+                {
+                    if (AppSettings.getInstance().getResetStatusOnClearSearch()) 
+                    {
+                        isFiltering = true;
+                        cmbStatusFilter.setValue("All Statuses");
+                        // Reset flag after the filter is applied
+                        Platform.runLater(() -> isFiltering = false);
+                    }
+                }
+            });
+
+            // Setup project search with debounce
+            projectSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+                isFiltering = true;
+                searchDelay.setOnFinished(e -> {
+                    projectManager.searchProjects(newVal); 
+                    // Reset flag after the search filter is applied
+                    Platform.runLater(() -> isFiltering = false);
+                    } 
+                );
+                searchDelay.playFromStart();
+            });
+
+            // Clear search field when a project row is clicked (even if already selected)
+            projectTable.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 1 && AppSettings.getInstance().getClearSearchOnProjectSelect() && !isFiltering) 
+                {
+                    Project clicked = projectTable.getSelectionModel().getSelectedItem();
+                    if (clicked != null) 
+                    {
+                        projectSearchField.clear();
+                    }
+                }
+            });
+
+            // Setup status filter
+            cmbStatusFilter.valueProperty().addListener((obs, oldVal, newVal) -> {
+                    projectManager.filterByStatus(newVal);
+            });
+        }
 
     /**
      * Registers all split panes for layout persistence.
@@ -370,6 +527,11 @@ public void initialize()
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
                 .resizable(false)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof SettingsController) {
+                        ((SettingsController) controller).setOnSettingsApplied(this::updateSearchDebounce);
+                    }
+                })
                 .build();
     }
 
@@ -421,5 +583,12 @@ public void initialize()
                     }
                 })
                 .build();
+    }
+
+    // search debounce
+    private void updateSearchDebounce() 
+    {
+        int ms = AppSettings.getInstance().getSearchDebounceMs();
+        searchDelay.setDuration(Duration.millis(ms));
     }
 }

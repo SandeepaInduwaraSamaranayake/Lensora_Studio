@@ -77,7 +77,7 @@ public class ProjectRepository
             """;
 
         try (Connection conn = DatabaseManager.connect();
-             PreparedStatement ps = conn.prepareStatement(sql))
+            PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setString(1,  p.getClientName());
             ps.setString(2,  p.getClientPhone());
@@ -104,7 +104,7 @@ public class ProjectRepository
     {
         String sql = "UPDATE project SET project_status=?, updated_at=? WHERE project_id=?";
         try (Connection conn = DatabaseManager.connect();
-             PreparedStatement ps = conn.prepareStatement(sql))
+            PreparedStatement ps = conn.prepareStatement(sql))
         {
             ps.setString(1, status);
             ps.setString(2, LocalDateTime.now().toString());
@@ -120,31 +120,61 @@ public class ProjectRepository
     {
         String sql = "SELECT * FROM project ORDER BY created_at DESC";
         try (Connection conn = DatabaseManager.connect();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery())
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery())
         {
             return mapList(rs);
         }
     }
 
-    /** Full-text search across number, client, phone, status. */
-    public static List<Project> search(String query) throws SQLException
+    /**
+     * Searches projects by text query and optional status filter.
+     * If query is null/empty, only status filter is applied.
+     * If status is null/empty or "All Statuses", no status filter is applied.
+     */
+    public static List<Project> search(String query, String status) throws SQLException 
     {
-        String like = "%" + query.toLowerCase() + "%";
-        String sql = """
-            SELECT * FROM project
-            WHERE lower(project_number) LIKE ?
-               OR lower(client_name)    LIKE ?
-               OR lower(client_phone)   LIKE ?
-               OR lower(project_status) LIKE ?
-               OR lower(event_type)     LIKE ?
-            ORDER BY created_at DESC
-            """;
-        try (Connection conn = DatabaseManager.connect();
-            PreparedStatement ps = conn.prepareStatement(sql))
+        StringBuilder sql = new StringBuilder("SELECT * FROM project WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+
+        if (query != null && !query.trim().isEmpty()) 
         {
-            for (int i = 1; i <= 5; i++) ps.setString(i, like);
-            try (ResultSet rs = ps.executeQuery()) { return mapList(rs); }
+            String like = "%" + query.toLowerCase() + "%";      // for text fields (case‑insensitive)
+            String dateLike = "%" + query + "%";                // for date field (no lowercasing)
+
+            sql.append(" AND (")
+            .append(" lower(project_number) LIKE ?")
+            .append(" OR lower(client_name)    LIKE ?")
+            .append(" OR lower(client_phone)   LIKE ?")
+            .append(" OR lower(project_status) LIKE ?")
+            .append(" OR lower(event_type)     LIKE ?")
+            .append(" OR lower(client_email)   LIKE ?")
+            .append(" OR event_date            LIKE ?")
+            .append(")");
+            // Add 6 text‑field parameters + 1 date parameter
+            for (int i = 0; i < 6; i++) params.add(like);
+            params.add(dateLike);   // date uses the non‑lowercased pattern
+        }
+
+        if (status != null && !status.isEmpty() && !status.equals("All Statuses")) 
+        {
+            sql.append(" AND project_status = ?");
+            params.add(status);
+        }
+
+        sql.append(" ORDER BY created_at DESC");
+
+        try (Connection conn = DatabaseManager.connect();
+            PreparedStatement ps = conn.prepareStatement(sql.toString())) 
+            {
+                for (int i = 0; i < params.size(); i++) 
+                {
+                    ps.setObject(i + 1, params.get(i));
+                }
+                try (ResultSet rs = ps.executeQuery()) 
+                {
+                    return mapList(rs);
+                }
         }
     }
 

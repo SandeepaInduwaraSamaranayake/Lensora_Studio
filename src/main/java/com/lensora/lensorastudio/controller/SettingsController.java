@@ -27,46 +27,90 @@ public class SettingsController implements DialogController
 {
     private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
 
-    @FXML 
-    private ComboBox<AppSettings.Theme> themeCombo;
+    // ----------------------------- FXML fields --------------------------------
 
     @FXML 
-    private Spinner<Double> fontSizeSpinner;
+    private ComboBox<AppSettings.Theme>     themeCombo;
+
+    @FXML 
+    private Spinner<Double>                 fontSizeSpinner;
+
+    @FXML private Spinner<Integer>          searchDebounceSpinner;
 
     @FXML
-    private Button btnCancel, btnSave, btnApply, btnRestoreDefaults, btnBrowseDefaultRoot, btnBrowseLogDir;
+    private Button                          btnCancel, 
+                                            btnSave, 
+                                            btnApply, 
+                                            btnRestoreDefaults, 
+                                            btnBrowseDefaultRoot, 
+                                            btnBrowseLogDir;
 
     @FXML 
-    private HBox prefHeaderBar;
+    private HBox                            prefHeaderBar;
 
     @FXML 
-    private TextField projectRootField, logDirField;
+    private TextField                       projectRootField, 
+                                            logDirField;
 
     @FXML
-    private CheckBox openOnStartupCheck;
+    private CheckBox                        openOnStartupCheck, 
+                                            openLastProjectCheck, 
+                                            clearSearchOnProjectSelectCheck,
+                                            resetStatusOnClearSearchCheck;
 
     private final AppSettings settings = AppSettings.getInstance();
 
-    // Temporary copies to revert on Cancel
+    private Runnable            onSettingsApplied;
+
+    // ---------------- Temporary copies to revert on Cancel --------------------
     private AppSettings.Theme   tempTheme;
     private double              tempFontSize;
     private String              tempProjectRoot;
     private String              tempLogDir;
     private boolean             tempOpenOnStartup;
+    private boolean             tempClearSearchOnSelect;
+    private boolean             tempOpenLastProject;
+    private boolean             tempResetStatusOnClearSearch;
+    private int                 tempSearchDebounce;
 
+    // ----------------------------- DialogController ---------------------------
     @Override
     public Node getHeaderNode()
     {
         return prefHeaderBar;
     }
 
+    // ----------------------------- Initialisation ----------------------------
     @FXML
     public void initialize()
     {
         logger.info("[SettingsController] Initializing SettingsController...");
-        //------------------------ Theme combo ---------------------------------------
-        themeCombo.getItems().addAll(AppSettings.Theme.values());
 
+        loadCurrentSettingsIntoTemp();
+        setupThemeCombo();
+        setupFontSizeSpinner();
+        setupSearchDebounceSpinner();
+        updateUIFromTemp();
+        setupButtonActions();
+    }
+
+    private void loadCurrentSettingsIntoTemp() 
+    {
+        // Load current settings into temp variables
+        tempTheme                    = settings.getTheme();
+        tempFontSize                 = settings.getFontSize();
+        tempProjectRoot              = settings.getDefaultProjectRoot();
+        tempLogDir                   = settings.getDefaultLogDir();
+        tempOpenOnStartup            = settings.getOpenOnStartup();
+        tempOpenLastProject          = settings.getOpenLastProject();
+        tempClearSearchOnSelect      = settings.getClearSearchOnProjectSelect();
+        tempResetStatusOnClearSearch = settings.getResetStatusOnClearSearch();
+        tempSearchDebounce           = settings.getSearchDebounceMs();
+    }
+
+    private void setupThemeCombo() 
+    {
+        themeCombo.getItems().addAll(AppSettings.Theme.values());
         // Show displayName instead of enum name in the dropdown
         themeCombo.setConverter(new StringConverter<>()
         {
@@ -83,19 +127,11 @@ public class SettingsController implements DialogController
             }
         });
 
-        // Load current settings into temp variables
-        tempTheme         = settings.getTheme();
-        tempFontSize      = settings.getFontSize();
-        tempProjectRoot   = settings.getDefaultProjectRoot();
-        tempLogDir        = settings.getDefaultLogDir();
-
-
         themeCombo.setValue(tempTheme);
+    }
 
-        // Apply current font size to this scene (so the initial state matches)
-        ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
-
-        // ----------------------- Font Size Spinner ----------------------------------
+    private void setupFontSizeSpinner() 
+    {
         // Set range and step
         SpinnerValueFactory<Double> valueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(8, 24, tempFontSize, 0.5);
         fontSizeSpinner.setValueFactory(valueFactory);
@@ -107,32 +143,72 @@ public class SettingsController implements DialogController
             // Live preview: apply to the current settings window only
             ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
         });
+    }
 
 
+    private void setupSearchDebounceSpinner() 
+    {
+        SpinnerValueFactory<Integer> debounceFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1000, tempSearchDebounce, 50);
+        searchDebounceSpinner.setValueFactory(debounceFactory);
+
+        searchDebounceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            tempSearchDebounce = newVal;
+        });
+    }
+
+    private void updateUIFromTemp() 
+    {
         // set project root directory
         projectRootField.setText(tempProjectRoot);
 
         // set log directory
         logDirField.setText(tempLogDir);
 
-        // ------------------------ Open On Starup -----------------------------------
-        boolean startupEnabled = StartupManager.isStartupEnabled();
-        openOnStartupCheck.setSelected(startupEnabled);
+        // Reset Status On Clear Search
+        resetStatusOnClearSearchCheck.setSelected(tempResetStatusOnClearSearch);
 
-        // Sync preferences with reality
-        settings.setOpenOnStartup(startupEnabled);
-        tempOpenOnStartup = startupEnabled;
+        // Clear Search On Project Select
+        clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
 
-        // ------------------------ Button Actions ------------------------------------
+        // Open Last Project
+        openLastProjectCheck.setSelected(tempOpenLastProject);
+
+        // Sync the actual open-on-startup with the system (in case it changed externally)
+        boolean actual = StartupManager.isStartupEnabled();
+        if (actual != tempOpenOnStartup) 
+        {
+            tempOpenOnStartup = actual;
+            openOnStartupCheck.setSelected(actual);
+            settings.setOpenOnStartup(actual); // keep preferences aligned
+        }
+    }
+
+    private void setupButtonActions() 
+    {
         btnCancel.setOnAction(e -> cancelAndClose());
         btnSave.setOnAction(e -> saveAndClose());
         btnApply.setOnAction(e -> applyChanges());
         btnRestoreDefaults.setOnAction(e -> restoreDefaults());
-
+        btnBrowseDefaultRoot.setOnAction(e -> browseFolder(projectRootField, "Select Default Project Root Folder"));
+        btnBrowseLogDir.setOnAction(e -> browseFolder(logDirField, "Select Default Log Directory"));
     }
+
+
 
     // -------- Save changes to preferences and apply to all windows ----------------
     private void applyChanges()
+    {
+        applyThemeAndFont();
+        applySearchDebounce();
+        applyProjectRoot();
+        applyLogDirectory();
+        applyStartupBehaviour();
+        applyUiBehaviour();
+        if (onSettingsApplied != null)  onSettingsApplied.run();
+        logger.info("[SettingsController] Settings applied.");
+    }
+
+    private void applyThemeAndFont() 
     {
         // Save theme if changed
         AppSettings.Theme selectedTheme = themeCombo.getValue();
@@ -150,23 +226,45 @@ public class SettingsController implements DialogController
             // Apply to all open windows
             ThemeManager.applyFontSizeToAllWindows(tempFontSize);
         }
+    }
 
+    private void applySearchDebounce() 
+    {
+        // Save search debounce (already stored in tempSearchDebounce)
+        if (tempSearchDebounce != settings.getSearchDebounceMs()) 
+        {
+            settings.setSearchDebounceMs(tempSearchDebounce);
+        }
+    }
+
+    private void applyProjectRoot() 
+    {
         // save project root folder
         String newRoot = projectRootField.getText().trim();
         if (!newRoot.equals(settings.getDefaultProjectRoot())) 
         {
             settings.setDefaultProjectRoot(newRoot);
         }
+    }
 
+    private void applyLogDirectory() 
+    {
         // save log directory
         String newLogDir = logDirField.getText().trim();
         if (!newLogDir.equals(settings.getDefaultLogDir())) 
         {
             settings.setDefaultLogDir(newLogDir);
             // when log directory changes, restart required
-            showRestartRequiredAlert();
+            Dialogs.showInfo(logDirField.getScene().getWindow(),
+                "Restart Required",
+                "Log directory updated",
+                "The new log directory will take effect after you restart the application."
+            );
         }
+    }
 
+    private void applyStartupBehaviour() 
+    {
         // Open on Startup toggle
         boolean newValue = openOnStartupCheck.isSelected();
         if (newValue != settings.getOpenOnStartup()) 
@@ -195,14 +293,16 @@ public class SettingsController implements DialogController
         }
     }
 
-    private void showRestartRequiredAlert() 
+    private void applyUiBehaviour() 
     {
-        Stage owner = (Stage) logDirField.getScene().getWindow();
-                Dialogs.showInfo(owner,
-                "Restart Required",
-                "Log directory updated",
-                "The new log directory will take effect after you restart the application."
-            );
+        // Clear search on project select toggle
+        settings.setClearSearchOnProjectSelect(clearSearchOnProjectSelectCheck.isSelected());
+
+        // Open last project toggle
+        settings.setOpenLastProject(openLastProjectCheck.isSelected());
+
+        // Reset status on clear search toggle
+        settings.setResetStatusOnClearSearch(resetStatusOnClearSearchCheck.isSelected());
     }
 
     private void saveAndClose()
@@ -213,18 +313,13 @@ public class SettingsController implements DialogController
 
     private void cancelAndClose() 
     {
-        // Revert any live preview back to the saved settings
+        // Revert temporary state to saved settings
+        loadCurrentSettingsIntoTemp();
+        updateUIFromTemp();
+
+        // Reapply theme and font to this window only (live preview undone)
         ThemeManager.applyFontSizeToAllWindows(settings.getFontSize());
-        ThemeManager.applyTheme(settings.getTheme()); // revert theme if live preview changed
-
-        // Revert project root (just for UI consistency)
-        projectRootField.setText(settings.getDefaultProjectRoot());
-
-        // Revert log directory
-        logDirField.setText(settings.getDefaultLogDir());
-
-        // Revert open on startup
-        openOnStartupCheck.setSelected(settings.getOpenOnStartup());
+        ThemeManager.applyTheme(settings.getTheme());
 
         closeWindow();
     }
@@ -232,26 +327,70 @@ public class SettingsController implements DialogController
     private void restoreDefaults()
     {
         // Reset temporary values to defaults
-        tempTheme         = AppSettings.DEFAULT_THEME;
-        tempFontSize      = AppSettings.DEFAULT_FONT_SIZE;
-        tempProjectRoot   = AppSettings.DEFAULT_PROJECT_ROOT;
-        tempLogDir        = AppSettings.DEFAULT_LOG_DIR;
-        tempOpenOnStartup = AppSettings.DEFAULT_OPEN_ON_STARTUP;
+        tempTheme                        = AppSettings.DEFAULT_THEME;
+        tempFontSize                     = AppSettings.DEFAULT_FONT_SIZE;
+        tempProjectRoot                  = AppSettings.DEFAULT_PROJECT_ROOT;
+        tempLogDir                       = AppSettings.DEFAULT_LOG_DIR;
+        tempOpenOnStartup                = AppSettings.DEFAULT_OPEN_ON_STARTUP;
+        tempOpenLastProject              = AppSettings.DEFAULT_OPEN_LAST_PROJECT;
+        tempClearSearchOnSelect          = AppSettings.DEFAULT_CLEAR_SEARCH_ON_PROJECT_SELECT;
+        tempResetStatusOnClearSearch     = AppSettings.DEFAULT_RESET_STATUS_ON_CLEAR_SEARCH;
+        tempSearchDebounce               = AppSettings.DEFAULT_SEARCH_DEBOUNCE_MS;
 
         // Update UI
         themeCombo.setValue(tempTheme);
+
+        // Font-size 
         fontSizeSpinner.getValueFactory().setValue(tempFontSize);
+
+        // project root
         projectRootField.setText(tempProjectRoot);
+
+        // log directory
         logDirField.setText(tempLogDir);
+
+        // Reset open on startup
+        openOnStartupCheck.setSelected(tempOpenOnStartup);
+
+        // Open last project
+        openLastProjectCheck.setSelected(tempOpenLastProject);
+
+        // Reset clear search on project select
+        clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
+
+        // Reset status on clear search
+        resetStatusOnClearSearchCheck.setSelected(tempResetStatusOnClearSearch);
+
+        // Reset search debounce
+        searchDebounceSpinner.getValueFactory().setValue(tempSearchDebounce);
 
         // Immediately preview the defaults
         ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
         // Also apply default theme to this window (but not save)
         ThemeManager.applyTheme(tempTheme);
         ThemeManager.applyFontSizeToAllWindows(tempFontSize);
+    }
 
-        // Reset open on startup
-        openOnStartupCheck.setSelected(tempOpenOnStartup);
+    private void browseFolder(TextField target, String title) 
+    {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(title);
+        String current = target.getText();
+        if (current != null && !current.isEmpty()) 
+        {
+            File dir = new File(current);
+            if (dir.exists()) chooser.setInitialDirectory(dir);
+        }
+        File selected = chooser.showDialog(target.getScene().getWindow());
+        if (selected != null) 
+        {
+            target.setText(selected.getAbsolutePath());
+            // Optionally keep the temporary variable in sync with what’s 
+            // displayed in the text field
+            // Update the corresponding temp variable
+            if (target == projectRootField) tempProjectRoot = selected.getAbsolutePath();
+            else if (target == logDirField) tempLogDir = selected.getAbsolutePath();
+        }
     }
 
     @FXML
@@ -261,52 +400,9 @@ public class SettingsController implements DialogController
         stage.close();
     }
 
-    @FXML
-    private void onBrowseDefaultRoot() 
+    // ----------------------------- Callback for MainController ----------------
+    public void setOnSettingsApplied(Runnable callback) 
     {
-        DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Select Default Project Root Folder");
-        // Start from the current value if it exists
-        String current = projectRootField.getText();
-        if (current != null && !current.isEmpty()) 
-        {
-            File currentDir = new File(current);
-            if (currentDir.exists()) 
-            {
-                chooser.setInitialDirectory(currentDir);
-            }
-        }
-        File selected = chooser.showDialog(projectRootField.getScene().getWindow());
-        if (selected != null)
-        {
-            projectRootField.setText(selected.getAbsolutePath());
-            // Optionally keep the temporary variable in sync with what’s 
-            // displayed in the text field
-            tempProjectRoot = selected.getAbsolutePath();
-        }
-    }
-
-    @FXML
-    private void onBrowseLogDir() 
-    {
-        DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Select Default Log Directory");
-        String current = logDirField.getText();
-        if (current != null && !current.isEmpty()) 
-        {
-            File currentDir = new File(current);
-            if (currentDir.exists()) 
-            {
-                chooser.setInitialDirectory(currentDir);
-            }
-        }
-        File selected = chooser.showDialog(logDirField.getScene().getWindow());
-        if (selected != null) 
-        {
-            logDirField.setText(selected.getAbsolutePath());
-            // Optionally keep the temporary variable in sync with what’s 
-            // displayed in the text field
-            tempLogDir = selected.getAbsolutePath();
-        }
+        this.onSettingsApplied = callback;
     }
 }

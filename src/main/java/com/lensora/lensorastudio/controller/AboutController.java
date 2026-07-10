@@ -25,13 +25,19 @@ public class AboutController implements DialogController
     private static final Logger logger = LoggerFactory.getLogger(AboutController.class);
 
     @FXML 
-    private Label productVersionLabel, buildInfoLabel, javafxVersionLabel, javaVersionLabel, osLabel, loggingLabel;
+    private Label       productVersionLabel, 
+                        buildInfoLabel, 
+                        javafxVersionLabel, 
+                        javaVersionLabel,
+                        osLabel, 
+                        loggingLabel;
     
-    @FXML 
-    private Button closeButton;
+    @FXML
+    private Button      closeButton;
 
     @FXML
-    private HBox aboutHeaderBar;
+    private HBox        aboutHeaderBar;
+    
 
     @Override
     public Node getHeaderNode() 
@@ -65,7 +71,7 @@ public class AboutController implements DialogController
         }
 
         // Fallback if running from IDE (no manifest)
-        if ("Unknown".equals(version)) 
+        if ("Unknown".equals(version))
         {
             version = "Development Build";
             build = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"));

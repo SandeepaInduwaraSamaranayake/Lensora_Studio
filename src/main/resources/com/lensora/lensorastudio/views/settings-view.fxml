@@ -57,9 +57,9 @@
                                        <Label text="General Settings" />
       
                                        <CheckBox fx:id="startMaximizedCheck" text="Start application maximized" />
-                                       <CheckBox fx:id="restoreWorkspaceCheck" text="Restore previous workspace" />
                                        <CheckBox fx:id="openLastProjectCheck" text="Open last selected project" />
-                                       <CheckBox fx:id="showStatusBarCheck" text="Show status bar" />
+                                       <CheckBox fx:id="clearSearchOnProjectSelectCheck" text="Clear search field when a project is selected" />
+                                       <CheckBox fx:id="resetStatusOnClearSearchCheck" text="Reset status filter when search is cleared" />
                                        <CheckBox fx:id="confirmDeleteCheck" text="Confirm before deleting files" />
                                        <CheckBox fx:id="openOnStartupCheck" text="Open Lensora Studio on system startup" />
 
@@ -67,7 +67,7 @@
                            <HBox maxWidth="Infinity" HBox.hgrow="ALWAYS" spacing="15">
                               <children>
                                  <TextField fx:id="logDirField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
-                                 <Button fx:id="btnBrowseLogDir" text="Browse" onAction="#onBrowseLogDir" minWidth="80" />
+                                 <Button fx:id="btnBrowseLogDir" text="Browse" minWidth="80" />
                               </children>
                            </HBox>
                            </VBox>
@@ -133,7 +133,7 @@
                                     <!-- Row 0: Project Root -->
                                     <Label text="Project Root Folder" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                                     <TextField fx:id="projectRootField" GridPane.columnIndex="1" GridPane.rowIndex="0" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
-                                    <Button text="Browse" GridPane.columnIndex="2" GridPane.rowIndex="0" onAction="#onBrowseDefaultRoot" />
+                                    <Button fx:id="btnBrowseDefaultRoot" text="Browse" GridPane.columnIndex="2" GridPane.rowIndex="0" />
 
                                     <!-- Row 1: Default Template -->
                                     <Label text="Default Template" GridPane.columnIndex="0" GridPane.rowIndex="1" />
@@ -185,11 +185,16 @@
                                           <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
                                           <ColumnConstraints hgrow="ALWAYS" />
                                     </columnConstraints>
-                                    <Label text="Thumbnail Cache Size (MB)" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                    <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                    <Label text="Search Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                    <Spinner fx:id="searchDebounceSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                                    <Label text="Thumbnail Cache Size (MB)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                    <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                               
-                                    <Label text="Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                    <ComboBox fx:id="previewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                    <Label text="Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                    <ComboBox fx:id="previewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
                               <rowConstraints>
                                  <RowConstraints />
                                  <RowConstraints />

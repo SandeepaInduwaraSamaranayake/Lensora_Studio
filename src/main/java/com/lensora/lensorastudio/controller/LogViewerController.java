@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -24,14 +25,19 @@ public class LogViewerController implements DialogController
 {
     private static final Logger logger = LoggerFactory.getLogger(LogViewerController.class);
 
-    @FXML private HBox logHeaderBar;
-    @FXML private Label logPathLabel;
-    @FXML private Label logSizeLabel;
-    @FXML private TextArea logTextArea;
-    @FXML private Button refreshButton;
-    @FXML private Button copyButton;
-    @FXML private Button closeButton;
-    @FXML private Button closeButtonBottom;
+    @FXML private HBox      logHeaderBar;
+
+    @FXML private Label     logPathLabel, 
+                            logSizeLabel;
+
+    @FXML private TextArea  logTextArea;
+
+    @FXML private Button    clearLogsButton,
+                            refreshButton, 
+                            copyButton, 
+                            closeButton, 
+                            closeButtonBottom;
+
 
     private Stage stage;
 
@@ -84,6 +90,20 @@ public class LogViewerController implements DialogController
     }
 
     @FXML
+    private void handleClearLogs() 
+    {
+        // Ask for confirmation
+        Dialogs.showConfirm(
+            stage,
+            "Clear Logs",
+            "Are you sure?",
+            "This will permanently delete all log entries. Continue?",
+            () -> clearLogFile(),   // yes action
+            null         // no action (just close)
+        );
+    }
+
+    @FXML
     private void handleRefresh() 
     {
         loadLogFile();
@@ -122,5 +142,37 @@ public class LogViewerController implements DialogController
         int exp = (int) (Math.log(size) / Math.log(1024));
         String pre = "KMGTPE".charAt(exp - 1) + "";
         return String.format("%.1f %sB", size / Math.pow(1024, exp), pre);
+    }
+
+    private void clearLogFile()
+    {
+        String logDir = AppSettings.getInstance().getDefaultLogDir();
+        Path logPath = Paths.get(logDir, "app.log");
+        File logFile = logPath.toFile();
+
+        try 
+        {
+            // Truncate the file to zero bytes (if it exists)
+            if (logFile.exists()) 
+            {
+                try (FileWriter writer = new FileWriter(logFile, false)) 
+                {
+                    writer.write(""); // overwrite with empty content
+                }
+            } 
+            else 
+            {
+                // If file doesn't exist, just create an empty one
+                Files.createDirectories(logPath.getParent());
+                Files.createFile(logPath);
+            }
+            // Refresh the view
+            loadLogFile();
+        } 
+        catch (IOException e) 
+        {
+            logger.error("Failed to clear log file", e);
+            Dialogs.showInfo(stage, "Error", "Could not clear log file", e.getMessage());
+        }
     }
 }

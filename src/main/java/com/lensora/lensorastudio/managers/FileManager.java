@@ -21,16 +21,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
-
 import org.kordamp.ikonli.javafx.FontIcon;
-import org.kordamp.ikonli.fontawesome5.FontAwesomeSolid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -47,8 +44,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class FileManager 
 {
-    private static final Logger logger = LoggerFactory.getLogger(FileManager.class);
-
+    private static final Logger logger               = LoggerFactory.getLogger(FileManager.class);
     private final TreeView<File> folderTree;
     private final TableView<File> fileTable;
     private final TableColumn<File, String> colFileName, colFileType, colFileSize, colFileDimensions, colFileModified;
@@ -61,7 +57,7 @@ public class FileManager
 
     private final HBox breadcrumbContainer;
     private final Button btnBack, btnForward;
-    private final TextField searchField;
+    private final TextField fileSearchField;
     private ToggleGroup viewToggleGroup;
     private final ToggleButton btnDetails, btnList, btnIcons, btnThumbnails;
     private final ListView<File> fileListView;
@@ -114,7 +110,7 @@ public class FileManager
                     HBox breadcrumbContainer,
                     Button btnBack,
                     Button btnForward,
-                    TextField searchField,
+                    TextField fileSearchField,
                     ToggleGroup viewToggleGroup,
                     ToggleButton btnDetails,
                     ToggleButton btnList,
@@ -147,12 +143,10 @@ public class FileManager
         this.ctxFileDelete = ctxFileDelete;
         this.ctxFileShowInExplorer = ctxFileShowInExplorer;
 
-
-        // NEW assignments
         this.breadcrumbContainer = breadcrumbContainer;
         this.btnBack = btnBack;
         this.btnForward = btnForward;
-        this.searchField = searchField;
+        this.fileSearchField = fileSearchField;
         this.viewToggleGroup = viewToggleGroup;
         this.btnDetails = btnDetails;
         this.btnList = btnList;
@@ -1049,9 +1043,9 @@ public void navigateTo(File folder)
     updateBreadcrumb(folder);
     updateButtonStates();
     // Clear search
-    if (!searchField.getText().isEmpty()) 
+    if (!fileSearchField.getText().isEmpty()) 
     {
-        searchField.setText("");
+        fileSearchField.setText("");
     }
     // If this navigation was not triggered by tree selection, update tree selection
     if (!isNavigatingHistory) 
@@ -1130,7 +1124,7 @@ public void navigateTo(File folder)
     {
         // Fallback: show full absolute path as a single segment (rare case)
         Button btn = new Button(folder.getAbsolutePath());
-        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: -color-fg-default; -fx-font-size: 11px;");
+        btn.setStyle("-fx-background-color: transparent; -fx-text-fill: -color-fg-default;");
         breadcrumbContainer.getChildren().add(btn);
         return;
     }
@@ -1160,7 +1154,7 @@ public void navigateTo(File folder)
         if (i > 0) 
         {
             Label sep = new Label(">");
-            sep.setStyle("-fx-text-fill: -color-fg-default; -fx-font-size: 10px;");
+            sep.setStyle("-fx-text-fill: -color-fg-default;");
             breadcrumbContainer.getChildren().add(sep);
         }
         Button btn = new Button(segmentNames.get(i));
@@ -1176,7 +1170,7 @@ public void navigateTo(File folder)
 
     private void setupSearch() 
     {
-        searchField.textProperty().addListener((obs, old, newVal) -> {
+        fileSearchField.textProperty().addListener((obs, old, newVal) -> {
             if (searchTask != null) searchTask.cancel();
             searchTask = new Task<>() {
                 @Override
@@ -1306,26 +1300,6 @@ public void navigateTo(File folder)
         int idx = name.lastIndexOf('.');
         return idx > 0 ? name.substring(idx + 1).toLowerCase() : null;
     }
-
-    // private Image chooseIcon(File file, int size) 
-    // {
-    //     if (file.isDirectory()) 
-    //     {
-    //         InputStream is = getClass().getResourceAsStream("/com/lensora/lensorastudio/icons/folder.png");
-    //         if (is != null) return new Image(is, size, size, true, true);
-    //     }
-
-    //     String ext = getFileExtension(file);
-    //     String path = "/com/lensora/lensorastudio/icons/ext/" + (ext != null ? ext : "file") + ".png";
-    //     InputStream is = getClass().getResourceAsStream(path);
-    //     if (is != null) return new Image(is, size, size, true, true);
-    //     // fallback generic file icon
-    //     is = getClass().getResourceAsStream("/com/lensora/lensorastudio/icons/file.png");
-    //     if (is != null) return new Image(is, size, size, true, true);
-    //     return null;
-    // }
-
-    
 
     private void loadThumbnail(File file, ImageView target) 
     {

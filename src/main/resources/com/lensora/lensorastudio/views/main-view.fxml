@@ -124,7 +124,7 @@
                 <Separator />
                 <Pane HBox.hgrow="ALWAYS" />
                 <Label text="Search:" />
-                <TextField prefWidth="400" promptText="Project, Client..." />
+                <TextField fx:id="projectSearchField" prefWidth="400" promptText="Project, Client, Phone, Email ..." />
             </ToolBar>
         </VBox>
     </top>
@@ -212,7 +212,7 @@
                     alignment="CENTER" spacing="12"
                     style="-fx-padding: 40;">
                     <FontIcon iconLiteral="fas-folder-open" iconSize="48"/>
-                    <Label text="Select a project to get started"/>
+                    <Label text="Select a project or create a new one to get started"/>
                     <Button fx:id="btnEmptyNewProject" text="+ New Project"/>
                 </VBox>
 
@@ -435,7 +435,7 @@
                             <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;" />
                             <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
                             <Pane HBox.hgrow="ALWAYS" />
-                            <TextField fx:id="searchField" promptText="Search..." style="-fx-padding: 2 6;" />
+                            <TextField fx:id="fileSearchField" promptText="Search..." style="-fx-padding: 2 6;" />
                             <Separator orientation="VERTICAL" />
                             <HBox spacing="2">
                                 <ToggleButton fx:id="btnDetails" selected="true">

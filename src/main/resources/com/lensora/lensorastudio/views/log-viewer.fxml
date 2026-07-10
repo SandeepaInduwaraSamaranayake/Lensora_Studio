@@ -23,7 +23,11 @@
                 </Label>
                 <Label text="Application Log"/>
                 <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="closeButton" onAction="#handleClose" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕"/>
+                <Button fx:id="closeButton" onAction="#handleClose" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕">
+                    <font>
+                        <Font size="11.0" />
+                    </font>
+                </Button>
             </children>
             <padding>
                 <Insets bottom="8.0" left="8.0" right="10.0" top="8.0" />
@@ -47,6 +51,7 @@
     <!-- Bottom: Action buttons -->
     <bottom>
         <HBox alignment="CENTER_RIGHT" spacing="12" style="-fx-padding: 12 16 16 16;">
+            <Button fx:id="clearLogsButton" text="Clear Logs" onAction="#handleClearLogs" />
             <Button fx:id="refreshButton" text="Refresh" onAction="#handleRefresh" />
             <Button fx:id="copyButton" text="Copy to Clipboard" onAction="#handleCopy" />
             <Button fx:id="closeButtonBottom" text="Close" onAction="#handleClose" defaultButton="true" />

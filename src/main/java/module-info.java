@@ -22,6 +22,7 @@ module com.lensora.lensorastudio
     requires org.kordamp.ikonli.javafx;
     // add icon pack modules
     requires org.kordamp.ikonli.fontawesome5;
+    requires java.sql.rowset;
 
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;
