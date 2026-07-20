@@ -7,6 +7,11 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import org.slf4j.LoggerFactory;
+import org.snapfx.SnapFX;
+
+import com.lensora.lensorastudio.docking.WorkspaceDockingService;
+
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 /**
@@ -18,6 +23,7 @@ import org.slf4j.Logger;
 public class ThemeManager
 {
     private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
+    private static Consumer<AppSettings.Theme> themeChangeListener;
 
     private ThemeManager() {}
 
@@ -33,7 +39,7 @@ public class ThemeManager
         AppSettings settings = AppSettings.getInstance();
         applyTheme(settings.getTheme());
         applyFontSizeToScene(scene, settings.getFontSize()); // direct application
-        //applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
+        applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
     }
 
     /**
@@ -44,16 +50,21 @@ public class ThemeManager
     public static void applyTheme(AppSettings.Theme theme)
     {
         logger.info("[ThemeManager.applyTheme] Applying theme: " + theme);
-        String stylesheet = switch (theme)
+        switch (theme)
         {
-            case CUPERTINO_DARK  -> new CupertinoDark().getUserAgentStylesheet();
-            case CUPERTINO_LIGHT -> new CupertinoLight().getUserAgentStylesheet();
-            case NORD_DARK       -> new NordDark().getUserAgentStylesheet();
-            case PRIMER_DARK     -> new PrimerDark().getUserAgentStylesheet();
-            case PRIMER_LIGHT    -> new PrimerLight().getUserAgentStylesheet();
-        };
-        // call atlantafx
-        Application.setUserAgentStylesheet(stylesheet);
+            case CUPERTINO_DARK  -> Application.setUserAgentStylesheet(new CupertinoDark().getUserAgentStylesheet());
+            case CUPERTINO_LIGHT -> Application.setUserAgentStylesheet(new CupertinoLight().getUserAgentStylesheet());
+            case NORD_DARK       -> Application.setUserAgentStylesheet(new NordDark().getUserAgentStylesheet());
+            case PRIMER_DARK     -> Application.setUserAgentStylesheet(new PrimerDark().getUserAgentStylesheet());
+            case PRIMER_LIGHT    -> Application.setUserAgentStylesheet(new PrimerLight().getUserAgentStylesheet());
+            case MODENA          -> Application.setUserAgentStylesheet(Application.STYLESHEET_MODENA);
+            case CASPIAN         -> Application.setUserAgentStylesheet(Application.STYLESHEET_CASPIAN);
+        }
+
+        if (themeChangeListener != null) 
+        {
+            themeChangeListener.accept(theme);
+        }
     }
 
     /**
@@ -78,7 +89,7 @@ public class ThemeManager
         }
         if (count == 0) 
         {
-            logger.info("[ThemeManager] No open windows found – font size will be applied when windows appear (ensure you call applyFontSizeToScene for the initial scene)");
+            logger.info("[ThemeManager] No open windows found - font size will be applied when windows appear (ensure you call applyFontSizeToScene for the initial scene)");
         }
     }
 
@@ -105,4 +116,11 @@ public class ThemeManager
     {
         applyFontSizeToScene(scene, AppSettings.getInstance().getFontSize());
     }
+
+
+    public static void setThemeChangeListener(Consumer<AppSettings.Theme> listener) 
+    {
+        themeChangeListener = listener;
+    }
+
 }

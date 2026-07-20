@@ -50,9 +50,6 @@ public class LayoutPersistence
     private static final List<PaneEntry> registeredPanes = new ArrayList<>();
     private record PaneEntry(String key, SplitPane pane) {}
 
-    // Live DoubleProperty for each registered divider, keyed by "paneKey.dividerIndex"
-    private static final Map<String, DoubleProperty> dividerProps = new HashMap<>();
-
 
     /**
      * False during the entire startup sequence (FXML load → window show →
@@ -69,76 +66,6 @@ public class LayoutPersistence
     private static volatile boolean isMaximising = false;
 
     private LayoutPersistence() {}
-
-        /**
-     * Signals that startup is complete and user-drag saves can now be
-     * persisted. Call from App.start() after bindWindow() returns and
-     * the maximise animation has had time to settle.
-     */
-    public static void markStartupComplete()
-    {
-        startupComplete = true;
-        logger.info("[Layout] startup complete — user-drag saves enabled.");
-    }
-
-    // =========================================================================
-    // SPLIT PANES
-    // =========================================================================
-
-    /**
-     * Registers a SplitPane for full layout persistence using bidirectional
-     * binding. Works for both always-visible and initially-hidden panes.
-     *
-     * Call from MainController.initialize() for every SplitPane.
-     * No separate restore step needed — binding handles everything.
-     * 
-     * @param key       unique identifier for this pane (e.g. "main.horizontal")
-     * @param splitPane the SplitPane to bind
-     */
-    public static void bindSplitPane(String key, SplitPane splitPane)
-    {
-        var dividers = splitPane.getDividers();
-        logger.info("[Layout] bindSplitPane key=" + key + " dividers=" + dividers.size() + " visible=" + splitPane.isVisible());
-
-        for (int i = 0; i < dividers.size(); i++)
-        {
-            final String propKey = key + "." + i;
-            double saved = PREFS.getDouble(PREFIX_SPLIT + propKey, -1.0);
-
-            // Only use saved value if it's in a sane range
-            double seed = (saved >= MIN_SAVE && saved <= MAX_SAVE)
-                ? saved
-                : dividers.get(i).getPosition();
-
-            logger.info("[Layout] divider[{}] saved={} seed={}",i,"%.4f".formatted(saved),"%.4f".formatted(seed));
-
-            DoubleProperty prop = new SimpleDoubleProperty(seed);
-            dividerProps.put(propKey, prop);
-
-            dividers.get(i).positionProperty().bindBidirectional(prop);
-
-            final int idx = i;
-            prop.addListener((obs, oldVal, newVal) ->
-            {
-                double v = newVal.doubleValue();
-
-                // Block ALL saves until startup is fully complete.
-                // Block values outside the human-drag range.
-                // Block saves while the window is maximising.
-                // This prevents any drift from initial layout, window resize,
-                // or maximise animation from overwriting the real saved value.
-                if (!startupComplete || isMaximising || v < MIN_SAVE || v > MAX_SAVE) 
-                {
-                    logger.info("[Layout] SAVE BLOCKED key={} divider[{}] {}",propKey,idx,"%.4f".formatted(v));
-                    return;  // ignore transient or invalid values
-                }
-
-                logger.info("[Layout] SAVE key={} divider[{}] {}",propKey,idx,"%.4f".formatted(v));
-                PREFS.putDouble(PREFIX_SPLIT + propKey, v);
-            });
-        }
-        registeredPanes.add(new PaneEntry(key, splitPane));
-    }
 
     // =========================================================================
     // WINDOW SIZE & POSITION

@@ -25,6 +25,8 @@ public class AppSettings
     private static final String     KEY_RESET_STATUS_ON_CLEAR_SEARCH                = "general.reset_status_on_clear_search";
     private static final String     KEY_OPEN_LAST_PROJECT                           = "general.open_last_project";
     private static final String     KEY_SEARCH_DEBOUNCE_MS                          = "advanced.search_debounce_ms";
+    private static final String     KEY_DOCK_LAYOUT                                 = "ui.dock_layout";
+    private static final String     KEY_FFPROBE_PATH                                = "advanced.ffprobe_path";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -38,16 +40,19 @@ public class AppSettings
     public static final boolean     DEFAULT_RESET_STATUS_ON_CLEAR_SEARCH            = false;
     public static final boolean     DEFAULT_OPEN_LAST_PROJECT                       = true;
     public static final int         DEFAULT_SEARCH_DEBOUNCE_MS                      = 50;
+    public static final String      DEFAULT_FFPROBE_PATH                            = ""; // empty = rely on system PATH
 
     // --------------------------- Supported themes ----------------------------------
 
     public enum Theme
     {
-        CUPERTINO_DARK  ("Cupertino Dark"),
-        CUPERTINO_LIGHT ("Cupertino Light"),
-        NORD_DARK       ("Nord Dark"),
-        PRIMER_DARK     ("Primer Dark"),
-        PRIMER_LIGHT    ("Primer Light");
+        CUPERTINO_DARK  ("Cupertino Dark" ),
+        CUPERTINO_LIGHT ("Cupertino Light" ),
+        NORD_DARK       ("Nord Dark" ),
+        PRIMER_DARK     ("Primer Dark" ),
+        PRIMER_LIGHT    ("Primer Light" ),
+        MODENA          ("JavaFX Modena (native SnapFX)"),
+        CASPIAN         ("JavaFX Caspian (native SnapFX)");
 
         public final String displayName;
         Theme(String displayName) { this.displayName = displayName; }
@@ -195,4 +200,25 @@ public class AppSettings
     {
         prefs.putInt(KEY_SEARCH_DEBOUNCE_MS, ms);
     }
+
+    public String getDockLayout()
+    {
+        return prefs.get(KEY_DOCK_LAYOUT, "");
+    }
+
+    public void setDockLayout(String layout)
+    {
+        prefs.put(KEY_DOCK_LAYOUT, layout);
+    }
+
+    public String getFfprobePath()
+    {
+        return prefs.get(KEY_FFPROBE_PATH, DEFAULT_FFPROBE_PATH);
+    }
+
+    public void setFfprobePath(String path)
+    {
+        prefs.put(KEY_FFPROBE_PATH, path);
+    }
+
 }

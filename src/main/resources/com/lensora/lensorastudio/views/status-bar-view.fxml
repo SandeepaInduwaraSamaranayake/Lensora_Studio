@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<HBox xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+    fx:controller="com.lensora.lensorastudio.controller.StatusBarController"
+    spacing="0" alignment="CENTER_LEFT" style="-fx-padding: 3 5 3 5;">
+    <Label fx:id="lblStatusText" text="Ready"/>
+    <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
+    <Label fx:id="lblStatusProjects" text="Projects: 0"/>
+    <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
+    <Label fx:id="lblStatusReminders" text="Reminders: 0"/>
+    <Pane HBox.hgrow="ALWAYS"/>
+    <Label fx:id="lblStatusPath" text="" style="-fx-cursor: hand;"/>
+    <HBox fx:id="progressContainer" spacing="10" alignment="CENTER_LEFT" visible="false" managed="false">
+        <ProgressBar fx:id="progressBar" prefWidth="200" progress="0"/>
+        <Label fx:id="progressLabel" text="0%"/>
+        <Label fx:id="progressSpeedLabel" text="0 KB/s"/>
+        <Label fx:id="progressEtaLabel" text="ETA: --"/>
+    </HBox>
+</HBox>

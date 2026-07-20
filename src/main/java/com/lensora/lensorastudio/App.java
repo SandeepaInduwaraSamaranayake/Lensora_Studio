@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 
 import org.slf4j.Logger;
 
+import com.lensora.lensorastudio.controller.MainController;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.DatabaseManager;
 import com.lensora.lensorastudio.services.LayoutPersistence;
@@ -76,19 +77,21 @@ public class App extends Application
     {
         // Install the global uncaught-exception handler.
         ErrorHandler.installGlobalHandler();
-
         try
         {
             //------------------------------- Theme and window style ------------------------------------
             Application.setUserAgentStylesheet(new CupertinoDark().getUserAgentStylesheet());
+
             stage.initStyle(StageStyle.EXTENDED);
             
             //------------------------------------- Load FXML -------------------------------------------
             FXMLLoader fxmlLoader = new FXMLLoader(Resources.MAIN_VIEW.url());
             Parent root = fxmlLoader.load();
 
+
             //------------------------------------- Scene ----------------------------------------------
             Scene scene = new Scene(root);
+
             // Load font-size override after the AtlantaFX stylesheet so it wins
             // scene.getStylesheets().add(
             //     App.class.getResource("styles/app-overrides.css").toExternalForm()
@@ -105,6 +108,11 @@ public class App extends Application
             );
             stage.setTitle("Lensora Studio");
             stage.setScene(scene);
+
+            MainController mainController = fxmlLoader.getController();
+            mainController.setStage(stage);
+            mainController.getDockingService().initialize(stage);
+            mainController.getDockingService().registerThemeListener();
             
             // Hide the window until layout is ready
             stage.setOpacity(0.0);
@@ -121,9 +129,9 @@ public class App extends Application
 
             stage.show();
             
-
             // centralized close request handler for all windows (e.g. to prompt "Save changes?" on exit)
             stage.setOnCloseRequest(event -> {
+                mainController.getDockingService().saveLayout();
                 logger.info("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
                 
                 // 1. Check for unsaved work here if needed (uncomment below to test)

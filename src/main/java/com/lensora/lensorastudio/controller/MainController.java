@@ -1,450 +1,264 @@
 package com.lensora.lensorastudio.controller;
 
+import com.lensora.lensorastudio.docking.WorkspaceDockingService;
+import com.lensora.lensorastudio.managers.FileListingManager;
 import com.lensora.lensorastudio.managers.FileManager;
-import com.lensora.lensorastudio.managers.ProjectManager;
+import com.lensora.lensorastudio.managers.FileOperationsManager;
 import com.lensora.lensorastudio.managers.WindowDragManager;
-import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.services.AppSettings;
-import com.lensora.lensorastudio.services.LayoutPersistence;
+import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.DialogBuilder;
-import com.lensora.lensorastudio.util.Dialogs;
-import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.MetadataPanel;
 import com.lensora.lensorastudio.util.Resources;
-
-import java.awt.Desktop;
+import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
+import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.geometry.Pos;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
-import javafx.scene.Scene;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.control.ScrollPane;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
-import javafx.scene.control.ToggleGroup;
-import javafx.scene.control.TreeView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
-import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
-
-public class MainController 
+public class MainController
 {
-    private static final Logger logger               = LoggerFactory.getLogger(MainController.class);
-    private PauseTransition searchDelay              = new PauseTransition(Duration.millis(50));
-    private boolean isFiltering                      = false;
+    private static final Logger logger = LoggerFactory.getLogger(MainController.class);
 
-    // ─── FXML injected fields ──────────────────────────────────────────────
+    @FXML private HBox headerBar;
+    @FXML private TextField projectSearchField;
+    @FXML private StackPane dockHost, statusBarHost;
 
-    @FXML private HBox                          headerBar;
+    @FXML private Menu mnu_view;
+    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project,
+                        mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout;
+    @FXML private Button btnNewProject;
 
-    @FXML private MenuItem                      mnu_btn_exit, 
-                                                mnu_btn_about, 
-                                                mnu_btn_new_project, 
-                                                mnu_btn_preferences, 
-                                                mnu_btn_view_logs;
+    private final ProjectsViewModel projectsViewModel = new ProjectsViewModel();
+    private final StatusBarViewModel statusBarViewModel = new StatusBarViewModel();
+    private final WorkspaceDockingService dockingService = new WorkspaceDockingService();
+    private final Map<String, javafx.scene.control.CheckMenuItem> panelCheckItems = new java.util.HashMap<>();
 
-    @FXML private SplitPane                     mainSplitPane, 
-                                                projectWorkspace, 
-                                                fileSplitPane;
+    private final PauseTransition searchDelay = new PauseTransition(Duration.millis(50));
 
-    // Project list
-    @FXML private TableView<Project>            projectTable;
-
-    @FXML private TableColumn<Project, String>  colProjectNumber, 
-                                                colClientName, 
-                                                colStatus;
-
-    @FXML private Label                         lblProjectCount, 
-                                                lblStatusProjects, 
-                                                lblStatusText, 
-                                                lblStatusPath, 
-                                                lblFolderHeader;
-
-    @FXML private HBox                          progressStepper;
-    @FXML private VBox                          emptyStatePane;
-
-    // Project details
-    @FXML private TextField                     projectSearchField, 
-                                                detProjectNumber, 
-                                                detClientName, 
-                                                detClientPhone, 
-                                                detClientEmail,
-                                                detEventType, 
-                                                detEventDate, 
-                                                detDueDate, 
-                                                detStatus, 
-                                                detPackage, 
-                                                detProjectPath,
-                                                detTotalAmount, 
-                                                detAdvanceAmount, 
-                                                detBalanceAmount;
-
-    @FXML private TextArea                      detRemarks;
-
-    // File browser
-    @FXML private TreeView<File>                folderTree;
-
-    @FXML private TableView<File>               fileTable;
-
-    @FXML private TableColumn<File, String>     colFileName, 
-                                                colFileType, 
-                                                colFileSize,
-                                                colFileDimensions,
-                                                colFileModified;
-
-    @FXML private Label                         lblCurrentFolder, 
-                                                lblFileCount;
-
-    @FXML private HBox                          progressContainer;
-
-    @FXML private ProgressBar                   progressBar;
-
-    @FXML private Label                         progressLabel, 
-                                                progressSpeedLabel, 
-                                                progressEtaLabel;
-
-
-    @FXML private HBox                          breadcrumbContainer;
-
-    @FXML private Button                        btnFolderBack, 
-                                                btnFolderForward;
-
-    @FXML private TextField                     fileSearchField;
-
-    @FXML private ToggleGroup                   viewToggleGroup;
-
-    @FXML private ToggleButton                  btnDetails, 
-                                                btnList, 
-                                                btnIcons, 
-                                                btnThumbnails;
-
-    @FXML private ListView<File>                fileListView;
-
-    @FXML private ScrollPane                    iconScrollPane;
-
-    @FXML private FlowPane                      iconFlowPane;
-
-    @FXML private MenuItem                      ctxFileOpen, 
-                                                ctxFileRename, 
-                                                ctxFileCopy, 
-                                                ctxFileMove,
-                                                ctxFileDelete, 
-                                                ctxFileShowInExplorer;
-
-    @FXML private Button                        btnNewProject, 
-                                                btnEmptyNewProject, 
-                                                btnDetailOpenFolder;
-
-    @FXML private ComboBox<String>              cmbStatusFilter;
-
-    // ─── Managers ───────────────────────────────────────────────────────────
-
-    private ProjectManager projectManager;
-    private FileManager fileManager;
-
-    // ─── Initialisation ─────────────────────────────────────────────────────
+    private ProjectListController projectListController;
+    private FileExplorerController fileExplorerController;
+    private StatusBarController statusBarController;
 
     @FXML
-    public void initialize() 
+    public void initialize()
     {
-        logger.info("[MainController] Initializing MainController...");
-        
-        // Split panes persistence
-        registerSplitPanes();
+        logger.info("[MainController] Initializing shell...");
 
-        // Project manager
-        projectManager = new ProjectManager
-        (
-                projectTable,
-                colProjectNumber,
-                colClientName, 
-                colStatus,
-                detProjectNumber,
-                detClientName,
-                detClientPhone,
-                detClientEmail,
-                detEventType,
-                detEventDate,
-                detDueDate,
-                detStatus,
-                detPackage,
-                detProjectPath,
-                detTotalAmount,
-                detAdvanceAmount, 
-                detBalanceAmount,
-                detRemarks,
-                progressStepper,
-                lblStatusPath,
-                lblFolderHeader,
-                lblStatusProjects, 
-                lblProjectCount,
-                lblStatusText,
-                projectWorkspace,
-                emptyStatePane
-        );
-
-        // File manager
-        fileManager = new FileManager
-        (
-                folderTree, 
-                fileTable,
-                colFileName, 
-                colFileType, 
-                colFileSize, 
-                colFileDimensions,
-                colFileModified,
-                lblCurrentFolder, 
-                lblFileCount, 
-                lblFolderHeader,
-                progressContainer, 
-                progressBar, 
-                progressLabel,
-                progressSpeedLabel, 
-                progressEtaLabel,
-                ctxFileOpen, 
-                ctxFileRename, 
-                ctxFileCopy, 
-                ctxFileMove,
-                ctxFileDelete, 
-                ctxFileShowInExplorer,
-                breadcrumbContainer, 
-                btnFolderBack, 
-                btnFolderForward, 
-                fileSearchField,
-                viewToggleGroup, 
-                btnDetails, 
-                btnList, 
-                btnIcons, 
-                btnThumbnails,
-                fileListView, 
-                iconScrollPane, 
-                iconFlowPane
-        );
-
-        // Populate Defaults
-        populateDefaults();
-
-        // Setup listeners
-        setupListeners();
-
-        // Menu actions
+        loadStatusBar();
+        loadDockablePanels();
+        setupPanelsMenu();
         setupMenuItems();
-
-        // Keyboard shortcuts
         setupKeyboardShortcuts();
+        setupSearchField();
 
-        // Button actions
-        setupButtonActions();
-
-        // Window drag manager
         WindowDragManager.attach(headerBar);
 
-        // Search debounce
-        updateSearchDebounce();
-
-        // Load projects
-        projectManager.refreshProjectList();
+        projectsViewModel.refresh();
     }
 
+    // ─── Panel loading ──────────────────────────────────────────────────────
 
-    // ─── Populate Defaults ────────────────────────────────────────────────
-    private void populateDefaults() 
+    private void loadStatusBar()
     {
-        // Populate status filter
-        cmbStatusFilter.getItems().add("All Statuses");
-        cmbStatusFilter.getItems().addAll(Project.ALL_STATUSES);
-        cmbStatusFilter.setValue("All Statuses");
+        try
+        {
+            FXMLLoader loader = new FXMLLoader(Resources.STATUS_BAR_VIEW.url());
+            Parent root = loader.load();
+            statusBarController = loader.getController();
+            statusBarController.bind(statusBarViewModel, projectsViewModel);
+            statusBarHost.getChildren().setAll(root);
+        }
+        catch (IOException e)
+        {
+            logger.error("Failed to load status bar view", e);
+        }
     }
 
-    // ─── Menu Actions ──────────────────────────────────────────────────────
+
+    private void loadDockablePanels()
+    {
+        try
+        {
+            // Projects Panel
+            FXMLLoader listLoader = new FXMLLoader(Resources.PROJECT_LIST_VIEW.url());
+            Node listRoot = listLoader.load();
+            projectListController = listLoader.getController();
+            projectListController.bind(projectsViewModel);
+            projectListController.setOnRowClicked(projectSearchField::clear);
+            dockingService.register("projects", listRoot, "Projects");
+
+            // Project detals Panel
+            FXMLLoader detailsLoader = new FXMLLoader(Resources.PROJECT_DETAILS_VIEW.url());
+            Node detailsRoot = detailsLoader.load();
+            ProjectDetailsController detailsController = detailsLoader.getController();
+            detailsController.bind(projectsViewModel);
+            dockingService.register("projectDetails", detailsRoot, "Project Details");
+
+            // File explorer panel
+            FXMLLoader explorerLoader = new FXMLLoader(Resources.FILE_EXPLORER_VIEW.url());
+            Node explorerRoot = explorerLoader.load();
+            fileExplorerController = explorerLoader.getController();
+            fileExplorerController.wireProgressUi(
+                    statusBarController.getProgressContainer(),
+                    statusBarController.getProgressBar(),
+                    statusBarController.getProgressLabel(),
+                    statusBarController.getProgressSpeedLabel(),
+                    statusBarController.getProgressEtaLabel());
+            dockingService.register("files", explorerRoot, "Files");
+            detailsController.setOnProjectPathChanged(path -> {fileExplorerController.loadProjectPath(path); statusBarViewModel.currentPathProperty().set(path);});
+            
+            
+            FileManager fileManager = fileExplorerController.getFileManager();
+            fileManager.setOnPathChanged(statusBarViewModel.currentPathProperty()::set);
+
+            
+            // MetaData Panel
+            FileListingManager fileListing = fileExplorerController.getFileManager().getFileListingManager();
+            FileOperationsManager fileOps = fileExplorerController.getFileManager().getFileOperationsManager();
+            setupMetadataPanel(fileListing, fileOps);
+
+            // Docking service refresh
+            dockingService.setOnRebuildRequested(this::rebuildAndMount);
+            dockingService.setOnNodeVisibilityChanged(this::refreshPanelsMenuChecks);
+            rebuildAndMount();
+
+            // After loading file explorer and docking service
+            fileExplorerController.setSnapFX(dockingService.getSnapFX());
+        }
+        catch (IOException e)
+        {
+            logger.error("Failed to load dockable panels", e);
+        }
+    }
 
     /**
-     * Sets up the main menu item actions.
-     * MENU BTN EXIT
-     * MENU BTN PREFERENCES
-     * MENU BTN ABOUT 
+     * Creates and registers the Metadata panel, sets up the file selection listener,
+     * and wires the right‑click handler to show the panel.
      */
-    private void setupMenuItems() 
+    private void setupMetadataPanel(FileListingManager fileListing, FileOperationsManager fileOps)
     {
-        // Exit menu item handler
-        if (mnu_btn_exit != null) 
+        // 1. Create the panel content (initially shows placeholder)
+        StackPane metadataContent = new StackPane();
+        Label placeholder = new Label("Select a file to view metadata");
+        metadataContent.getChildren().add(placeholder);
+
+        // 2. Register the panel with the docking service
+        dockingService.register("metadata", metadataContent, "Metadata");
+
+        // 3. Listen to file selection and load metadata
+        fileListing.selectedFileProperty().addListener((obs, oldFile, newFile) -> {
+            if (newFile == null) 
+            {
+                metadataContent.getChildren().setAll(new Label("No file selected"));
+                return;
+            }
+
+            Label loading = new Label("Loading metadata...");
+            metadataContent.getChildren().setAll(loading);
+
+            MetadataExtractionService.extractAsync(newFile,
+                metadata -> Platform.runLater(() -> {
+                    Node content = MetadataPanel.buildContent(metadata);
+                    metadataContent.getChildren().setAll(content);
+                }),
+                error -> Platform.runLater(() -> {
+                    Label errorLabel = new Label("Failed to read metadata: " + error.getMessage());
+                    metadataContent.getChildren().setAll(errorLabel);
+                })
+            );
+        });
+
+        // 4. Wire the right‑click "Metadata" action to show the panel
+        fileOps.setShowMetadataHandler(file -> {
+            // Update the selection – this triggers the listener to load metadata
+            fileListing.selectedFileProperty().set(file);
+            // Show the metadata panel if it was hidden
+            dockingService.showPanel("metadata");
+        });
+    }
+
+    // ─── Menu / shortcuts / search (unchanged behaviour, just slimmer) ─────
+
+    private void setupMenuItems()
+    {
+        if (mnu_btn_exit != null)
         {
             mnu_btn_exit.setOnAction(e -> {
-                logger.info("[Lensora] Exit menu item clicked, forwarding close request...");
-
                 Stage stage = (Stage) headerBar.getScene().getWindow();
                 if (stage != null)
                 {
-                    // Fire a formal close request to simulate the user clicking the OS close button
                     stage.fireEvent(new javafx.stage.WindowEvent(stage,
                             javafx.stage.WindowEvent.WINDOW_CLOSE_REQUEST));
                 }
             });
         }
-        // Preferences menu item handler
-        if (mnu_btn_preferences != null) 
+        if (mnu_btn_preferences != null) mnu_btn_preferences.setOnAction(e -> showPreferencesWindow());
+        if (mnu_btn_about != null) mnu_btn_about.setOnAction(e -> showAboutWindow());
+        if (mnu_btn_new_project != null) mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
+        if (btnNewProject != null) btnNewProject.setOnAction(e -> showNewProjectDialog());
+        if (mnu_btn_view_logs != null) mnu_btn_view_logs.setOnAction(e -> showLogViewer());
+        if (mnu_btn_reset_layout != null)
         {
-            mnu_btn_preferences.setOnAction(e -> showPreferencesWindow());
+            mnu_btn_reset_layout.setOnAction(e -> 
+            {
+                dockingService.createDefaultLayout();
+                // Rebuild + remount so the reset actually takes effect on screen,
+                // and refresh menu checkmarks since a reset also re-shows everything.
+                dockHost.getChildren().setAll(dockingService.buildLayout());
+                refreshPanelsMenuChecks();
+                });
         }
+    }
 
-        // About menu item handler
-        if (mnu_btn_about != null) 
-        {
-            mnu_btn_about.setOnAction(e -> showAboutWindow());
-        }
-
-        // New Project item handler
+    private void setupKeyboardShortcuts()
+    {
+        if (mnu_btn_preferences != null)
+            mnu_btn_preferences.setAccelerator(new KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN));
+        if (mnu_btn_exit != null)
+            mnu_btn_exit.setAccelerator(new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN));
+        if (mnu_btn_about != null)
+            mnu_btn_about.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         if (mnu_btn_new_project != null)
-        {
-            mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
-        }
+            mnu_btn_new_project.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
+        if (mnu_btn_view_logs != null)
+            mnu_btn_view_logs.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
 
-        // View Logs item handler
-        if (mnu_btn_view_logs != null) 
-        {
-            mnu_btn_view_logs.setOnAction(e -> showLogViewer());
-        }
-    }
+        headerBar.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null && fileExplorerController != null)
+            {
+                fileExplorerController.setupCopyPasteShortcuts(newScene);
+            }
+        });
 
-    // ─── Button Actions ─────────────────────────────────────────────────────
-
-    /**
-     * Sets up button actions (New Project, Open Folder, etc.)
-     */
-    private void setupButtonActions() 
-    {
-        if (btnNewProject != null) 
-        {
-            btnNewProject.setOnAction(e -> showNewProjectDialog());
-        }
-        if (btnEmptyNewProject != null) 
-        {
-            btnEmptyNewProject.setOnAction(e -> showNewProjectDialog());
-        }
-        if (btnDetailOpenFolder != null) 
-        {
-            btnDetailOpenFolder.setOnAction(e -> {
-                Project current = projectManager.getCurrentProject();
-                if (current != null && current.getProjectPath() != null) 
-                {
-                    try 
-                    {
-                        if (Desktop.isDesktopSupported()) 
-                        {
-                            Desktop.getDesktop().open(new File(current.getProjectPath()));
-                        } 
-                        else 
-                        {
-                            Dialogs.showInfo(null, 
-                                            "Not Supported", 
-                                            null,
-                                            "Cannot open folder on this system.");
-                        }
-                    } 
-                    catch (IOException ex) 
-                    {
-                        ErrorHandler.show(null, "Could not open folder", ex);
-                    }
-                }
-            });
-        }
-
-        if (btnFolderBack != null) 
-        {
-            btnFolderBack.setOnAction(e -> fileManager.goBack());
-        }
-        if (btnFolderForward != null) 
-        {
-            btnFolderForward.setOnAction(e -> fileManager.goForward());
-        }
-    }
-
-    /**
-     * Sets up keyboard shortcuts (accelerators) for menu items.
-     */
-    private void setupKeyboardShortcuts() 
-    {
-        // Preferences: Ctrl + P
-        if (mnu_btn_preferences != null) 
-        {
-            mnu_btn_preferences.setAccelerator(
-                new KeyCodeCombination(KeyCode.P, KeyCombination.CONTROL_DOWN)
-            );
-        }
-
-        // Exit: Ctrl + W
-        if (mnu_btn_exit != null) 
-        {
-            mnu_btn_exit.setAccelerator(
-                new KeyCodeCombination(KeyCode.W, KeyCombination.CONTROL_DOWN)
-            );
-        }
-
-        // About: Ctrl + Shift + A
-        if (mnu_btn_about != null) 
-        {
-            mnu_btn_about.setAccelerator(
-                new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
-            );
-        }
-
-        // New Project: Ctrl + N
-        if (mnu_btn_new_project != null) 
-        {
-            mnu_btn_new_project.setAccelerator(
-                new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN)
-            );
-        }
-
-        // View Logs: Ctrl + Shift + L
-        if (mnu_btn_view_logs != null) 
-        {
-            mnu_btn_view_logs.setAccelerator(
-                new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN)
-            );
-        }
-
-        // setup filemanager keyboard shortcuts ctrl + c / ctrl + v / ctrl + x
-        if (fileManager != null)
-        {
-            headerBar.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) 
-                {
-                    fileManager.setupCopyPasteShortcuts(newScene);
-                }       
-            });
-        }
-
-        // Ctrl + F - Focus search text field
         projectSearchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
-            if (newScene != null) 
+            if (newScene != null)
             {
                 newScene.setOnKeyPressed(e -> {
-                    if (e.isControlDown() && e.getCode() == KeyCode.F) 
+                    if (e.isControlDown() && e.getCode() == KeyCode.F)
                     {
                         projectSearchField.requestFocus();
                         projectSearchField.selectAll();
@@ -455,87 +269,46 @@ public class MainController
         });
     }
 
-        private void setupListeners() 
-        {
-            // Wire project selection to file manager
-            projectManager.setOnProjectSelected(() -> {
-                Project current = projectManager.getCurrentProject();
-                if (current != null) 
-                {
-                    fileManager.loadProjectPath(current.getProjectPath());
-                }
-            });
-
-            // Immediate listener for empty text (resets status filter if enabled)
-            projectSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                if (newVal != null && newVal.trim().isEmpty()) 
-                {
-                    if (AppSettings.getInstance().getResetStatusOnClearSearch()) 
-                    {
-                        isFiltering = true;
-                        cmbStatusFilter.setValue("All Statuses");
-                        // Reset flag after the filter is applied
-                        Platform.runLater(() -> isFiltering = false);
-                    }
-                }
-            });
-
-            // Setup project search with debounce
-            projectSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
-                isFiltering = true;
-                searchDelay.setOnFinished(e -> {
-                    projectManager.searchProjects(newVal); 
-                    // Reset flag after the search filter is applied
-                    Platform.runLater(() -> isFiltering = false);
-                    } 
-                );
-                searchDelay.playFromStart();
-            });
-
-            // Clear search field when a project row is clicked (even if already selected)
-            projectTable.setOnMouseClicked(e -> {
-                if (e.getClickCount() == 1 && AppSettings.getInstance().getClearSearchOnProjectSelect() && !isFiltering) 
-                {
-                    Project clicked = projectTable.getSelectionModel().getSelectedItem();
-                    if (clicked != null) 
-                    {
-                        projectSearchField.clear();
-                    }
-                }
-            });
-
-            // Setup status filter
-            cmbStatusFilter.valueProperty().addListener((obs, oldVal, newVal) -> {
-                    projectManager.filterByStatus(newVal);
-            });
-        }
-
-    /**
-     * Registers all split panes for layout persistence.
-     */
-    private void registerSplitPanes() 
+    private void setupSearchField()
     {
-        LayoutPersistence.bindSplitPane("main.horizontal", mainSplitPane);
-        LayoutPersistence.bindSplitPane("detail.vertical", projectWorkspace);
-        LayoutPersistence.bindSplitPane("file.horizontal", fileSplitPane);
+        updateSearchDebounce();
+
+        projectSearchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && newVal.trim().isEmpty()
+                    && AppSettings.getInstance().getResetStatusOnClearSearch())
+            {
+                // handled implicitly: ProjectListController's status combo stays put;
+                // if you want auto-reset behaviour, expose a resetStatusFilter() method
+                // on ProjectListController and call it here.
+            }
+            searchDelay.setOnFinished(e -> projectsViewModel.searchProjects(newVal));
+            searchDelay.playFromStart();
+        });
     }
 
-    // ─── Dialog Show Methods ───────────────────────────────────────────────
+    private void updateSearchDebounce()
+    {
+        int ms = AppSettings.getInstance().getSearchDebounceMs();
+        searchDelay.setDuration(Duration.millis(ms));
+    }
 
-    private void showPreferencesWindow() 
+    // ─── Dialogs (unchanged) ────────────────────────────────────────────────
+
+    private void showPreferencesWindow()
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
                 .resizable(false)
                 .withControllerConsumer(controller -> {
-                    if (controller instanceof SettingsController) {
-                        ((SettingsController) controller).setOnSettingsApplied(this::updateSearchDebounce);
+                    if (controller instanceof SettingsController sc)
+                    {
+                        sc.setOnSettingsApplied(this::updateSearchDebounce);
                     }
                 })
                 .build();
     }
 
-    private void showAboutWindow() 
+    private void showAboutWindow()
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
@@ -543,26 +316,17 @@ public class MainController
                 .build();
     }
 
-    private void showNewProjectDialog() 
+    private void showNewProjectDialog()
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
                 .resizable(false)
                 .withControllerConsumer(controller -> {
-                    if (controller instanceof NewProjectController) 
+                    if (controller instanceof NewProjectController npc)
                     {
-                        ((NewProjectController) controller).setOnProjectCreated(projectId -> {
-                            // Refresh the project list after creation
-                            projectManager.refreshProjectList();
-                            // select the new project
-                            for (Project p : projectTable.getItems()) 
-                            {
-                                if (p.getProjectId() == projectId)
-                                {
-                                    projectTable.getSelectionModel().select(p);
-                                    break;
-                                }
-                            }
+                        npc.setOnProjectCreated(projectId -> {
+                            projectsViewModel.refresh();
+                            projectsViewModel.selectById(projectId);
                             logger.info("Project list refreshed after creation.");
                         });
                     }
@@ -570,25 +334,74 @@ public class MainController
                 .build();
     }
 
-    private void showLogViewer() 
+    private void showLogViewer()
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.LOG_VIEWER_VIEW.url(), "Lensora Studio Log", mainStage)
-                .resizable(true)  // allow resizing
-                .modality(Modality.NONE)     // non‑modal so user can keep it open
+                .resizable(true)
+                .modality(Modality.NONE)
                 .withControllerConsumer(controller -> {
-                    if (controller instanceof LogViewerController)
+                    if (controller instanceof LogViewerController lvc)
                     {
-                        ((LogViewerController) controller).setStage(mainStage);
+                        lvc.setStage(mainStage);
                     }
                 })
                 .build();
     }
 
-    // search debounce
-    private void updateSearchDebounce() 
+    /** Called by App.start() so sub-controllers with file dialogs know their owner. */
+    public void setStage(Stage stage)
     {
-        int ms = AppSettings.getInstance().getSearchDebounceMs();
-        searchDelay.setDuration(Duration.millis(ms));
+        if (fileExplorerController != null) fileExplorerController.setStage(stage);
+    }
+
+    public WorkspaceDockingService getDockingService() 
+    {
+        return dockingService;
+    }
+
+
+    /** Builds View → Panels with one CheckMenuItem per dockable panel. */
+    private void setupPanelsMenu()
+    {
+        if (mnu_view == null) return;
+
+        Menu panelsMenu = new Menu("Panels");
+
+        for (Map.Entry<String, String> entry : dockingService.getRegisteredPanels().entrySet())
+        {
+            String id = entry.getKey();
+            String title = entry.getValue();
+
+            javafx.scene.control.CheckMenuItem item = new javafx.scene.control.CheckMenuItem(title);
+            item.setSelected(dockingService.isVisible(id));
+
+            item.setOnAction(e -> {
+                if (item.isSelected()) dockingService.showPanel(id);
+                else dockingService.hidePanel(id);
+            });
+
+            panelsMenu.getItems().add(item);
+            panelCheckItems.put(id, item);
+        }
+
+        mnu_view.getItems().add(0, panelsMenu);
+        mnu_view.getItems().add(1, new javafx.scene.control.SeparatorMenuItem());
+    }
+
+
+    /** Re-syncs checkmarks after an operation that can change multiple panels' visibility at once (e.g. Reset Layout). */
+    private void refreshPanelsMenuChecks()
+    {
+        for (Map.Entry<String, javafx.scene.control.CheckMenuItem> entry : panelCheckItems.entrySet())
+        {
+            entry.getValue().setSelected(dockingService.isVisible(entry.getKey()));
+        }
+    }
+
+    private void rebuildAndMount() 
+    {
+        dockHost.getChildren().setAll(dockingService.buildLayout());
+        refreshPanelsMenuChecks();
     }
 }

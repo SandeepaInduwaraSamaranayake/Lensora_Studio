@@ -2,6 +2,25 @@
 AtlantaFX scales everything from the .root -fx-font-size value.
 Change this single number to resize all text in the application.
 Default AtlantaFX value is 14px. Adjust to taste (12px–13px is typical). */
-.root {
+/* .root {
     -fx-font-size: 12px;
-}
+} */
+
+
+
+/*SnapFX App Overrides - ADDED into C:\Users\Hp\.m2\repository\org\snapfx\snapfx-core\0.8.0\snapfx-core-0.8.0.jar ---> end of the file snapfx-atlantafx-compat.css */
+/* .dock-control-icon,
+.dock-control-icon-close {
+    -fx-background-color: #888888;
+    -fx-opacity: 1;
+} */
+
+
+/*SnapFX App Overrides Commented Hover animation- C:\Users\Hp\.m2\repository\org\snapfx\snapfx-core\0.8.0\snapfx-core-0.8.0.jar ---> end of the file snapfx.css */
+/*.dock-node-close-button:hover {
+    -fx-background-color: derive(-fx-background, -8%);
+}*/
+
+/*.dock-node-close-button:hover .dock-control-icon {
+    -fx-background-color: -fx-text-base-color;
+}*/

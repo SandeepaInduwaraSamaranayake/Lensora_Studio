@@ -20,3 +20,1458 @@ Computer\HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\com\lensora\lensorastudio\ser
 
 -- warning solution
 $env:MAVEN_OPTS="--enable-native-access=ALL-UNNAMED --enable-final-field-mutation=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
+
+
+
+
+
+
+
+
+
+
+=================SnapFX===================
+
+1. List all classes
+
+jar tf C:\Users\Hp\.m2\repository\org\snapfx\snapfx-core\0.8.0\snapfx-core-0.8.0.jar
+
+
+2. Export all methods
+
+
+Create a PowerShell script:
+
+$jar="C:\Users\Hp\.m2\repository\org\snapfx\snapfx-core\0.8.0\snapfx-core-0.8.0.jar"
+
+$classes = jar tf $jar |
+Where-Object {$_.EndsWith(".class")} |
+ForEach-Object {
+    $_.Replace("/",".").Replace(".class","")
+}
+
+foreach($class in $classes)
+{
+    Write-Output "===================================="
+    Write-Output $class
+    Write-Output "===================================="
+
+    javap -classpath $jar -public $class
+}
+
+==========================================
+
+
+
+
+
+
+
+
+
+==============SnapFX Classes================
+
+PS C:\Users\Hp> jar tf C:\Users\Hp\.m2\repository\org\snapfx\snapfx-core\0.8.0\snapfx-core-0.8.0.jar
+META-INF/
+META-INF/MANIFEST.MF
+module-info.class
+org/
+org/snapfx/
+org/snapfx/BuildInfo.class
+org/snapfx/DockUserAgentThemeMode.class
+org/snapfx/SnapFX$1.class
+org/snapfx/SnapFX$DockPlacementMemory.class
+org/snapfx/SnapFX$FxThreadObjectProperty.class
+org/snapfx/SnapFX$SideBarDropPreview.class
+org/snapfx/SnapFX$SideBarDropTarget.class
+org/snapfx/SnapFX.class
+org/snapfx/close/
+org/snapfx/close/DockCloseBehavior.class
+org/snapfx/close/DockCloseDecision.class
+org/snapfx/close/DockCloseRequest.class
+org/snapfx/close/DockCloseResult.class
+org/snapfx/close/DockCloseSource.class
+org/snapfx/debug/
+org/snapfx/debug/DockDebugOverlay$1.class
+org/snapfx/debug/DockDebugOverlay.class
+org/snapfx/debug/DockGraphDebugView$DockElementRow.class
+org/snapfx/debug/DockGraphDebugView$DragLogCell.class
+org/snapfx/debug/DockGraphDebugView$DragLogEntry.class
+org/snapfx/debug/DockGraphDebugView$DragLogType.class
+org/snapfx/debug/DockGraphDebugView.class
+org/snapfx/dnd/
+org/snapfx/dnd/DockDragData.class
+org/snapfx/dnd/DockDragService$DockDropIndicator.class
+org/snapfx/dnd/DockDragService$DockDropZonesOverlay.class
+org/snapfx/dnd/DockDragService$DockGhostOverlay.class
+org/snapfx/dnd/DockDragService$DragHoverEvent.class
+org/snapfx/dnd/DockDragService$DropRequest.class
+org/snapfx/dnd/DockDragService$FloatDetachRequest.class
+org/snapfx/dnd/DockDragService.class
+org/snapfx/dnd/DockDropVisualizationMode.class
+org/snapfx/floating/
+org/snapfx/floating/DockFloatingController.class
+org/snapfx/floating/DockFloatingPinButtonMode.class
+org/snapfx/floating/DockFloatingPinChangeEvent.class
+org/snapfx/floating/DockFloatingPinLockedBehavior.class
+org/snapfx/floating/DockFloatingPinSource.class
+org/snapfx/floating/DockFloatingSnapEngine$SnapAxisResult.class
+org/snapfx/floating/DockFloatingSnapEngine.class
+org/snapfx/floating/DockFloatingSnapTarget.class
+org/snapfx/floating/DockFloatingWindow$DropTarget.class
+org/snapfx/floating/DockFloatingWindow$DropZoneResolution.class
+org/snapfx/floating/DockFloatingWindow$FloatingDropIndicator.class
+org/snapfx/floating/DockFloatingWindow$FloatingDropZonesOverlay.class
+org/snapfx/floating/DockFloatingWindow$ResizeBounds.class
+org/snapfx/floating/DockFloatingWindow.class
+org/snapfx/localization/
+org/snapfx/localization/DockLocalizationProvider.class
+org/snapfx/localization/DockResourceBundleLocalizationProvider.class
+org/snapfx/localization/internal/
+org/snapfx/localization/internal/DockLocalizationService.class
+org/snapfx/model/
+org/snapfx/model/DockContainer.class
+org/snapfx/model/DockElement.class
+org/snapfx/model/DockGraph.class
+org/snapfx/model/DockNode$HiddenRestoreTarget.class
+org/snapfx/model/DockNode.class
+org/snapfx/model/DockPosition.class
+org/snapfx/model/DockSplitPane.class
+org/snapfx/model/DockTabPane.class
+org/snapfx/persistence/
+org/snapfx/persistence/DockLayoutLoadException.class
+org/snapfx/persistence/DockLayoutSerializer$DeserializedSideBar.class
+org/snapfx/persistence/DockLayoutSerializer$DeserializedSideBarEntry.class
+org/snapfx/persistence/DockLayoutSerializer$DockElementAdapter.class
+org/snapfx/persistence/DockLayoutSerializer$ElementData.class
+org/snapfx/persistence/DockLayoutSerializer$LayoutData.class
+org/snapfx/persistence/DockLayoutSerializer$OrientationAdapter.class
+org/snapfx/persistence/DockLayoutSerializer$SideBarData.class
+org/snapfx/persistence/DockLayoutSerializer$SideBarEntryData.class
+org/snapfx/persistence/DockLayoutSerializer.class
+org/snapfx/persistence/DockLayoutSnapshotService$DockFloatingWindowSnapshot.class
+org/snapfx/persistence/DockLayoutSnapshotService$DockLayoutSnapshot.class
+org/snapfx/persistence/DockLayoutSnapshotService.class
+org/snapfx/persistence/DockNodeContentSerializer.class
+org/snapfx/persistence/DockNodeFactory$UnknownElementContext.class
+org/snapfx/persistence/DockNodeFactory.class
+org/snapfx/shortcuts/
+org/snapfx/shortcuts/DockShortcutAction.class
+org/snapfx/shortcuts/DockShortcutController.class
+org/snapfx/sidebar/
+org/snapfx/sidebar/DockSideBarController.class
+org/snapfx/sidebar/DockSideBarMode.class
+org/snapfx/theme/
+org/snapfx/theme/DockThemeCatalog.class
+org/snapfx/theme/DockThemeStyleClasses.class
+org/snapfx/theme/DockThemeStylesheetManager.class
+org/snapfx/view/
+org/snapfx/view/DockCloseButtonMode.class
+org/snapfx/view/DockDropZone.class
+org/snapfx/view/DockDropZoneType.class
+org/snapfx/view/DockLayoutEngine$1.class
+org/snapfx/view/DockLayoutEngine$TabHeader.class
+org/snapfx/view/DockLayoutEngine$TargetCandidate.class
+org/snapfx/view/DockLayoutEngine.class
+org/snapfx/view/DockNodeView.class
+org/snapfx/view/DockTitleBarMode.class
+snapfx-atlantafx-compat.css
+snapfx-dark.css
+snapfx-version.properties
+snapfx.css
+org/snapfx/i18n/
+org/snapfx/i18n/snapfx_de.properties
+org/snapfx/i18n/snapfx_en.properties
+
+
+
+
+
+
+==================== SnapFX Methods =====================
+
+====================================
+module-info
+====================================
+Compiled from "module-info.java"
+module jdk.zipfs@26.0.1 {
+  requires java.base;
+  provides  java.nio.file.spi.FileSystemProvider with
+    jdk.nio.zipfs.ZipFileSystemProvider;
+}
+====================================
+org.snapfx.BuildInfo
+====================================
+Compiled from "BuildInfo.java"
+public final class org.snapfx.BuildInfo {
+  public static java.lang.String getVersion();
+}
+====================================
+org.snapfx.DockUserAgentThemeMode
+====================================
+Compiled from "DockUserAgentThemeMode.java"
+public final class org.snapfx.DockUserAgentThemeMode extends java.lang.Enum<org.snapfx.DockUserAgentThemeMode> {
+  public static final org.snapfx.DockUserAgentThemeMode AUTO;
+  public static final org.snapfx.DockUserAgentThemeMode MODENA;
+  public static final org.snapfx.DockUserAgentThemeMode ATLANTAFX_COMPAT;
+  public static org.snapfx.DockUserAgentThemeMode[] values();
+  public static org.snapfx.DockUserAgentThemeMode valueOf(java.lang.String);
+}
+====================================
+org.snapfx.SnapFX$1
+====================================
+Compiled from "SnapFX.java"
+class org.snapfx.SnapFX$1 {
+}
+====================================
+org.snapfx.SnapFX$DockPlacementMemory
+====================================
+Compiled from "SnapFX.java"
+final class org.snapfx.SnapFX$DockPlacementMemory extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.floating.DockFloatingWindow hostWindow();
+  public org.snapfx.model.DockElement preferredTarget();
+  public org.snapfx.model.DockPosition preferredPosition();
+  public java.lang.Integer preferredTabIndex();
+  public org.snapfx.model.DockElement previousNeighbor();
+  public org.snapfx.model.DockPosition positionRelativeToPreviousNeighbor();
+  public java.lang.Integer tabIndexRelativeToPreviousNeighbor();
+  public org.snapfx.model.DockElement nextNeighbor();
+  public org.snapfx.model.DockPosition positionRelativeToNextNeighbor();
+  public java.lang.Integer tabIndexRelativeToNextNeighbor();
+}
+====================================
+org.snapfx.SnapFX$FxThreadObjectProperty
+====================================
+Compiled from "SnapFX.java"
+final class org.snapfx.SnapFX$FxThreadObjectProperty<T> extends javafx.beans.property.SimpleObjectProperty<T> {
+  public void set(T);
+}
+====================================
+org.snapfx.SnapFX$SideBarDropPreview
+====================================
+Compiled from "SnapFX.java"
+final class org.snapfx.SnapFX$SideBarDropPreview extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public javafx.geometry.Side side();
+  public int insertIndex();
+  public double sceneX();
+  public double sceneY();
+  public double width();
+}
+====================================
+org.snapfx.SnapFX$SideBarDropTarget
+====================================
+Compiled from "SnapFX.java"
+final class org.snapfx.SnapFX$SideBarDropTarget extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public javafx.geometry.Side side();
+  public int insertIndex();
+}
+====================================
+org.snapfx.SnapFX
+====================================
+Compiled from "SnapFX.java"
+public class org.snapfx.SnapFX {
+  public org.snapfx.SnapFX();
+  public void initialize(javafx.stage.Stage);
+  public static java.lang.String getDefaultThemeName();
+  public static java.lang.String getDefaultThemeStylesheetResourcePath();
+  public static java.util.Map<java.lang.String, java.lang.String> getAvailableThemeStylesheets();
+  public static java.util.List<java.lang.String> getAvailableThemeNames();
+  public static java.util.Locale getDefaultLocale();
+  public static java.util.List<java.util.Locale> getAvailableLocales();
+  public javafx.beans.property.ObjectProperty<java.util.Locale> localeProperty();
+  public java.util.Locale getLocale();
+  public void setLocale(java.util.Locale);
+  public javafx.beans.property.ObjectProperty<org.snapfx.localization.DockLocalizationProvider> localizationProviderProperty();
+  public org.snapfx.localization.DockLocalizationProvider getLocalizationProvider();
+  public void setLocalizationProvider(org.snapfx.localization.DockLocalizationProvider);
+  public java.lang.String getThemeStylesheetResourcePath();
+  public void setThemeStylesheet(java.lang.String);
+  public org.snapfx.DockUserAgentThemeMode getUserAgentThemeMode();
+  public void setUserAgentThemeMode(org.snapfx.DockUserAgentThemeMode);
+  public void refreshUserAgentThemeIntegration();
+  public org.snapfx.model.DockNode dock(javafx.scene.Node, java.lang.String);
+  public org.snapfx.model.DockNode dock(javafx.scene.Node, java.lang.String, org.snapfx.model.DockElement, org.snapfx.model.DockPosition);
+  public void dock(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition);
+  public void undock(org.snapfx.model.DockNode);
+  public javafx.scene.Parent buildLayout();
+  public void resetShortcutsToDefaults();
+  public void setShortcut(org.snapfx.shortcuts.DockShortcutAction, javafx.scene.input.KeyCombination);
+  public void clearShortcut(org.snapfx.shortcuts.DockShortcutAction);
+  public javafx.scene.input.KeyCombination getShortcut(org.snapfx.shortcuts.DockShortcutAction);
+  public java.util.Map<org.snapfx.shortcuts.DockShortcutAction, javafx.scene.input.KeyCombination> getShortcuts();
+  public void setLocked(boolean);
+  public boolean isLocked();
+  public void setNodeFactory(org.snapfx.persistence.DockNodeFactory);
+  public java.lang.String saveLayout();
+  public void loadLayout(java.lang.String) throws org.snapfx.persistence.DockLayoutLoadException;
+  public void hide(org.snapfx.model.DockNode);
+  public void remove(org.snapfx.model.DockNode);
+  public void close(org.snapfx.model.DockNode);
+  public void restore(org.snapfx.model.DockNode);
+  public void pinToSideBar(org.snapfx.model.DockNode, javafx.geometry.Side);
+  public void restoreFromSideBar(org.snapfx.model.DockNode);
+  public void pinOpenSideBar(javafx.geometry.Side);
+  public void collapsePinnedSideBar(javafx.geometry.Side);
+  public boolean isSideBarPinnedOpen(javafx.geometry.Side);
+  public boolean isCollapsePinnedSideBarOnActiveIconClick();
+  public void setCollapsePinnedSideBarOnActiveIconClick(boolean);
+  public void setSideBarMode(org.snapfx.sidebar.DockSideBarMode);
+  public org.snapfx.sidebar.DockSideBarMode getSideBarMode();
+  public double getSideBarPanelWidth(javafx.geometry.Side);
+  public void setSideBarPanelWidth(javafx.geometry.Side, double);
+  public javafx.collections.ObservableList<org.snapfx.model.DockNode> getSideBarNodes(javafx.geometry.Side);
+  public boolean isPinnedToSideBar(org.snapfx.model.DockNode);
+  public javafx.geometry.Side getPinnedSide(org.snapfx.model.DockNode);
+  public org.snapfx.floating.DockFloatingWindow floatNode(org.snapfx.model.DockNode);
+  public org.snapfx.floating.DockFloatingWindow floatNode(org.snapfx.model.DockNode, java.lang.Double, java.lang.Double);
+  public void attachFloatingWindow(org.snapfx.floating.DockFloatingWindow);
+  public javafx.collections.ObservableList<org.snapfx.floating.DockFloatingWindow> getFloatingWindows();
+  public void closeFloatingWindows(boolean);
+  public javafx.collections.ObservableList<org.snapfx.model.DockNode> getHiddenNodes();
+  public org.snapfx.model.DockGraph getDockGraph();
+  public org.snapfx.view.DockLayoutEngine getLayoutEngine();
+  public org.snapfx.dnd.DockDragService getDragService();
+  public void setDropVisualizationMode(org.snapfx.dnd.DockDropVisualizationMode);
+  public org.snapfx.dnd.DockDropVisualizationMode getDropVisualizationMode();
+  public void setCloseButtonMode(org.snapfx.view.DockCloseButtonMode);
+  public org.snapfx.view.DockCloseButtonMode getCloseButtonMode();
+  public void setTitleBarMode(org.snapfx.view.DockTitleBarMode);
+  public org.snapfx.view.DockTitleBarMode getTitleBarMode();
+  public javafx.stage.Stage getPrimaryStage();
+  public void setDefaultCloseBehavior(org.snapfx.close.DockCloseBehavior);
+  public org.snapfx.close.DockCloseBehavior getDefaultCloseBehavior();
+  public void setOnCloseRequest(java.util.function.Function<org.snapfx.close.DockCloseRequest, org.snapfx.close.DockCloseDecision>);
+  public void setOnCloseHandled(java.util.function.Consumer<org.snapfx.close.DockCloseResult>);
+  public void setFloatingPinButtonMode(org.snapfx.floating.DockFloatingPinButtonMode);
+  public org.snapfx.floating.DockFloatingPinButtonMode getFloatingPinButtonMode();
+  public void setDefaultFloatingAlwaysOnTop(boolean);
+  public boolean isDefaultFloatingAlwaysOnTop();
+  public void setAllowFloatingPinToggle(boolean);
+  public boolean isAllowFloatingPinToggle();
+  public void setFloatingPinLockedBehavior(org.snapfx.floating.DockFloatingPinLockedBehavior);
+  public org.snapfx.floating.DockFloatingPinLockedBehavior getFloatingPinLockedBehavior();
+  public void setFloatingWindowSnappingEnabled(boolean);
+  public boolean isFloatingWindowSnappingEnabled();
+  public void setFloatingWindowSnapDistance(double);
+  public double getFloatingWindowSnapDistance();
+  public void setFloatingWindowSnapTargets(java.util.Set<org.snapfx.floating.DockFloatingSnapTarget>);
+  public java.util.Set<org.snapfx.floating.DockFloatingSnapTarget> getFloatingWindowSnapTargets();
+  public void setOnFloatingPinChanged(java.util.function.Consumer<org.snapfx.floating.DockFloatingPinChangeEvent>);
+  public void setFloatingWindowAlwaysOnTop(org.snapfx.floating.DockFloatingWindow, boolean);
+  public int getDockNodeCount(java.lang.String);
+  public boolean setRootSplitRatios(double...);
+  public boolean setSplitRatios(org.snapfx.model.DockSplitPane, double...);
+}
+====================================
+org.snapfx.close.DockCloseBehavior
+====================================
+Compiled from "DockCloseBehavior.java"
+public final class org.snapfx.close.DockCloseBehavior extends java.lang.Enum<org.snapfx.close.DockCloseBehavior> {
+  public static final org.snapfx.close.DockCloseBehavior HIDE;
+  public static final org.snapfx.close.DockCloseBehavior REMOVE;
+  public static org.snapfx.close.DockCloseBehavior[] values();
+  public static org.snapfx.close.DockCloseBehavior valueOf(java.lang.String);
+}
+====================================
+org.snapfx.close.DockCloseDecision
+====================================
+Compiled from "DockCloseDecision.java"
+public final class org.snapfx.close.DockCloseDecision extends java.lang.Enum<org.snapfx.close.DockCloseDecision> {
+  public static final org.snapfx.close.DockCloseDecision DEFAULT;
+  public static final org.snapfx.close.DockCloseDecision CANCEL;
+  public static final org.snapfx.close.DockCloseDecision HIDE;
+  public static final org.snapfx.close.DockCloseDecision REMOVE;
+  public static org.snapfx.close.DockCloseDecision[] values();
+  public static org.snapfx.close.DockCloseDecision valueOf(java.lang.String);
+}
+====================================
+org.snapfx.close.DockCloseRequest
+====================================
+Compiled from "DockCloseRequest.java"
+public final class org.snapfx.close.DockCloseRequest extends java.lang.Record {
+  public org.snapfx.close.DockCloseRequest(org.snapfx.close.DockCloseSource, java.util.List<org.snapfx.model.DockNode>, org.snapfx.floating.DockFloatingWindow, org.snapfx.close.DockCloseBehavior);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.close.DockCloseSource source();
+  public java.util.List<org.snapfx.model.DockNode> nodes();
+  public org.snapfx.floating.DockFloatingWindow floatingWindow();
+  public org.snapfx.close.DockCloseBehavior defaultBehavior();
+}
+====================================
+org.snapfx.close.DockCloseResult
+====================================
+Compiled from "DockCloseResult.java"
+public final class org.snapfx.close.DockCloseResult extends java.lang.Record {
+  public org.snapfx.close.DockCloseResult(org.snapfx.close.DockCloseRequest, org.snapfx.close.DockCloseBehavior, boolean);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.close.DockCloseRequest request();
+  public org.snapfx.close.DockCloseBehavior appliedBehavior();
+  public boolean canceled();
+}
+====================================
+org.snapfx.close.DockCloseSource
+====================================
+Compiled from "DockCloseSource.java"
+public final class org.snapfx.close.DockCloseSource extends java.lang.Enum<org.snapfx.close.DockCloseSource> {
+  public static final org.snapfx.close.DockCloseSource TAB;
+  public static final org.snapfx.close.DockCloseSource TITLE_BAR;
+  public static final org.snapfx.close.DockCloseSource FLOATING_WINDOW;
+  public static org.snapfx.close.DockCloseSource[] values();
+  public static org.snapfx.close.DockCloseSource valueOf(java.lang.String);
+}
+====================================
+org.snapfx.debug.DockDebugOverlay$1
+====================================
+Compiled from "DockDebugOverlay.java"
+class org.snapfx.debug.DockDebugOverlay$1 extends javafx.animation.AnimationTimer {
+  public void handle(long);
+}
+====================================
+org.snapfx.debug.DockDebugOverlay
+====================================
+Compiled from "DockDebugOverlay.java"
+public class org.snapfx.debug.DockDebugOverlay extends javafx.scene.layout.StackPane {
+  public org.snapfx.debug.DockDebugOverlay(org.snapfx.model.DockGraph, org.snapfx.dnd.DockDragService);
+  public void setLocale(java.util.Locale);
+  public void setLocalizationProvider(org.snapfx.localization.DockLocalizationProvider);
+}
+====================================
+org.snapfx.debug.DockGraphDebugView$DockElementRow
+====================================
+Compiled from "DockGraphDebugView.java"
+final class org.snapfx.debug.DockGraphDebugView$DockElementRow extends javafx.scene.control.TreeTableRow<org.snapfx.model.DockElement> {
+}
+====================================
+org.snapfx.debug.DockGraphDebugView$DragLogCell
+====================================
+Compiled from "DockGraphDebugView.java"
+class org.snapfx.debug.DockGraphDebugView$DragLogCell extends javafx.scene.control.ListCell<org.snapfx.debug.DockGraphDebugView$DragLogEntry> {
+}
+====================================
+org.snapfx.debug.DockGraphDebugView$DragLogEntry
+====================================
+Compiled from "DockGraphDebugView.java"
+final class org.snapfx.debug.DockGraphDebugView$DragLogEntry extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public java.time.LocalTime timestamp();
+  public org.snapfx.debug.DockGraphDebugView$DragLogType type();
+  public java.lang.String message();
+  public long revision();
+}
+====================================
+org.snapfx.debug.DockGraphDebugView$DragLogType
+====================================
+Compiled from "DockGraphDebugView.java"
+final class org.snapfx.debug.DockGraphDebugView$DragLogType extends java.lang.Enum<org.snapfx.debug.DockGraphDebugView$DragLogType> {
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType DRAG_START;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType TARGET_CHANGE;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType POSITION_CHANGE;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType DROP;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType DRAG_CANCEL;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType LAYOUT_CHANGE;
+  public static final org.snapfx.debug.DockGraphDebugView$DragLogType SYSTEM;
+  public static org.snapfx.debug.DockGraphDebugView$DragLogType[] values();
+  public static org.snapfx.debug.DockGraphDebugView$DragLogType valueOf(java.lang.String);
+}
+====================================
+org.snapfx.debug.DockGraphDebugView
+====================================
+Compiled from "DockGraphDebugView.java"
+public class org.snapfx.debug.DockGraphDebugView extends javafx.scene.layout.BorderPane {
+  public org.snapfx.debug.DockGraphDebugView(org.snapfx.model.DockGraph, org.snapfx.dnd.DockDragService);
+  public void setLocale(java.util.Locale);
+  public void setLocalizationProvider(org.snapfx.localization.DockLocalizationProvider);
+  public void rebuildTree();
+  public void setAutoExportOnDrop(boolean);
+  public void expandAll();
+}
+====================================
+org.snapfx.dnd.DockDragData
+====================================
+Compiled from "DockDragData.java"
+public class org.snapfx.dnd.DockDragData {
+  public org.snapfx.dnd.DockDragData(org.snapfx.model.DockNode);
+  public org.snapfx.model.DockNode getDraggedNode();
+  public org.snapfx.model.DockElement getDropTarget();
+  public void setDropTarget(org.snapfx.model.DockElement);
+  public org.snapfx.model.DockPosition getDropPosition();
+  public void setDropPosition(org.snapfx.model.DockPosition);
+  public java.lang.Integer getDropTabIndex();
+  public void setDropTabIndex(java.lang.Integer);
+  public double getMouseX();
+  public void setMouseX(double);
+  public double getMouseY();
+  public void setMouseY(double);
+}
+====================================
+org.snapfx.dnd.DockDragService$DockDropIndicator
+====================================
+Compiled from "DockDragService.java"
+class org.snapfx.dnd.DockDragService$DockDropIndicator extends javafx.scene.layout.Pane {
+  public org.snapfx.dnd.DockDragService$DockDropIndicator();
+  public void show(javafx.geometry.Bounds, java.lang.Double);
+  public void hide();
+}
+====================================
+org.snapfx.dnd.DockDragService$DockDropZonesOverlay
+====================================
+Compiled from "DockDragService.java"
+class org.snapfx.dnd.DockDragService$DockDropZonesOverlay extends javafx.scene.layout.Pane {
+  public org.snapfx.dnd.DockDragService$DockDropZonesOverlay();
+  public void showZones(java.util.List<org.snapfx.view.DockDropZone>);
+  public void hide();
+}
+====================================
+org.snapfx.dnd.DockDragService$DockGhostOverlay
+====================================
+Compiled from "DockDragService.java"
+class org.snapfx.dnd.DockDragService$DockGhostOverlay extends javafx.scene.layout.StackPane {
+  public org.snapfx.dnd.DockDragService$DockGhostOverlay();
+  public void setImage(javafx.scene.image.Image);
+  public void updatePosition();
+  public void hide();
+}
+====================================
+org.snapfx.dnd.DockDragService$DragHoverEvent
+====================================
+Compiled from "DockDragService.java"
+public final class org.snapfx.dnd.DockDragService$DragHoverEvent extends java.lang.Record {
+  public org.snapfx.dnd.DockDragService$DragHoverEvent(org.snapfx.model.DockNode, double, double);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.model.DockNode draggedNode();
+  public double screenX();
+  public double screenY();
+}
+====================================
+org.snapfx.dnd.DockDragService$DropRequest
+====================================
+Compiled from "DockDragService.java"
+public final class org.snapfx.dnd.DockDragService$DropRequest extends java.lang.Record {
+  public org.snapfx.dnd.DockDragService$DropRequest(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.model.DockNode draggedNode();
+  public org.snapfx.model.DockElement target();
+  public org.snapfx.model.DockPosition position();
+  public java.lang.Integer tabIndex();
+}
+====================================
+org.snapfx.dnd.DockDragService$FloatDetachRequest
+====================================
+Compiled from "DockDragService.java"
+public final class org.snapfx.dnd.DockDragService$FloatDetachRequest extends java.lang.Record {
+  public org.snapfx.dnd.DockDragService$FloatDetachRequest(org.snapfx.model.DockNode, double, double);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.model.DockNode draggedNode();
+  public double screenX();
+  public double screenY();
+}
+====================================
+org.snapfx.dnd.DockDragService
+====================================
+Compiled from "DockDragService.java"
+public class org.snapfx.dnd.DockDragService {
+  public org.snapfx.dnd.DockDragService(org.snapfx.model.DockGraph);
+  public void initialize(javafx.stage.Stage);
+  public void startDrag(org.snapfx.model.DockNode, javafx.scene.input.MouseEvent);
+  public void updateDrag(javafx.scene.input.MouseEvent);
+  public void endDrag(javafx.scene.input.MouseEvent);
+  public void cancelDrag();
+  public boolean isDragging();
+  public org.snapfx.dnd.DockDragData getCurrentDrag();
+  public void setLayoutEngine(org.snapfx.view.DockLayoutEngine);
+  public void setTextResolver(java.util.function.BiFunction<java.lang.String, java.lang.Object[], java.lang.String>);
+  public void setOnFloatDetachRequest(java.util.function.Consumer<org.snapfx.dnd.DockDragService$FloatDetachRequest>);
+  public void setOnDropRequest(java.util.function.Consumer<org.snapfx.dnd.DockDragService$DropRequest>);
+  public void setOnDragHover(java.util.function.Consumer<org.snapfx.dnd.DockDragService$DragHoverEvent>);
+  public void setOnDragFinished(java.lang.Runnable);
+  public void setSuppressMainDropAtScreenPoint(java.util.function.BiPredicate<java.lang.Double, java.lang.Double>);
+  public javafx.beans.property.ObjectProperty<org.snapfx.dnd.DockDragData> currentDragProperty();
+  public org.snapfx.dnd.DockDropVisualizationMode getDropVisualizationMode();
+  public void setDropVisualizationMode(org.snapfx.dnd.DockDropVisualizationMode);
+}
+====================================
+org.snapfx.dnd.DockDropVisualizationMode
+====================================
+Compiled from "DockDropVisualizationMode.java"
+public final class org.snapfx.dnd.DockDropVisualizationMode extends java.lang.Enum<org.snapfx.dnd.DockDropVisualizationMode> {
+  public static final org.snapfx.dnd.DockDropVisualizationMode OFF;
+  public static final org.snapfx.dnd.DockDropVisualizationMode DEFAULT;
+  public static final org.snapfx.dnd.DockDropVisualizationMode ALL_ZONES;
+  public static final org.snapfx.dnd.DockDropVisualizationMode SUBTREE;
+  public static final org.snapfx.dnd.DockDropVisualizationMode ACTIVE_ONLY;
+  public static org.snapfx.dnd.DockDropVisualizationMode[] values();
+  public static org.snapfx.dnd.DockDropVisualizationMode valueOf(java.lang.String);
+}
+====================================
+org.snapfx.floating.DockFloatingController
+====================================
+Compiled from "DockFloatingController.java"
+public final class org.snapfx.floating.DockFloatingController {
+  public org.snapfx.floating.DockFloatingController();
+  public void setActiveFloatingWindow(org.snapfx.floating.DockFloatingWindow);
+  public void clearActiveFloatingWindowIfMatches(org.snapfx.floating.DockFloatingWindow);
+  public org.snapfx.floating.DockFloatingWindow resolveActiveFloatingWindow(java.util.List<org.snapfx.floating.DockFloatingWindow>, javafx.scene.Scene, javafx.scene.Scene);
+  public org.snapfx.floating.DockFloatingWindow findFloatingWindowByScene(java.util.List<org.snapfx.floating.DockFloatingWindow>, javafx.scene.Scene);
+  public org.snapfx.floating.DockFloatingWindow findFloatingWindowContainingNode(java.util.List<org.snapfx.floating.DockFloatingWindow>, org.snapfx.model.DockNode);
+  public org.snapfx.floating.DockFloatingWindow resolveActivePlacementHost(java.util.List<org.snapfx.floating.DockFloatingWindow>, org.snapfx.floating.DockFloatingWindow);
+  public boolean removeFloatingWindow(java.util.List<org.snapfx.floating.DockFloatingWindow>, org.snapfx.floating.DockFloatingWindow);
+  public boolean isMainDropSuppressedByFloatingWindow(java.util.List<org.snapfx.floating.DockFloatingWindow>, java.lang.Double, java.lang.Double);
+  public org.snapfx.floating.DockFloatingWindow findTopFloatingWindowAt(java.util.List<org.snapfx.floating.DockFloatingWindow>, double, double);
+  public void promoteFloatingWindowToFront(java.util.List<org.snapfx.floating.DockFloatingWindow>, org.snapfx.floating.DockFloatingWindow);
+  public void applyRememberedFloatingBounds(org.snapfx.model.DockNode, org.snapfx.floating.DockFloatingWindow);
+  public void rememberFloatingBoundsForNodes(org.snapfx.floating.DockFloatingWindow);
+  public void rememberFloatingAlwaysOnTopForNodes(org.snapfx.floating.DockFloatingWindow);
+  public void applyFloatingPinSettings(org.snapfx.floating.DockFloatingWindow, org.snapfx.floating.DockFloatingPinButtonMode, boolean, org.snapfx.floating.DockFloatingPinLockedBehavior);
+  public void applyFloatingSnapSettings(org.snapfx.floating.DockFloatingWindow, boolean, double, java.util.Set<org.snapfx.floating.DockFloatingSnapTarget>, java.util.function.Supplier<java.util.List<org.snapfx.floating.DockFloatingWindow>>);
+  public void applyFloatingWindowInitialAlwaysOnTop(org.snapfx.floating.DockFloatingWindow, java.lang.Boolean, boolean, org.snapfx.floating.DockFloatingPinSource);
+}
+====================================
+org.snapfx.floating.DockFloatingPinButtonMode
+====================================
+Compiled from "DockFloatingPinButtonMode.java"
+public final class org.snapfx.floating.DockFloatingPinButtonMode extends java.lang.Enum<org.snapfx.floating.DockFloatingPinButtonMode> {
+  public static final org.snapfx.floating.DockFloatingPinButtonMode ALWAYS;
+  public static final org.snapfx.floating.DockFloatingPinButtonMode NEVER;
+  public static final org.snapfx.floating.DockFloatingPinButtonMode AUTO;
+  public static org.snapfx.floating.DockFloatingPinButtonMode[] values();
+  public static org.snapfx.floating.DockFloatingPinButtonMode valueOf(java.lang.String);
+}
+====================================
+org.snapfx.floating.DockFloatingPinChangeEvent
+====================================
+Compiled from "DockFloatingPinChangeEvent.java"
+public final class org.snapfx.floating.DockFloatingPinChangeEvent extends java.lang.Record {
+  public org.snapfx.floating.DockFloatingPinChangeEvent(org.snapfx.floating.DockFloatingWindow, boolean, org.snapfx.floating.DockFloatingPinSource);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.floating.DockFloatingWindow window();
+  public boolean alwaysOnTop();
+  public org.snapfx.floating.DockFloatingPinSource source();
+}
+====================================
+org.snapfx.floating.DockFloatingPinLockedBehavior
+====================================
+Compiled from "DockFloatingPinLockedBehavior.java"
+public final class org.snapfx.floating.DockFloatingPinLockedBehavior extends java.lang.Enum<org.snapfx.floating.DockFloatingPinLockedBehavior> {
+  public static final org.snapfx.floating.DockFloatingPinLockedBehavior ALLOW;
+  public static final org.snapfx.floating.DockFloatingPinLockedBehavior HIDE_BUTTON;
+  public static org.snapfx.floating.DockFloatingPinLockedBehavior[] values();
+  public static org.snapfx.floating.DockFloatingPinLockedBehavior valueOf(java.lang.String);
+}
+====================================
+org.snapfx.floating.DockFloatingPinSource
+====================================
+Compiled from "DockFloatingPinSource.java"
+public final class org.snapfx.floating.DockFloatingPinSource extends java.lang.Enum<org.snapfx.floating.DockFloatingPinSource> {
+  public static final org.snapfx.floating.DockFloatingPinSource USER;
+  public static final org.snapfx.floating.DockFloatingPinSource API;
+  public static final org.snapfx.floating.DockFloatingPinSource LAYOUT_LOAD;
+  public static final org.snapfx.floating.DockFloatingPinSource WINDOW_CREATE_DEFAULT;
+  public static org.snapfx.floating.DockFloatingPinSource[] values();
+  public static org.snapfx.floating.DockFloatingPinSource valueOf(java.lang.String);
+}
+====================================
+org.snapfx.floating.DockFloatingSnapEngine$SnapAxisResult
+====================================
+Compiled from "DockFloatingSnapEngine.java"
+final class org.snapfx.floating.DockFloatingSnapEngine$SnapAxisResult extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public double value();
+  public double distance();
+}
+====================================
+org.snapfx.floating.DockFloatingSnapEngine
+====================================
+Compiled from "DockFloatingSnapEngine.java"
+final class org.snapfx.floating.DockFloatingSnapEngine {
+}
+====================================
+org.snapfx.floating.DockFloatingSnapTarget
+====================================
+Compiled from "DockFloatingSnapTarget.java"
+public final class org.snapfx.floating.DockFloatingSnapTarget extends java.lang.Enum<org.snapfx.floating.DockFloatingSnapTarget> {
+  public static final org.snapfx.floating.DockFloatingSnapTarget SCREEN;
+  public static final org.snapfx.floating.DockFloatingSnapTarget MAIN_WINDOW;
+  public static final org.snapfx.floating.DockFloatingSnapTarget FLOATING_WINDOWS;
+  public static org.snapfx.floating.DockFloatingSnapTarget[] values();
+  public static org.snapfx.floating.DockFloatingSnapTarget valueOf(java.lang.String);
+}
+====================================
+org.snapfx.floating.DockFloatingWindow$DropTarget
+====================================
+Compiled from "DockFloatingWindow.java"
+public final class org.snapfx.floating.DockFloatingWindow$DropTarget extends java.lang.Record {
+  public org.snapfx.floating.DockFloatingWindow$DropTarget(org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer, int, double);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.model.DockElement target();
+  public org.snapfx.model.DockPosition position();
+  public java.lang.Integer tabIndex();
+  public int depth();
+  public double area();
+}
+====================================
+org.snapfx.floating.DockFloatingWindow$DropZoneResolution
+====================================
+Compiled from "DockFloatingWindow.java"
+final class org.snapfx.floating.DockFloatingWindow$DropZoneResolution extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public java.util.List<org.snapfx.view.DockDropZone> validZones();
+  public org.snapfx.view.DockDropZone activeZone();
+}
+====================================
+org.snapfx.floating.DockFloatingWindow$FloatingDropIndicator
+====================================
+Compiled from "DockFloatingWindow.java"
+class org.snapfx.floating.DockFloatingWindow$FloatingDropIndicator extends javafx.scene.layout.Pane {
+}
+====================================
+org.snapfx.floating.DockFloatingWindow$FloatingDropZonesOverlay
+====================================
+Compiled from "DockFloatingWindow.java"
+class org.snapfx.floating.DockFloatingWindow$FloatingDropZonesOverlay extends javafx.scene.layout.Pane {
+}
+====================================
+org.snapfx.floating.DockFloatingWindow$ResizeBounds
+====================================
+Compiled from "DockFloatingWindow.java"
+final class org.snapfx.floating.DockFloatingWindow$ResizeBounds extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public double x();
+  public double y();
+  public double width();
+  public double height();
+}
+====================================
+org.snapfx.floating.DockFloatingWindow
+====================================
+Compiled from "DockFloatingWindow.java"
+public final class org.snapfx.floating.DockFloatingWindow {
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockNode);
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockNode, org.snapfx.dnd.DockDragService);
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockNode, java.lang.String);
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockNode, java.lang.String, org.snapfx.dnd.DockDragService);
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockElement, org.snapfx.dnd.DockDragService);
+  public org.snapfx.floating.DockFloatingWindow(org.snapfx.model.DockElement, java.lang.String, org.snapfx.dnd.DockDragService);
+  public java.lang.String getId();
+  public org.snapfx.model.DockNode getDockNode();
+  public org.snapfx.model.DockGraph getDockGraph();
+  public java.util.List<org.snapfx.model.DockNode> getDockNodes();
+  public boolean containsNode(org.snapfx.model.DockNode);
+  public boolean isEmpty();
+  public boolean isShowing();
+  public javafx.scene.Scene getScene();
+  public boolean ownsScene(javafx.scene.Scene);
+  public boolean containsScreenPoint(double, double);
+  public void toFront();
+  public void setPreferredPosition(java.lang.Double, java.lang.Double);
+  public void setPreferredSize(double, double);
+  public java.lang.Double getPreferredX();
+  public java.lang.Double getPreferredY();
+  public double getPreferredWidth();
+  public double getPreferredHeight();
+  public void captureCurrentBounds();
+  public void show(javafx.stage.Stage);
+  public void close();
+  public void closeWithoutNotification();
+  public void setOnAttachRequested(java.lang.Runnable);
+  public void setOnWindowClosed(java.util.function.Consumer<org.snapfx.floating.DockFloatingWindow>);
+  public void setOnWindowActivated(java.lang.Runnable);
+  public void setOnCloseRequested(java.util.function.BooleanSupplier);
+  public void setOnNodeCloseRequest(java.util.function.BiConsumer<org.snapfx.model.DockNode, org.snapfx.close.DockCloseSource>);
+  public void setOnNodeFloatRequest(java.util.function.Consumer<org.snapfx.model.DockNode>);
+  public void setOnNodePinToSideBarRequest(java.util.function.BiConsumer<org.snapfx.model.DockNode, javafx.geometry.Side>);
+  public void setTextResolver(java.util.function.BiFunction<java.lang.String, java.lang.Object[], java.lang.String>);
+  public void refreshLocalization();
+  public void setSnappingEnabled(boolean);
+  public boolean isSnappingEnabled();
+  public void setSnapDistance(double);
+  public double getSnapDistance();
+  public void setSnapTargets(java.util.Set<org.snapfx.floating.DockFloatingSnapTarget>);
+  public java.util.Set<org.snapfx.floating.DockFloatingSnapTarget> getSnapTargets();
+  public void setSnapPeerWindowsSupplier(java.util.function.Supplier<java.util.List<org.snapfx.floating.DockFloatingWindow>>);
+  public boolean isAlwaysOnTop();
+  public void setAlwaysOnTop(boolean);
+  public void setAlwaysOnTop(boolean, org.snapfx.floating.DockFloatingPinSource);
+  public org.snapfx.floating.DockFloatingPinButtonMode getPinButtonMode();
+  public void setPinButtonMode(org.snapfx.floating.DockFloatingPinButtonMode);
+  public boolean isPinToggleEnabled();
+  public void setPinToggleEnabled(boolean);
+  public org.snapfx.floating.DockFloatingPinLockedBehavior getPinLockedBehavior();
+  public void setPinLockedBehavior(org.snapfx.floating.DockFloatingPinLockedBehavior);
+  public void setOnAlwaysOnTopChanged(java.util.function.BiConsumer<java.lang.Boolean, org.snapfx.floating.DockFloatingPinSource>);
+  public void undockNode(org.snapfx.model.DockNode);
+  public void dockNode(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer);
+  public void moveNode(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer);
+  public void requestFloatForNode(org.snapfx.model.DockNode);
+  public org.snapfx.view.DockNodeView getDockNodeView(org.snapfx.model.DockNode);
+  public org.snapfx.floating.DockFloatingWindow$DropTarget resolveDropTarget(double, double, org.snapfx.model.DockNode);
+  public void updateDropPreview(org.snapfx.model.DockNode, double, double, org.snapfx.dnd.DockDropVisualizationMode);
+  public void clearDropPreview();
+}
+====================================
+org.snapfx.localization.DockLocalizationProvider
+====================================
+Compiled from "DockLocalizationProvider.java"
+public interface org.snapfx.localization.DockLocalizationProvider {
+  public abstract java.lang.String resolve(java.util.Locale, java.lang.String);
+}
+====================================
+org.snapfx.localization.DockResourceBundleLocalizationProvider
+====================================
+Compiled from "DockResourceBundleLocalizationProvider.java"
+public final class org.snapfx.localization.DockResourceBundleLocalizationProvider implements org.snapfx.localization.DockLocalizationProvider {
+  public org.snapfx.localization.DockResourceBundleLocalizationProvider(java.lang.String);
+  public org.snapfx.localization.DockResourceBundleLocalizationProvider(java.lang.String, java.lang.ClassLoader);
+  public org.snapfx.localization.DockResourceBundleLocalizationProvider(java.lang.String, java.lang.Module);
+  public java.lang.String resolve(java.util.Locale, java.lang.String);
+}
+====================================
+org.snapfx.localization.internal.DockLocalizationService
+====================================
+Compiled from "DockLocalizationService.java"
+public final class org.snapfx.localization.internal.DockLocalizationService {
+  public static final java.util.Locale DEFAULT_LOCALE;
+  public static final java.util.List<java.util.Locale> BUILT_IN_LOCALES;
+  public static final java.lang.String BUILT_IN_BUNDLE_BASE_NAME;
+  public org.snapfx.localization.internal.DockLocalizationService();
+  public org.snapfx.localization.internal.DockLocalizationService(org.snapfx.localization.DockLocalizationProvider);
+  public java.util.Locale getLocale();
+  public void setLocale(java.util.Locale);
+  public org.snapfx.localization.DockLocalizationProvider getUserProvider();
+  public void setUserProvider(org.snapfx.localization.DockLocalizationProvider);
+  public java.lang.String text(java.lang.String, java.lang.Object...);
+}
+====================================
+org.snapfx.model.DockContainer
+====================================
+Compiled from "DockContainer.java"
+public interface org.snapfx.model.DockContainer extends org.snapfx.model.DockElement {
+  public abstract javafx.collections.ObservableList<org.snapfx.model.DockElement> getChildren();
+  public abstract void addChild(org.snapfx.model.DockElement);
+  public abstract void removeChild(org.snapfx.model.DockElement);
+  public default boolean isEmpty();
+  public default void cleanupIfEmpty();
+}
+====================================
+org.snapfx.model.DockElement
+====================================
+Compiled from "DockElement.java"
+public interface org.snapfx.model.DockElement {
+  public abstract java.lang.String getId();
+  public abstract org.snapfx.model.DockContainer getParent();
+  public abstract void setParent(org.snapfx.model.DockContainer);
+  public default void removeFromParent();
+}
+====================================
+org.snapfx.model.DockGraph
+====================================
+Compiled from "DockGraph.java"
+public class org.snapfx.model.DockGraph {
+  public static final double DEFAULT_SIDE_BAR_PANEL_WIDTH;
+  public org.snapfx.model.DockGraph();
+  public javafx.beans.property.LongProperty revisionProperty();
+  public long getRevision();
+  public org.snapfx.model.DockElement getRoot();
+  public javafx.beans.property.ObjectProperty<org.snapfx.model.DockElement> rootProperty();
+  public void setRoot(org.snapfx.model.DockElement);
+  public void setLayoutIdCounter(long);
+  public long getLayoutIdCounter();
+  public boolean isLocked();
+  public javafx.beans.property.BooleanProperty lockedProperty();
+  public void setLocked(boolean);
+  public javafx.collections.ObservableList<org.snapfx.model.DockNode> getSideBarNodes(javafx.geometry.Side);
+  public boolean isSideBarPinnedOpen(javafx.geometry.Side);
+  public javafx.beans.property.BooleanProperty sideBarPinnedOpenProperty(javafx.geometry.Side);
+  public void setSideBarPinnedOpen(javafx.geometry.Side, boolean);
+  public void pinOpenSideBar(javafx.geometry.Side);
+  public void collapsePinnedSideBar(javafx.geometry.Side);
+  public double getSideBarPanelWidth(javafx.geometry.Side);
+  public javafx.beans.property.DoubleProperty sideBarPanelWidthProperty(javafx.geometry.Side);
+  public void setSideBarPanelWidth(javafx.geometry.Side, double);
+  public void pinToSideBar(org.snapfx.model.DockNode, javafx.geometry.Side);
+  public void pinToSideBar(org.snapfx.model.DockNode, javafx.geometry.Side, int);
+  public void restoreFromSideBar(org.snapfx.model.DockNode);
+  public boolean isPinnedToSideBar(org.snapfx.model.DockNode);
+  public javafx.geometry.Side getPinnedSide(org.snapfx.model.DockNode);
+  public boolean unpinFromSideBar(org.snapfx.model.DockNode);
+  public void clearSideBars();
+  public void dock(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition);
+  public void dock(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer);
+  public void undock(org.snapfx.model.DockNode);
+  public void move(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition);
+  public void move(org.snapfx.model.DockNode, org.snapfx.model.DockElement, org.snapfx.model.DockPosition, java.lang.Integer);
+  public org.snapfx.model.DockElement findElementByLayoutId(java.lang.String);
+  public int getDockNodeCount(java.lang.String);
+}
+====================================
+org.snapfx.model.DockNode$HiddenRestoreTarget
+====================================
+Compiled from "DockNode.java"
+public final class org.snapfx.model.DockNode$HiddenRestoreTarget extends java.lang.Enum<org.snapfx.model.DockNode$HiddenRestoreTarget> {
+  public static final org.snapfx.model.DockNode$HiddenRestoreTarget DOCKED;
+  public static final org.snapfx.model.DockNode$HiddenRestoreTarget FLOATING;
+  public static org.snapfx.model.DockNode$HiddenRestoreTarget[] values();
+  public static org.snapfx.model.DockNode$HiddenRestoreTarget valueOf(java.lang.String);
+}
+====================================
+org.snapfx.model.DockNode
+====================================
+Compiled from "DockNode.java"
+public class org.snapfx.model.DockNode implements org.snapfx.model.DockElement {
+  public org.snapfx.model.DockNode(javafx.scene.Node, java.lang.String);
+  public org.snapfx.model.DockNode(java.lang.String, javafx.scene.Node, java.lang.String);
+  public java.lang.String getId();
+  public java.lang.String getDockNodeId();
+  public void setLayoutId(java.lang.String);
+  public java.lang.String getTitle();
+  public javafx.beans.property.StringProperty titleProperty();
+  public void setTitle(java.lang.String);
+  public javafx.scene.Node getContent();
+  public javafx.beans.property.ObjectProperty<javafx.scene.Node> contentProperty();
+  public void setContent(javafx.scene.Node);
+  public javafx.scene.image.Image getIcon();
+  public javafx.beans.property.ObjectProperty<javafx.scene.image.Image> iconProperty();
+  public void setIcon(javafx.scene.image.Image);
+  public boolean isCloseable();
+  public javafx.beans.property.BooleanProperty closeableProperty();
+  public void setCloseable(boolean);
+  public org.snapfx.model.DockContainer getParent();
+  public void setParent(org.snapfx.model.DockContainer);
+  public org.snapfx.model.DockElement getLastKnownTarget();
+  public void setLastKnownTarget(org.snapfx.model.DockElement);
+  public org.snapfx.model.DockPosition getLastKnownPosition();
+  public void setLastKnownPosition(org.snapfx.model.DockPosition);
+  public java.lang.Integer getLastKnownTabIndex();
+  public void setLastKnownTabIndex(java.lang.Integer);
+  public java.lang.Double getLastFloatingX();
+  public void setLastFloatingX(java.lang.Double);
+  public java.lang.Double getLastFloatingY();
+  public void setLastFloatingY(java.lang.Double);
+  public java.lang.Double getLastFloatingWidth();
+  public void setLastFloatingWidth(java.lang.Double);
+  public java.lang.Double getLastFloatingHeight();
+  public void setLastFloatingHeight(java.lang.Double);
+  public java.lang.Boolean getLastFloatingAlwaysOnTop();
+  public void setLastFloatingAlwaysOnTop(java.lang.Boolean);
+  public org.snapfx.model.DockNode$HiddenRestoreTarget getHiddenRestoreTarget();
+  public void setHiddenRestoreTarget(org.snapfx.model.DockNode$HiddenRestoreTarget);
+  public java.lang.String toString();
+}
+====================================
+org.snapfx.model.DockPosition
+====================================
+Compiled from "DockPosition.java"
+public final class org.snapfx.model.DockPosition extends java.lang.Enum<org.snapfx.model.DockPosition> {
+  public static final org.snapfx.model.DockPosition TOP;
+  public static final org.snapfx.model.DockPosition BOTTOM;
+  public static final org.snapfx.model.DockPosition LEFT;
+  public static final org.snapfx.model.DockPosition RIGHT;
+  public static final org.snapfx.model.DockPosition CENTER;
+  public static org.snapfx.model.DockPosition[] values();
+  public static org.snapfx.model.DockPosition valueOf(java.lang.String);
+}
+====================================
+org.snapfx.model.DockSplitPane
+====================================
+Compiled from "DockSplitPane.java"
+public class org.snapfx.model.DockSplitPane implements org.snapfx.model.DockContainer {
+  public org.snapfx.model.DockSplitPane(javafx.geometry.Orientation);
+  public java.lang.String getId();
+  public org.snapfx.model.DockContainer getParent();
+  public void setParent(org.snapfx.model.DockContainer);
+  public javafx.collections.ObservableList<org.snapfx.model.DockElement> getChildren();
+  public void addChild(org.snapfx.model.DockElement);
+  public void removeChild(org.snapfx.model.DockElement);
+  public javafx.geometry.Orientation getOrientation();
+  public org.snapfx.model.DockElement getFlattenedChild();
+  public java.util.List<javafx.beans.property.DoubleProperty> getDividerPositions();
+  public void setDividerPosition(int, double);
+  public java.lang.String toString();
+}
+====================================
+org.snapfx.model.DockTabPane
+====================================
+Compiled from "DockTabPane.java"
+public class org.snapfx.model.DockTabPane implements org.snapfx.model.DockContainer {
+  public org.snapfx.model.DockTabPane();
+  public java.lang.String getId();
+  public org.snapfx.model.DockContainer getParent();
+  public void setParent(org.snapfx.model.DockContainer);
+  public javafx.collections.ObservableList<org.snapfx.model.DockElement> getChildren();
+  public void addChild(org.snapfx.model.DockElement);
+  public void addChild(org.snapfx.model.DockElement, int);
+  public void removeChild(org.snapfx.model.DockElement);
+  public org.snapfx.model.DockElement getFlattenedChild();
+  public int getSelectedIndex();
+  public javafx.beans.property.IntegerProperty selectedIndexProperty();
+  public void setSelectedIndex(int);
+  public java.lang.String toString();
+}
+====================================
+org.snapfx.persistence.DockLayoutLoadException
+====================================
+Compiled from "DockLayoutLoadException.java"
+public class org.snapfx.persistence.DockLayoutLoadException extends java.lang.Exception {
+  public org.snapfx.persistence.DockLayoutLoadException(java.lang.String, java.lang.String);
+  public org.snapfx.persistence.DockLayoutLoadException(java.lang.String, java.lang.String, java.lang.Throwable);
+  public java.lang.String getLocation();
+  public java.lang.String toDisplayMessage();
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$DeserializedSideBar
+====================================
+Compiled from "DockLayoutSerializer.java"
+final class org.snapfx.persistence.DockLayoutSerializer$DeserializedSideBar extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public javafx.geometry.Side side();
+  public boolean pinnedOpen();
+  public java.lang.Double panelWidth();
+  public java.util.List<org.snapfx.persistence.DockLayoutSerializer$DeserializedSideBarEntry> entries();
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$DeserializedSideBarEntry
+====================================
+Compiled from "DockLayoutSerializer.java"
+final class org.snapfx.persistence.DockLayoutSerializer$DeserializedSideBarEntry extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public org.snapfx.model.DockNode node();
+  public org.snapfx.model.DockElement restoreTarget();
+  public org.snapfx.model.DockPosition restorePosition();
+  public java.lang.Integer restoreTabIndex();
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$DockElementAdapter
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$DockElementAdapter implements com.google.gson.JsonSerializer<org.snapfx.model.DockElement>, com.google.gson.JsonDeserializer<org.snapfx.model.DockElement> {
+  public com.google.gson.JsonElement serialize(org.snapfx.model.DockElement, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  public org.snapfx.model.DockElement deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  public com.google.gson.JsonElement serialize(java.lang.Object, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  public java.lang.Object deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$ElementData
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$ElementData {
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$LayoutData
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$LayoutData {
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$OrientationAdapter
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$OrientationAdapter implements com.google.gson.JsonSerializer<javafx.geometry.Orientation>, com.google.gson.JsonDeserializer<javafx.geometry.Orientation> {
+  public com.google.gson.JsonElement serialize(javafx.geometry.Orientation, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  public javafx.geometry.Orientation deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+  public com.google.gson.JsonElement serialize(java.lang.Object, java.lang.reflect.Type, com.google.gson.JsonSerializationContext);
+  public java.lang.Object deserialize(com.google.gson.JsonElement, java.lang.reflect.Type, com.google.gson.JsonDeserializationContext) throws com.google.gson.JsonParseException;
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$SideBarData
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$SideBarData {
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer$SideBarEntryData
+====================================
+Compiled from "DockLayoutSerializer.java"
+class org.snapfx.persistence.DockLayoutSerializer$SideBarEntryData {
+}
+====================================
+org.snapfx.persistence.DockLayoutSerializer
+====================================
+Compiled from "DockLayoutSerializer.java"
+public class org.snapfx.persistence.DockLayoutSerializer {
+  public static final java.lang.String DOCK_NODE;
+  public static final java.lang.String DOCK_SPLIT_PANE;
+  public static final java.lang.String DOCK_TAB_PANE;
+  public static final java.lang.String TYPE_JSON_SUFFIX;
+  public static final java.lang.String ID_JSON_SUFFIX;
+  public static final java.lang.String TITLE_JSON_SUFFIX;
+  public org.snapfx.persistence.DockLayoutSerializer(org.snapfx.model.DockGraph);
+  public void setNodeFactory(org.snapfx.persistence.DockNodeFactory);
+  public void setTextResolver(java.util.function.BiFunction<java.lang.String, java.lang.Object[], java.lang.String>);
+  public void registerNode(org.snapfx.model.DockNode);
+  public java.lang.String serialize();
+  public void deserialize(java.lang.String) throws org.snapfx.persistence.DockLayoutLoadException;
+}
+====================================
+org.snapfx.persistence.DockLayoutSnapshotService$DockFloatingWindowSnapshot
+====================================
+Compiled from "DockLayoutSnapshotService.java"
+public final class org.snapfx.persistence.DockLayoutSnapshotService$DockFloatingWindowSnapshot extends java.lang.Record {
+  public org.snapfx.persistence.DockLayoutSnapshotService$DockFloatingWindowSnapshot(com.google.gson.JsonObject, java.lang.Double, java.lang.Double, java.lang.Double, java.lang.Double, java.lang.Boolean);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public com.google.gson.JsonObject layout();
+  public java.lang.Double x();
+  public java.lang.Double y();
+  public java.lang.Double width();
+  public java.lang.Double height();
+  public java.lang.Boolean alwaysOnTop();
+}
+====================================
+org.snapfx.persistence.DockLayoutSnapshotService$DockLayoutSnapshot
+====================================
+Compiled from "DockLayoutSnapshotService.java"
+public final class org.snapfx.persistence.DockLayoutSnapshotService$DockLayoutSnapshot extends java.lang.Record {
+  public org.snapfx.persistence.DockLayoutSnapshotService$DockLayoutSnapshot(com.google.gson.JsonObject, java.util.List<org.snapfx.persistence.DockLayoutSnapshotService$DockFloatingWindowSnapshot>);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public com.google.gson.JsonObject mainLayout();
+  public java.util.List<org.snapfx.persistence.DockLayoutSnapshotService$DockFloatingWindowSnapshot> floatingWindows();
+}
+====================================
+org.snapfx.persistence.DockLayoutSnapshotService
+====================================
+Compiled from "DockLayoutSnapshotService.java"
+public final class org.snapfx.persistence.DockLayoutSnapshotService {
+  public org.snapfx.persistence.DockLayoutSnapshotService();
+  public java.lang.String createSnapshotJson(java.lang.String, com.google.gson.JsonArray);
+  public com.google.gson.JsonObject createFloatingWindowEntry(java.lang.String, java.lang.Double, java.lang.Double, double, double, boolean);
+  public org.snapfx.persistence.DockLayoutSnapshotService$DockLayoutSnapshot tryParseSnapshot(java.lang.String);
+  public void validateSnapshot(org.snapfx.persistence.DockLayoutSnapshotService$DockLayoutSnapshot, org.snapfx.persistence.DockNodeFactory) throws org.snapfx.persistence.DockLayoutLoadException;
+  public void validateLayoutJson(java.lang.String, java.lang.String, org.snapfx.persistence.DockNodeFactory) throws org.snapfx.persistence.DockLayoutLoadException;
+  public java.lang.String toJson(java.lang.Object);
+}
+====================================
+org.snapfx.persistence.DockNodeContentSerializer
+====================================
+Compiled from "DockNodeContentSerializer.java"
+public interface org.snapfx.persistence.DockNodeContentSerializer {
+  public abstract com.google.gson.JsonObject serializeContent();
+  public abstract void deserializeContent(com.google.gson.JsonObject);
+}
+====================================
+org.snapfx.persistence.DockNodeFactory$UnknownElementContext
+====================================
+Compiled from "DockNodeFactory.java"
+public final class org.snapfx.persistence.DockNodeFactory$UnknownElementContext extends java.lang.Record {
+  public org.snapfx.persistence.DockNodeFactory$UnknownElementContext(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public java.lang.String elementType();
+  public java.lang.String dockNodeId();
+  public java.lang.String layoutId();
+  public java.lang.String title();
+  public java.lang.String jsonPath();
+}
+====================================
+org.snapfx.persistence.DockNodeFactory
+====================================
+Compiled from "DockNodeFactory.java"
+public interface org.snapfx.persistence.DockNodeFactory {
+  public abstract org.snapfx.model.DockNode createNode(java.lang.String);
+  public default org.snapfx.model.DockNode createUnknownNode(org.snapfx.persistence.DockNodeFactory$UnknownElementContext);
+}
+====================================
+org.snapfx.shortcuts.DockShortcutAction
+====================================
+Compiled from "DockShortcutAction.java"
+public final class org.snapfx.shortcuts.DockShortcutAction extends java.lang.Enum<org.snapfx.shortcuts.DockShortcutAction> {
+  public static final org.snapfx.shortcuts.DockShortcutAction CLOSE_ACTIVE_NODE;
+  public static final org.snapfx.shortcuts.DockShortcutAction NEXT_TAB;
+  public static final org.snapfx.shortcuts.DockShortcutAction PREVIOUS_TAB;
+  public static final org.snapfx.shortcuts.DockShortcutAction CANCEL_DRAG;
+  public static final org.snapfx.shortcuts.DockShortcutAction TOGGLE_ACTIVE_FLOATING_ALWAYS_ON_TOP;
+  public static org.snapfx.shortcuts.DockShortcutAction[] values();
+  public static org.snapfx.shortcuts.DockShortcutAction valueOf(java.lang.String);
+}
+====================================
+org.snapfx.shortcuts.DockShortcutController
+====================================
+Compiled from "DockShortcutController.java"
+public final class org.snapfx.shortcuts.DockShortcutController {
+  public org.snapfx.shortcuts.DockShortcutController();
+  public void resetToDefaults();
+  public void setShortcut(org.snapfx.shortcuts.DockShortcutAction, javafx.scene.input.KeyCombination);
+  public void clearShortcut(org.snapfx.shortcuts.DockShortcutAction);
+  public javafx.scene.input.KeyCombination getShortcut(org.snapfx.shortcuts.DockShortcutAction);
+  public java.util.Map<org.snapfx.shortcuts.DockShortcutAction, javafx.scene.input.KeyCombination> getShortcutsSnapshot();
+  public org.snapfx.shortcuts.DockShortcutAction resolveShortcutAction(javafx.scene.input.KeyEvent);
+  public void bindFloatingShortcutScene(org.snapfx.floating.DockFloatingWindow, javafx.event.EventHandler<javafx.scene.input.KeyEvent>);
+  public void unbindFloatingShortcutScene(org.snapfx.floating.DockFloatingWindow, javafx.event.EventHandler<javafx.scene.input.KeyEvent>);
+  public javafx.scene.Node resolveNodeFromEventTarget(java.lang.Object);
+  public javafx.scene.Node resolveFocusedNode(java.lang.Object, javafx.scene.Scene);
+  public javafx.scene.Scene resolveSceneFromEventTarget(java.lang.Object);
+  public javafx.scene.Scene resolveSceneFromNode(javafx.scene.Node);
+  public javafx.scene.control.TabPane resolveActiveTabPane(java.lang.Object, javafx.scene.Scene, javafx.scene.Node);
+  public javafx.scene.control.TabPane findTabPaneInHierarchy(javafx.scene.Node);
+  public javafx.scene.control.TabPane findFirstTabPane(javafx.scene.Node);
+  public boolean selectTabRelative(int, java.lang.Object, javafx.scene.Scene, javafx.scene.Node);
+  public org.snapfx.model.DockNode resolveActiveDockNode(java.lang.Object, javafx.scene.Scene, org.snapfx.model.DockElement);
+}
+====================================
+org.snapfx.sidebar.DockSideBarController
+====================================
+Compiled from "DockSideBarController.java"
+public final class org.snapfx.sidebar.DockSideBarController {
+  public org.snapfx.sidebar.DockSideBarController();
+  public org.snapfx.sidebar.DockSideBarMode getSideBarMode();
+  public boolean setSideBarMode(org.snapfx.sidebar.DockSideBarMode);
+  public boolean isCollapsePinnedSideBarOnActiveIconClick();
+  public void setCollapsePinnedSideBarOnActiveIconClick(boolean);
+  public boolean isOverlayOpen(javafx.geometry.Side);
+  public boolean isPinnedPanelCollapsed(javafx.geometry.Side);
+  public boolean hasOpenOverlays();
+  public void onIconClicked(javafx.geometry.Side, org.snapfx.model.DockNode, boolean);
+  public void onPanelPinnedOpen(javafx.geometry.Side, org.snapfx.model.DockNode, boolean);
+  public void onPanelCollapsed(javafx.geometry.Side, org.snapfx.model.DockNode, boolean);
+  public void onPanelRestoreRequested(javafx.geometry.Side, org.snapfx.model.DockNode);
+  public void onNodePinned(javafx.geometry.Side, org.snapfx.model.DockNode);
+  public void onPinOpenApplied(javafx.geometry.Side, boolean);
+  public void onCollapseApplied(javafx.geometry.Side, boolean);
+  public boolean closeTransientOverlays(java.util.function.Predicate<javafx.geometry.Side>);
+  public void pruneInvalidViewState(javafx.geometry.Side, java.util.List<org.snapfx.model.DockNode>, boolean);
+  public org.snapfx.model.DockNode resolveSelectedNode(javafx.geometry.Side, java.util.List<org.snapfx.model.DockNode>);
+  public void resetTransientViewState();
+  public void forgetTransientStateForNode(org.snapfx.model.DockNode);
+}
+====================================
+org.snapfx.sidebar.DockSideBarMode
+====================================
+Compiled from "DockSideBarMode.java"
+public final class org.snapfx.sidebar.DockSideBarMode extends java.lang.Enum<org.snapfx.sidebar.DockSideBarMode> {
+  public static final org.snapfx.sidebar.DockSideBarMode ALWAYS;
+  public static final org.snapfx.sidebar.DockSideBarMode AUTO;
+  public static final org.snapfx.sidebar.DockSideBarMode NEVER;
+  public static org.snapfx.sidebar.DockSideBarMode[] values();
+  public static org.snapfx.sidebar.DockSideBarMode valueOf(java.lang.String);
+}
+====================================
+org.snapfx.theme.DockThemeCatalog
+====================================
+Compiled from "DockThemeCatalog.java"
+public final class org.snapfx.theme.DockThemeCatalog {
+  public static java.lang.String getDefaultThemeName();
+  public static java.lang.String getDefaultThemeStylesheetResourcePath();
+  public static java.util.Map<java.lang.String, java.lang.String> getAvailableThemeStylesheets();
+  public static java.util.List<java.lang.String> getAvailableThemeNames();
+}
+====================================
+org.snapfx.theme.DockThemeStyleClasses
+====================================
+Compiled from "DockThemeStyleClasses.java"
+public class org.snapfx.theme.DockThemeStyleClasses {
+  public static final java.lang.String DOCK_CONTROL_ICON;
+  public static final java.lang.String DOCK_CONTROL_ICON_FLOAT;
+  public static final java.lang.String DOCK_CONTROL_ICON_CLOSE;
+  public static final java.lang.String DOCK_CONTROL_ICON_ATTACH;
+  public static final java.lang.String DOCK_CONTROL_ICON_PIN_ON;
+  public static final java.lang.String DOCK_CONTROL_ICON_PIN_OFF;
+  public static final java.lang.String DOCK_CONTROL_ICON_MAXIMIZE;
+  public static final java.lang.String DOCK_CONTROL_ICON_RESTORE;
+  public static final java.lang.String DOCK_NODE_CLOSE_BUTTON;
+  public static final java.lang.String DOCK_NODE_FLOAT_BUTTON;
+  public static final java.lang.String DOCK_TAB_FLOAT_BUTTON;
+  public static final java.lang.String DOCK_WINDOW_CONTROL_BUTTON;
+  public static final java.lang.String DOCK_WINDOW_PIN_BUTTON;
+  public static final java.lang.String DOCK_WINDOW_ATTACH_BUTTON;
+  public static final java.lang.String DOCK_WINDOW_MAXIMIZE_BUTTON;
+  public static final java.lang.String DOCK_WINDOW_CLOSE_BUTTON;
+  public static final java.lang.String DOCK_TAB_GRAPHIC;
+  public static final java.lang.String DOCK_TAB_PANE;
+  public static final java.lang.String DOCK_SPLIT_PANE;
+  public static final java.lang.String DOCK_EMPTY_LAYOUT;
+  public static final java.lang.String DOCK_NODE_TITLE_LABEL;
+  public static final java.lang.String DOCK_NODE_HEADER;
+  public static final java.lang.String DOCK_NODE_VIEW;
+  public static final java.lang.String DOCK_NODE_CONTENT;
+  public static final java.lang.String DOCK_SIDEBAR_HOST;
+  public static final java.lang.String DOCK_SIDEBAR_STRIP;
+  public static final java.lang.String DOCK_SIDEBAR_STRIP_LEFT;
+  public static final java.lang.String DOCK_SIDEBAR_STRIP_RIGHT;
+  public static final java.lang.String DOCK_SIDEBAR_DROP_INSERT_LINE;
+  public static final java.lang.String DOCK_SIDEBAR_ICON_BUTTON;
+  public static final java.lang.String DOCK_SIDEBAR_ICON_BUTTON_ACTIVE;
+  public static final java.lang.String DOCK_SIDEBAR_ICON_FALLBACK;
+  public static final java.lang.String DOCK_SIDEBAR_OVERLAY_HOST;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_OVERLAY;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_PINNED;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_HEADER;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_TITLE_LABEL;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_CONTENT;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_BUTTON;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_PIN_BUTTON;
+  public static final java.lang.String DOCK_SIDEBAR_PANEL_RESTORE_BUTTON;
+  public static final java.lang.String DOCK_SIDEBAR_RESIZE_HANDLE;
+  public static final java.lang.String DOCK_SIDEBAR_RESIZE_HANDLE_LEFT;
+  public static final java.lang.String DOCK_SIDEBAR_RESIZE_HANDLE_RIGHT;
+  public static final java.lang.String DOCK_FLOATING_WINDOW;
+  public static final java.lang.String DOCK_FLOATING_TITLE_BAR;
+  public static final java.lang.String DOCK_FLOATING_LAYOUT_CONTAINER;
+  public static final java.lang.String DOCK_DEBUG_PANEL;
+}
+====================================
+org.snapfx.theme.DockThemeStylesheetManager
+====================================
+Compiled from "DockThemeStylesheetManager.java"
+public final class org.snapfx.theme.DockThemeStylesheetManager {
+  public org.snapfx.theme.DockThemeStylesheetManager();
+  public java.lang.String getStylesheetResourcePath();
+  public java.lang.String setStylesheetResourcePath(java.lang.String);
+  public void applyToScene(javafx.scene.Scene, java.lang.String);
+}
+====================================
+org.snapfx.view.DockCloseButtonMode
+====================================
+Compiled from "DockCloseButtonMode.java"
+public final class org.snapfx.view.DockCloseButtonMode extends java.lang.Enum<org.snapfx.view.DockCloseButtonMode> {
+  public static final org.snapfx.view.DockCloseButtonMode TAB_ONLY;
+  public static final org.snapfx.view.DockCloseButtonMode TITLE_ONLY;
+  public static final org.snapfx.view.DockCloseButtonMode BOTH;
+  public static org.snapfx.view.DockCloseButtonMode[] values();
+  public static org.snapfx.view.DockCloseButtonMode valueOf(java.lang.String);
+  public boolean showTabClose();
+  public boolean showTitleClose();
+}
+====================================
+org.snapfx.view.DockDropZone
+====================================
+Compiled from "DockDropZone.java"
+public class org.snapfx.view.DockDropZone {
+  public org.snapfx.view.DockDropZone(org.snapfx.model.DockElement, org.snapfx.model.DockPosition, org.snapfx.view.DockDropZoneType, javafx.geometry.Bounds, int, java.lang.Integer, java.lang.Double);
+  public org.snapfx.model.DockElement getTarget();
+  public org.snapfx.model.DockPosition getPosition();
+  public org.snapfx.view.DockDropZoneType getType();
+  public javafx.geometry.Bounds getBounds();
+  public int getDepth();
+  public java.lang.Integer getTabIndex();
+  public java.lang.Double getInsertLineX();
+  public boolean contains(double, double);
+  public double area();
+}
+====================================
+org.snapfx.view.DockDropZoneType
+====================================
+Compiled from "DockDropZoneType.java"
+public final class org.snapfx.view.DockDropZoneType extends java.lang.Enum<org.snapfx.view.DockDropZoneType> {
+  public static final org.snapfx.view.DockDropZoneType EDGE;
+  public static final org.snapfx.view.DockDropZoneType CENTER;
+  public static final org.snapfx.view.DockDropZoneType TAB_HEADER;
+  public static final org.snapfx.view.DockDropZoneType TAB_INSERT;
+  public static org.snapfx.view.DockDropZoneType[] values();
+  public static org.snapfx.view.DockDropZoneType valueOf(java.lang.String);
+}
+====================================
+org.snapfx.view.DockLayoutEngine$1
+====================================
+Compiled from "DockLayoutEngine.java"
+class org.snapfx.view.DockLayoutEngine$1 {
+}
+====================================
+org.snapfx.view.DockLayoutEngine$TabHeader
+====================================
+Compiled from "DockLayoutEngine.java"
+final class org.snapfx.view.DockLayoutEngine$TabHeader extends java.lang.Record {
+  public final java.lang.String toString();
+  public final int hashCode();
+  public final boolean equals(java.lang.Object);
+  public javafx.scene.layout.HBox node();
+  public java.lang.Runnable cleanup();
+}
+====================================
+org.snapfx.view.DockLayoutEngine$TargetCandidate
+====================================
+Compiled from "DockLayoutEngine.java"
+class org.snapfx.view.DockLayoutEngine$TargetCandidate {
+}
+====================================
+org.snapfx.view.DockLayoutEngine
+====================================
+Compiled from "DockLayoutEngine.java"
+public class org.snapfx.view.DockLayoutEngine {
+  public static final java.lang.String TAB_DOCK_NODE_KEY;
+  public org.snapfx.view.DockLayoutEngine(org.snapfx.model.DockGraph, org.snapfx.dnd.DockDragService);
+  public javafx.scene.Node buildSceneGraph();
+  public org.snapfx.model.DockElement findElementAt(double, double);
+  public java.util.List<org.snapfx.view.DockDropZone> collectDropZones();
+  public org.snapfx.view.DockDropZone findBestDropZone(java.util.List<org.snapfx.view.DockDropZone>, double, double);
+  public void clearCache();
+  public void setOnNodeCloseRequest(java.util.function.BiConsumer<org.snapfx.model.DockNode, org.snapfx.close.DockCloseSource>);
+  public void setOnNodeFloatRequest(java.util.function.Consumer<org.snapfx.model.DockNode>);
+  public void setOnNodePinToSideBarRequest(java.util.function.BiConsumer<org.snapfx.model.DockNode, javafx.geometry.Side>);
+  public void setCanFloatNodePredicate(java.util.function.Predicate<org.snapfx.model.DockNode>);
+  public void setTextResolver(java.util.function.BiFunction<java.lang.String, java.lang.Object[], java.lang.String>);
+  public org.snapfx.view.DockCloseButtonMode getCloseButtonMode();
+  public void setCloseButtonMode(org.snapfx.view.DockCloseButtonMode);
+  public org.snapfx.view.DockTitleBarMode getTitleBarMode();
+  public void setTitleBarMode(org.snapfx.view.DockTitleBarMode);
+  public javafx.scene.Node getViewForElement(org.snapfx.model.DockElement);
+  public org.snapfx.view.DockNodeView getDockNodeView(org.snapfx.model.DockNode);
+}
+====================================
+org.snapfx.view.DockNodeView
+====================================
+Compiled from "DockNodeView.java"
+public class org.snapfx.view.DockNodeView extends javafx.scene.layout.VBox {
+  public org.snapfx.view.DockNodeView(org.snapfx.model.DockNode, org.snapfx.model.DockGraph, org.snapfx.dnd.DockDragService);
+  public org.snapfx.view.DockNodeView(org.snapfx.model.DockNode, org.snapfx.model.DockGraph, org.snapfx.dnd.DockDragService, java.util.function.BiFunction<java.lang.String, java.lang.Object[], java.lang.String>);
+  public void setOnCloseRequest(java.lang.Runnable);
+  public void setOnFloatRequest(java.lang.Runnable);
+  public void bindCloseButtonVisible(javafx.beans.binding.BooleanExpression);
+  public void setCloseButtonVisible(boolean);
+  public void bindFloatButtonVisible(javafx.beans.binding.BooleanExpression);
+  public void setFloatButtonVisible(boolean);
+  public boolean isFloatButtonVisible();
+  public boolean isCloseButtonVisible();
+  public org.snapfx.model.DockNode getDockNode();
+  public javafx.scene.layout.HBox getHeader();
+  public void setHeaderContextMenu(javafx.scene.control.ContextMenu);
+  public void setHeaderVisible(boolean);
+  public void dispose();
+}
+====================================
+org.snapfx.view.DockTitleBarMode
+====================================
+Compiled from "DockTitleBarMode.java"
+public final class org.snapfx.view.DockTitleBarMode extends java.lang.Enum<org.snapfx.view.DockTitleBarMode> {
+  public static final org.snapfx.view.DockTitleBarMode ALWAYS;
+  public static final org.snapfx.view.DockTitleBarMode NEVER;
+  public static final org.snapfx.view.DockTitleBarMode AUTO;
+  public static org.snapfx.view.DockTitleBarMode[] values();
+  public static org.snapfx.view.DockTitleBarMode valueOf(java.lang.String);
+}

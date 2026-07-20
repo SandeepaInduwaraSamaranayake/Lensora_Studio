@@ -15,7 +15,9 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="483.0" prefWidth="833.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.AboutController">
+<AnchorPane prefHeight="483.0" prefWidth="833.0"
+   xmlns="http://javafx.com/javafx/18"
+   xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.AboutController">
    <children>
       <!-- Title Bar -->
       <HBox fx:id="aboutHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" prefWidth="833.0" spacing="8.0">
@@ -58,37 +60,37 @@
                   <Label style="-fx-font-weight: bold; -fx-font-size: 25px;" text="Lensora Studio"/>
 
                   <Separator prefWidth="300.0" />
-      
+
                   <!-- Info Grid -->
                   <GridPane hgap="15.0" prefHeight="189.0" prefWidth="360.0" vgap="10.0">
                      <columnConstraints>
-                              <ColumnConstraints halignment="RIGHT" hgrow="NEVER" minWidth="120.0" />
-                              <ColumnConstraints hgrow="ALWAYS" />
+                        <ColumnConstraints halignment="RIGHT" hgrow="NEVER" minWidth="120.0" />
+                        <ColumnConstraints hgrow="ALWAYS" />
                      </columnConstraints>
                      <padding>
                         <Insets top="10.0" />
                      </padding>
-      
+
                      <!-- Product Version -->
                      <Label style="-fx-font-weight: bold;" text="Product Version:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                      <Label fx:id="productVersionLabel" text="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
-      
+
                      <!-- Build Information -->
                      <Label style="-fx-font-weight: bold;" text="Build Information:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                      <Label fx:id="buildInfoLabel" text="2025-06-11 10:30:00" GridPane.columnIndex="1" GridPane.rowIndex="1" />
-      
+
                      <!-- JavaFX Version -->
                      <Label style="-fx-font-weight: bold;" text="JavaFX Version:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
                      <Label fx:id="javafxVersionLabel" text="18" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-      
+
                      <!-- Java Version -->
                      <Label style="-fx-font-weight: bold;" text="Java Version:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                      <Label fx:id="javaVersionLabel" text="17, OpenJDK Runtime Environment" GridPane.columnIndex="1" GridPane.rowIndex="3" />
-      
+
                      <!-- Operating System -->
                      <Label style="-fx-font-weight: bold;" text="Operating System:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
                      <Label fx:id="osLabel" text="Windows 10, amd64" GridPane.columnIndex="1" GridPane.rowIndex="4" />
-   
+
 
                      <Label style="-fx-font-weight: bold;" text="Application Data Folder:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
                      <Label fx:id="loggingLabel" text="C://Users/Data" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" />
@@ -115,9 +117,9 @@
                      </rowConstraints>
 
                   </GridPane>
-      
+
                   <Separator prefWidth="300.0" />
-      
+
                   <!-- Close Button -->
                   <HBox alignment="CENTER_RIGHT" spacing="10.0">
                      <children>
@@ -125,7 +127,7 @@
                         <Button fx:id="closeButton" defaultButton="true" mnemonicParsing="false" onAction="#handleClose" text="Close" />
                      </children>
                   </HBox>
-                  </children>
+               </children>
             </VBox>
          </children>
       </HBox>

@@ -1,0 +1,54 @@
+package com.lensora.lensorastudio.services;
+
+import com.lensora.lensorastudio.model.MediaMetadata;
+import com.lensora.lensorastudio.util.ImageMetadataExtractor;
+import com.lensora.lensorastudio.util.VideoMetadataExtractor;
+
+import javafx.concurrent.Task;
+
+import java.io.File;
+
+/**
+ * Runs metadata extraction (metadata-extractor for images, ffprobe for
+ * videos) on a background thread and hands the result back on the FX thread.
+ */
+public final class MetadataExtractionService
+{
+    private MetadataExtractionService() {}
+
+    public static Task<MediaMetadata> createTask(File file)
+    {
+        return new Task<>() {
+            @Override
+            protected MediaMetadata call()
+            {
+                if (ImageMetadataExtractor.isSupportedImage(file))
+                {
+                    return ImageMetadataExtractor.extract(file);
+                }
+                else if (VideoMetadataExtractor.isSupportedVideo(file))
+                {
+                    return VideoMetadataExtractor.extract(file);
+                }
+                else
+                {
+                    MediaMetadata unsupported = new MediaMetadata(file.getAbsolutePath(), MediaMetadata.MediaType.UNSUPPORTED);
+                    unsupported.put("File", "Name", file.getName());
+                    unsupported.put("Info", "Message", "Metadata extraction is not supported for this file type.");
+                    return unsupported;
+                }
+            }
+        };
+    }
+
+    public static void extractAsync(File file, java.util.function.Consumer<MediaMetadata> onResult,
+                                    java.util.function.Consumer<Throwable> onError)
+    {
+        Task<MediaMetadata> task = createTask(file);
+        task.setOnSucceeded(e -> onResult.accept(task.getValue()));
+        task.setOnFailed(e -> onError.accept(task.getException()));
+        Thread thread = new Thread(task, "metadata-extraction");
+        thread.setDaemon(true);
+        thread.start();
+    }
+}
