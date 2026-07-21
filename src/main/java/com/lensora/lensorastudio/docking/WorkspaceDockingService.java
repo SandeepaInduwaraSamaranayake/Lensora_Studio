@@ -250,7 +250,7 @@ public class WorkspaceDockingService
         DockSplitPane right = new DockSplitPane(Orientation.HORIZONTAL);
         right.addChild(filesNode);
         right.addChild(metadataNode);          // <-- metadata now in default layout
-        right.setDividerPosition(0, 0.00001);      // files get 70%, metadata 30%
+        right.setDividerPosition(0, 0.70);      // files get 70%, metadata 30%
 
         // Root: horizontal split with left and right
         DockSplitPane root = new DockSplitPane(Orientation.HORIZONTAL);

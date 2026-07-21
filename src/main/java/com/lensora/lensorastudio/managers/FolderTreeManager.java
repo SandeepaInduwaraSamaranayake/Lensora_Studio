@@ -3,10 +3,13 @@ package com.lensora.lensorastudio.managers;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
 
+import javafx.concurrent.Task;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
@@ -44,6 +47,10 @@ public class FolderTreeManager
     private Consumer<File> onFolderSelected;
     private Runnable onRefreshRequested;
     private Consumer<String> onPathChanged;
+    /** Paste is delegated out — FileOperationsManager owns the actual copy-with-progress logic. */
+    private Runnable pasteRequested = () -> {};
+    /** (files, targetFolder, isMove) — isMove is true for internal drags, false for external OS drag-ins. */
+    private TriConsumer<java.util.List<File>, File, Boolean> onFilesDropped = (files, folder, move) -> {};
 
     public FolderTreeManager(TreeView<File> folderTree, HBox breadcrumbContainer,
                             Button btnBack, Button btnForward, Label lblFolderHeader)
@@ -60,9 +67,18 @@ public class FolderTreeManager
         setupNavigationButtons();
     }
 
+    /** Small local functional interface — java.util has no 3-arg Consumer. */
+    @FunctionalInterface
+    public interface TriConsumer<A, B, C>
+    {
+        void accept(A a, B b, C c);
+    }
+
     public void setOnFolderSelected(Consumer<File> callback) { this.onFolderSelected = callback; }
     public void setOnPathChanged(Consumer<String> callback) { this.onPathChanged = callback; }
     public void setOnRefreshRequested(Runnable callback) { this.onRefreshRequested = callback; }
+    public void setOnFilesDropped(TriConsumer<java.util.List<File>, File, Boolean> callback) { this.onFilesDropped = callback; }
+    public void setOnPasteRequested(Runnable callback) { this.pasteRequested = callback; }
 
     public File getCurrentFolder() { return currentFolder; }
     public File getProjectRoot() { return projectRoot; }
@@ -271,25 +287,64 @@ public class FolderTreeManager
 
     private void setupTreeCellFactory()
     {
-        folderTree.setCellFactory(tv -> new TreeCell<>() {
-            @Override
-            protected void updateItem(File item, boolean empty)
-            {
-                super.updateItem(item, empty);
-                if (empty || item == null)
+        folderTree.setCellFactory(tv -> {
+            TreeCell<File> cell = new TreeCell<>() {
+                @Override
+                protected void updateItem(File item, boolean empty)
                 {
-                    setText(null);
-                    setGraphic(null);
+                    super.updateItem(item, empty);
+                    if (empty || item == null)
+                    {
+                        setText(null);
+                        setGraphic(null);
+                    }
+                    else
+                    {
+                        setText(item.getName());
+                        FontIcon folderIcon = new FontIcon("fas-folder");
+                        folderIcon.setIconSize(16);
+                        setGraphic(folderIcon);
+                    }
                 }
-                else
-                {
-                    setText(item.getName());
-                    FontIcon folderIcon = new FontIcon("fas-folder");
-                    folderIcon.setIconSize(16);
-                    setGraphic(folderIcon);
-                }
-            }
+            };
+
+            setupCellDragAndDrop(cell);
+            return cell;
         });
+    }
+
+    private void setupCellDragAndDrop(TreeCell<File> cell)
+    {
+        cell.setOnDragOver(event -> {
+            File folder = cell.getItem();
+            if (folder != null && folder.isDirectory() && event.getDragboard().hasFiles())
+            {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+                cell.setStyle("-fx-background-color: -color-accent-muted;");
+            }
+            event.consume();
+        });
+
+        cell.setOnDragExited(event -> cell.setStyle(""));
+
+        cell.setOnDragDropped(event -> {
+            File targetFolder = cell.getItem();
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+
+            if (targetFolder != null && targetFolder.isDirectory() && db.hasFiles() && onFilesDropped != null)
+            {
+                boolean isInternal = Boolean.TRUE.equals(
+                        db.getContent(com.lensora.lensorastudio.util.ClipboardFormats.INTERNAL_DRAG));
+                onFilesDropped.accept(db.getFiles(), targetFolder, isInternal);
+                success = true;
+            }
+
+            cell.setStyle("");
+            event.setDropCompleted(success);
+            event.consume();
+
+        }); 
     }
 
     private void setupTreeSelectionListener()
@@ -321,9 +376,6 @@ public class FolderTreeManager
         folderTree.setContextMenu(contextMenu);
     }
 
-    /** Paste is delegated out — FileOperationsManager owns the actual copy-with-progress logic. */
-    private Runnable pasteRequested = () -> {};
-    public void setOnPasteRequested(Runnable callback) { this.pasteRequested = callback; }
 
     public File getSelectedFolder()
     {

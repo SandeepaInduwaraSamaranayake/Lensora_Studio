@@ -1,6 +1,6 @@
 package com.lensora.lensorastudio.managers;
 
-import com.lensora.lensorastudio.util.Dialogs;
+import com.lensora.lensorastudio.util.ClipboardFormats;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
@@ -16,6 +16,9 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
@@ -31,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 
 /**
  * Owns the file listing: the details TableView, ListView, and icon/thumbnail
@@ -51,6 +55,7 @@ public class FileListingManager
 
     private final Map<File, SimpleStringProperty> dimensionProps = new ConcurrentHashMap<>();
     private final Map<File, String> dimensionCache = new ConcurrentHashMap<>();
+    private BiConsumer<List<File>, Boolean> onExternalFilesDropped; // (files, isMove — always false here)
     private final ObjectProperty<File> selectedFileProperty = new SimpleObjectProperty<>();
 
     private File currentFolder;
@@ -85,6 +90,7 @@ public class FileListingManager
         setupToggleGroup();
         setupTableColumns();
         setupViewSwitching();
+        setupDragAndDrop();
         setupSearch();
         setupListeners();
     }
@@ -92,6 +98,9 @@ public class FileListingManager
     public TableView<File> getFileTable() { return fileTable; }
     public File getSelectedFile() { return fileTable.getSelectionModel().getSelectedItem(); }
     public List<File> getSelectedFiles() { return fileTable.getSelectionModel().getSelectedItems(); }
+
+    /** Called by FileManager to wire external drop-into-current-folder behaviour. */
+    public void setOnFilesDroppedIntoCurrentFolder(BiConsumer<List<File>, Boolean> callback) { this.onExternalFilesDropped = callback; }
     
 
     // ─── Listeners ──────────────────────────────────────────────────────────
@@ -322,6 +331,19 @@ public class FileListingManager
             nameLabel.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
             card.getChildren().addAll(iconNode, nameLabel);
+
+            // drag handler
+            card.setOnDragDetected(event -> {
+                List<File> selected = getSelectedFiles().isEmpty() ? List.of(file) : getSelectedFiles();
+                Dragboard db = card.startDragAndDrop(TransferMode.MOVE);
+                ClipboardContent content = new ClipboardContent();
+                content.putFiles(selected);
+                content.put(ClipboardFormats.INTERNAL_DRAG, true);
+                db.setContent(content);
+                event.consume();
+            });
+
+            // click handler
             card.setOnMouseClicked(e -> {
                 if (e.getClickCount() == 2) openFile(file);
             });
@@ -417,4 +439,68 @@ public class FileListingManager
     {
         return selectedFileProperty;
     }
+
+    // ─── Drag&Drop ──────────────────────────────────────────────────────────
+
+    /** Sets up drag source + drop target behaviour for all three views. */
+    private void setupDragAndDrop()
+    {
+        setupDragSource(fileTable);
+        setupDragSource(fileListView);
+        // Icon view cards are built dynamically in populateIconView(); handled there.
+
+        setupDropTarget(fileTable);
+        setupDropTarget(fileListView);
+        setupDropTarget(iconScrollPane);
+    }
+
+    private void setupDragSource(Node source)
+    {
+        source.setOnDragDetected(event -> {
+            List<File> selected = getSelectedFiles();
+            if (selected.isEmpty()) return;
+
+            Dragboard db = source.startDragAndDrop(TransferMode.MOVE);
+            ClipboardContent content = new ClipboardContent();
+            content.putFiles(selected);
+            content.put(ClipboardFormats.INTERNAL_DRAG, true);
+            db.setContent(content);
+            event.consume();
+        });
+    }
+
+    private void setupDropTarget(javafx.scene.Node target)
+    {
+        target.setOnDragOver(event -> {
+            if (event.getGestureSource() != target && event.getDragboard().hasFiles())
+            {
+                event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            }
+            event.consume();
+        });
+
+        target.setOnDragDropped(event -> {
+            Dragboard db = event.getDragboard();
+            boolean success = false;
+
+            if (db.hasFiles())
+            {
+                boolean isInternal = Boolean.TRUE.equals(db.getContent(ClipboardFormats.INTERNAL_DRAG));
+
+                // Files dragged from elsewhere in this app onto the file
+                // listing itself (not a folder) is a no-op - they're
+                // already in the current folder. Only handle genuine
+                // external OS drag-ins here.
+                if (!isInternal && onExternalFilesDropped != null)
+                {
+                    onExternalFilesDropped.accept(db.getFiles(), false);
+                    success = true;
+                }
+            }
+
+            event.setDropCompleted(success);
+            event.consume();
+        });
+    }
+
 }

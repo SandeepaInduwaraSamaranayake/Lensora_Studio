@@ -310,6 +310,64 @@ public class FileOperationsManager
         thread.start();
     }
 
+    /**
+     * Handles files dropped onto a folder — either from within the app
+     * (move) or from the OS (copy). Reuses the same progress-bound
+     * FileCopyTask pipeline as clipboard paste.
+     */
+    public void dropFilesInto(List<File> files, File targetFolder, boolean move)
+    {
+        if (files == null || files.isEmpty()) return;
+
+        if (targetFolder == null || !targetFolder.isDirectory())
+        {
+            Dialogs.showInfo(null, "Drop", null, "Please drop onto a valid folder.");
+            return;
+        }
+
+        for (File src : files)
+        {
+            if (isRecursivePaste(src, targetFolder))
+            {
+                Dialogs.showInfo(null, "Drop", null, "Cannot move/copy a folder into itself or its subfolder.");
+                return;
+            }
+            if (src.getParentFile() != null && src.getParentFile().equals(targetFolder))
+            {
+                // Already in this folder — nothing to do for this entry.
+                continue;
+            }
+        }
+
+        currentCopyTask = new FileCopyTask(files, targetFolder);
+        bindProgress(currentCopyTask);
+
+        currentCopyTask.setOnSucceeded(e -> {
+            hideProgress();
+            if (move)
+            {
+                for (File src : files)
+                {
+                    if (src.getParentFile() == null || !src.getParentFile().equals(targetFolder))
+                    {
+                        deleteRecursive(src);
+                    }
+                }
+            }
+            refreshCallback.run();
+        });
+        currentCopyTask.setOnFailed(e -> {
+            hideProgress();
+            ErrorHandler.show(null, "Drop failed", currentCopyTask.getException());
+        });
+        currentCopyTask.setOnCancelled(e -> hideProgress());
+
+        showProgress();
+        Thread thread = new Thread(currentCopyTask, "file-drop-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
     private void onPasteSucceeded(List<File> sourceFiles, boolean isCut)
     {
         hideProgress();
