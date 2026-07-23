@@ -102,7 +102,7 @@ public class FileManager
     // ─── Public API (unchanged) ─────────────────────────────────────────────
 
     public void setStage(Stage stage) { fileOperationsManager.setStage(stage); }
-    public void setSnapFX(SnapFX snapFX) { fileOperationsManager.setSnapFX(snapFX); }
+    public void setSnapFX(SnapFX snapFX) { fileOperationsManager.setSnapFX(snapFX); fileListingManager.setSnapFX(snapFX);}
     public void setOnPathChanged(Consumer<String> callback) { folderTreeManager.setOnPathChanged(callback); }
 
     public FileListingManager getFileListingManager() { return fileListingManager; }

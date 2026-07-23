@@ -305,7 +305,7 @@ public class FileOperationsManager
         currentCopyTask.setOnCancelled(e -> hideProgress());
 
         showProgress();
-        Thread thread = new Thread(currentCopyTask, "file-copy-task");
+        Thread thread = new Thread(currentCopyTask, "Lensora-file-copy-task");
         thread.setDaemon(true);
         thread.start();
     }
@@ -363,7 +363,7 @@ public class FileOperationsManager
         currentCopyTask.setOnCancelled(e -> hideProgress());
 
         showProgress();
-        Thread thread = new Thread(currentCopyTask, "file-drop-task");
+        Thread thread = new Thread(currentCopyTask, "Lensora-file-drop-task");
         thread.setDaemon(true);
         thread.start();
     }

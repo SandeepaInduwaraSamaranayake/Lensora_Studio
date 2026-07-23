@@ -1,12 +1,16 @@
 package com.lensora.lensorastudio.util;
 
 import com.lensora.lensorastudio.model.MediaMetadata;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.Separator;
+import javafx.scene.control.TitledPane;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -16,84 +20,117 @@ import org.snapfx.model.DockNode;
 
 import java.io.File;
 import java.util.Map;
-import java.util.List;
 
-public final class MetadataPanel 
+public final class MetadataPanel
 {
+    private MetadataPanel() {}
 
-private MetadataPanel() {}
+    // ─────────────────────────────────────────────────────────────────────
+    // Modal version  (kept for fallback)
+    // ─────────────────────────────────────────────────────────────────────
 
-         // ─── Modal version (kept for fallback) ──────────────────────────────
-        public static void show(Window owner, MediaMetadata metadata) 
+    public static void show(Window owner, MediaMetadata metadata)
+    {
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+        if (owner != null) stage.initOwner(owner);
+        stage.setTitle("Metadata - " + new File(metadata.getFilePath()).getName());
+
+        Scene scene = new Scene(buildContent(metadata), 650, 550);
+        stage.setScene(scene);
+        stage.showAndWait();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // SnapFX floating version
+    // ─────────────────────────────────────────────────────────────────────
+
+    public static void showFloating(MediaMetadata metadata, SnapFX snapFX)
+    {
+        if (snapFX == null)
         {
-                Stage stage = new Stage();
-                stage.initModality(Modality.APPLICATION_MODAL);
-                if (owner != null) stage.initOwner(owner);
-                stage.setTitle("Metadata - " + new File(metadata.getFilePath()).getName());
-
-                Parent content = buildContent(metadata);
-                Scene scene = new Scene(content, 650, 550);
-                stage.setScene(scene);
-                stage.showAndWait();
+            show(null, metadata);
+            return;
         }
 
-        // ─── SnapFX floating version ─────────────────────────────────────────
-        public static void showFloating(MediaMetadata metadata, SnapFX snapFX) 
+        DockNode dockNode = new DockNode(
+                "metadata-" + System.currentTimeMillis(),
+                buildContent(metadata),
+                "Metadata - " + new File(metadata.getFilePath()).getName());
+
+        dockNode.setCloseable(true);
+        snapFX.floatNode(dockNode);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Shared UI
+    // ─────────────────────────────────────────────────────────────────────
+
+    public static Parent buildContent(MediaMetadata metadata)
+    {
+        VBox container = new VBox(8);
+        container.setPadding(new Insets(10));
+
+        for (Map.Entry<String, Map<String, String>> group : metadata.getGroups().entrySet())
         {
-                if (snapFX == null) 
+            TitledPane pane = new TitledPane( group.getKey(), createPropertyGrid(group.getValue()));
+            pane.setExpanded(true);
+            container.getChildren().add(pane);
+        }
+
+        ScrollPane scrollPane = new ScrollPane(container);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+
+        return scrollPane;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Property Grid
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static GridPane createPropertyGrid(Map<String, String> values)
+    {
+        GridPane grid = new GridPane();
+
+        grid.setHgap(12);
+        grid.setVgap(6);
+        grid.setPadding(new Insets(10));
+
+        ColumnConstraints propertyColumn = new ColumnConstraints();
+        propertyColumn.setPrefWidth(220);
+        propertyColumn.setMinWidth(180);
+
+        ColumnConstraints valueColumn = new ColumnConstraints();
+        valueColumn.setHgrow(Priority.ALWAYS);
+
+        grid.getColumnConstraints().addAll(propertyColumn, valueColumn);
+
+        int row = 0;
+        int index = 0;
+
+        for (Map.Entry<String, String> entry : values.entrySet())
+        {
+                Label property = new Label(entry.getKey());
+                property.setStyle("-fx-font-weight: bold;");
+
+                Label value =  new Label(entry.getValue());
+                
+                grid.add(property, 0, row);
+                grid.add(value, 1, row);
+
+                if (index != values.size() - 1)
                 {
-                        show(null, metadata);
-                        return;
+                        row++;
+                        Separator separator = new Separator();
+                        GridPane.setColumnSpan(separator, 2);
+                        grid.add(separator, 0, row);
                 }
 
-                Node content = buildContent(metadata);
-                String title = "Metadata - " + new File(metadata.getFilePath()).getName();
-                DockNode dockNode = new DockNode("metadata-" + System.currentTimeMillis(), content, title);
-                dockNode.setCloseable(true);
-
-                // Float the node – SnapFX creates a floating, draggable, non‑modal window
-                snapFX.floatNode(dockNode);
+                row++;
+                index++;
         }
 
-        // ─── Shared content builder ──────────────────────────────────────────
-        public static Parent buildContent(MediaMetadata metadata) 
-        {
-                VBox container = new VBox(8);
-                container.setPadding(new Insets(10));
-
-                for (Map.Entry<String, Map<String, String>> group : metadata.getGroups().entrySet()) 
-                {
-                        TableView<Map.Entry<String, String>> table = createTable(group.getValue());
-                        TitledPane pane = new TitledPane(group.getKey(), table);
-                        pane.setExpanded(true); // expand all groups
-                        container.getChildren().add(pane);
-                }
-
-                ScrollPane scrollPane = new ScrollPane(container);
-                scrollPane.setFitToWidth(true);
-                scrollPane.setFitToHeight(false);
-                return scrollPane;
-        }
-
-        private static TableView<Map.Entry<String, String>> createTable(Map<String, String> values) 
-        {
-                TableView<Map.Entry<String, String>> table = new TableView<>();
-
-                TableColumn<Map.Entry<String, String>, String> keyCol = new TableColumn<>("Property");
-                keyCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getKey()));
-                keyCol.setPrefWidth(220);
-
-                TableColumn<Map.Entry<String, String>, String> valueCol = new TableColumn<>("Value");
-                valueCol.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getValue()));
-                valueCol.setPrefWidth(380);
-
-                table.getColumns().addAll(List.of(keyCol, valueCol));
-                table.getItems().addAll(values.entrySet());
-                table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-
-                int rows = values.size();
-                table.setPrefHeight(Math.min(300, 28 + rows * 26));
-                table.setMaxHeight(Double.MAX_VALUE);
-                return table;
-        }
+        return grid;
+    }
 }

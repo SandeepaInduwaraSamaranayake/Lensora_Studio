@@ -7,6 +7,7 @@ import com.lensora.lensorastudio.util.VideoMetadataExtractor;
 import javafx.concurrent.Task;
 
 import java.io.File;
+import java.util.function.Consumer;
 
 /**
  * Runs metadata extraction (metadata-extractor for images, ffprobe for
@@ -41,13 +42,12 @@ public final class MetadataExtractionService
         };
     }
 
-    public static void extractAsync(File file, java.util.function.Consumer<MediaMetadata> onResult,
-                                    java.util.function.Consumer<Throwable> onError)
+    public static void extractAsync(File file, Consumer<MediaMetadata> onResult, Consumer<Throwable> onError)
     {
         Task<MediaMetadata> task = createTask(file);
         task.setOnSucceeded(e -> onResult.accept(task.getValue()));
         task.setOnFailed(e -> onError.accept(task.getException()));
-        Thread thread = new Thread(task, "metadata-extraction");
+        Thread thread = new Thread(task, "Lensora-metadata-extraction");
         thread.setDaemon(true);
         thread.start();
     }

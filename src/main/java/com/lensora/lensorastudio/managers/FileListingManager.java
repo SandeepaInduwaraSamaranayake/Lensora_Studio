@@ -1,9 +1,11 @@
 package com.lensora.lensorastudio.managers;
 
+import com.lensora.lensorastudio.docking.WorkspaceDockingService;
 import com.lensora.lensorastudio.util.ClipboardFormats;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
+import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
@@ -23,8 +25,10 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
+
 import java.io.File;
 import java.io.IOException;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -34,7 +38,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.snapfx.SnapFX;
 
 /**
  * Owns the file listing: the details TableView, ListView, and icon/thumbnail
@@ -43,6 +54,8 @@ import java.util.function.BiConsumer;
  */
 public class FileListingManager
 {
+    private static final Logger logger = LoggerFactory.getLogger(FileListingManager.class);
+
     private final TableView<File> fileTable;
     private final TableColumn<File, String> colFileName, colFileType, colFileSize, colFileDimensions, colFileModified;
     private final Label lblCurrentFolder, lblFileCount;
@@ -55,11 +68,14 @@ public class FileListingManager
 
     private final Map<File, SimpleStringProperty> dimensionProps = new ConcurrentHashMap<>();
     private final Map<File, String> dimensionCache = new ConcurrentHashMap<>();
+    private final ExecutorService dimensionExecutor = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
+    private final Map<File, Future<?>> dimensionFutures = new ConcurrentHashMap<>();
     private BiConsumer<List<File>, Boolean> onExternalFilesDropped; // (files, isMove — always false here)
     private final ObjectProperty<File> selectedFileProperty = new SimpleObjectProperty<>();
 
     private File currentFolder;
     private Task<Void> searchTask;
+    private SnapFX snapFX;
 
     public FileListingManager(TableView<File> fileTable,
                             TableColumn<File, String> colFileName, TableColumn<File, String> colFileType,
@@ -101,6 +117,7 @@ public class FileListingManager
 
     /** Called by FileManager to wire external drop-into-current-folder behaviour. */
     public void setOnFilesDroppedIntoCurrentFolder(BiConsumer<List<File>, Boolean> callback) { this.onExternalFilesDropped = callback; }
+    public void setSnapFX(SnapFX snapFX) { this.snapFX = snapFX; }
     
 
     // ─── Listeners ──────────────────────────────────────────────────────────
@@ -120,6 +137,7 @@ public class FileListingManager
 
     public void loadFolder(File folder)
     {
+        cancelAllDimensionTasks();
         dimensionProps.clear();
         dimensionCache.clear();
 
@@ -192,6 +210,11 @@ public class FileListingManager
                 ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
     }
 
+    public void shutdownDimensionExecutor()
+    {
+        dimensionExecutor.shutdownNow();
+    }
+
     private void loadDimensions(File file, SimpleStringProperty prop)
     {
         if (!isImageFile(file) && !isVideoFile(file))
@@ -199,36 +222,95 @@ public class FileListingManager
             prop.set("");
             return;
         }
+
         String cached = dimensionCache.get(file);
+
         if (cached != null)
         {
             prop.set(cached);
             return;
         }
 
-        if (isImageFile(file)) 
+        // Cancel previous task for this file
+        Future<?> oldFuture = dimensionFutures.remove(file);
+
+        if (oldFuture != null && !oldFuture.isDone())
         {
-            Image img = new Image(file.toURI().toString(), true);
-            img.progressProperty().addListener((obs, old, progress) -> {
-                if (progress.doubleValue() >= 1.0)
-                {
-                    String dims = (int) img.getWidth() + "x" + (int) img.getHeight();
-                    dimensionCache.put(file, dims);
-                    Platform.runLater(() -> prop.set(dims));
-                }
-            });
-            img.exceptionProperty().addListener((obs, old, ex) -> {
-                if (ex != null)
-                {
-                    dimensionCache.put(file, "");
-                    Platform.runLater(() -> prop.set(""));
-                }
-            });
+            oldFuture.cancel(true);
         }
-        else if(isVideoFile(file))
+
+        Task<String> task = new Task<>()
         {
-            //todo
+            @Override
+            protected String call()
+            {
+                if (isCancelled() || Thread.currentThread().isInterrupted())
+                {
+                    return "";
+                }
+
+                if (isImageFile(file))
+                {
+                    return ImageMetadataExtractor.getDimensions(file);
+                }
+
+                if (isVideoFile(file))
+                {
+                    // TODO: implement VideoMetadataExtractor later
+                    return "";
+                }
+                return "";
+            }
+        };
+
+
+        task.setOnSucceeded(e ->
+        {
+            if (task.isCancelled())
+            {
+                dimensionFutures.remove(file);
+                return;
+            }
+
+            String dimensions = task.getValue();
+            dimensionCache.put(file, dimensions);
+            prop.set(dimensions);
+            dimensionFutures.remove(file);
+        });
+
+        task.setOnFailed(e ->
+        {
+            logger.warn( "Failed to load dimensions for {}", file.getName(), task.getException() );
+            dimensionCache.put(file, "");
+            prop.set("");
+            dimensionFutures.remove(file);
+        });
+
+        task.setOnCancelled(e ->
+        {
+            dimensionFutures.remove(file);
+        });
+
+        Future<?> future = dimensionExecutor.submit(task);
+        dimensionFutures.put(file, future);
+    }
+
+
+    /**
+     * Cancel all pending dimension loading tasks.
+     * Calling before loading a new folder.
+     */
+    private void cancelAllDimensionTasks()
+    {
+        for (Future<?> future : dimensionFutures.values())
+        {
+            if (!future.isDone())
+            {
+                future.cancel(true);
+            }
         }
+
+        dimensionFutures.clear();
     }
 
     // ─── View switching ─────────────────────────────────────────────────────
@@ -370,8 +452,7 @@ public class FileListingManager
     private boolean isImageFile(File file)
     {
         String ext = getFileExtension(file);
-        return ext != null && (ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png")
-                || ext.equals("gif") || ext.equals("bmp") || ext.equals("tiff"));
+        return ext != null && (ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("gif") || ext.equals("bmp") || ext.equals("tiff"));
     }
 
     private boolean isVideoFile(File file)
@@ -393,7 +474,8 @@ public class FileListingManager
     {
         fileSearchField.textProperty().addListener((obs, old, newVal) -> {
             if (searchTask != null) searchTask.cancel();
-            searchTask = new Task<>() {
+            searchTask = new Task<>() 
+            {
                 @Override
                 protected Void call() {
                     if (newVal == null || newVal.isEmpty())
@@ -456,20 +538,24 @@ public class FileListingManager
 
     private void setupDragSource(Node source)
     {
-        source.setOnDragDetected(event -> {
-            List<File> selected = getSelectedFiles();
-            if (selected.isEmpty()) return;
-
-            Dragboard db = source.startDragAndDrop(TransferMode.MOVE);
-            ClipboardContent content = new ClipboardContent();
-            content.putFiles(selected);
-            content.put(ClipboardFormats.INTERNAL_DRAG, true);
-            db.setContent(content);
-            event.consume();
+        fileTable.setRowFactory(tv -> {
+            TableRow<File> row = new TableRow<>();
+            row.setOnDragDetected(e -> {
+                if (row.isEmpty()) return;
+                List<File> selected = fileTable.getSelectionModel().getSelectedItems();
+                if (selected.isEmpty()) return;
+                Dragboard db = row.startDragAndDrop(TransferMode.COPY_OR_MOVE);
+                ClipboardContent content = new ClipboardContent();
+                content.putFiles(selected);
+                content.put(ClipboardFormats.INTERNAL_DRAG, true);
+                db.setContent(content);
+                e.consume();
+            });
+            return row;
         });
     }
 
-    private void setupDropTarget(javafx.scene.Node target)
+    private void setupDropTarget(Node target)
     {
         target.setOnDragOver(event -> {
             if (event.getGestureSource() != target && event.getDragboard().hasFiles())
@@ -502,5 +588,4 @@ public class FileListingManager
             event.consume();
         });
     }
-
 }

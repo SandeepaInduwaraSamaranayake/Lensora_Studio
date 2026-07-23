@@ -3,7 +3,6 @@ package com.lensora.lensorastudio.managers;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
 
-import javafx.concurrent.Task;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -343,8 +342,7 @@ public class FolderTreeManager
             cell.setStyle("");
             event.setDropCompleted(success);
             event.consume();
-
-        }); 
+        });
     }
 
     private void setupTreeSelectionListener()

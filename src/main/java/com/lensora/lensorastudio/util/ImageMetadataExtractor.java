@@ -5,8 +5,14 @@ import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
-
+import com.drew.metadata.bmp.BmpHeaderDirectory;
+import com.drew.metadata.exif.ExifDirectoryBase;
+import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.drew.metadata.jpeg.JpegDirectory;
+import com.drew.metadata.png.PngDirectory;
 import com.lensora.lensorastudio.model.MediaMetadata;
+
+import javafx.scene.image.Image;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,10 +78,10 @@ public final class ImageMetadataExtractor
     public static boolean isSupportedImage(File file)
     {
         String ext = getExtension(file);
-        return ext != null && (ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png")
-                || ext.equals("tif") || ext.equals("tiff") || ext.equals("heic") || ext.equals("heif")
-                || ext.equals("webp") || ext.equals("bmp") || ext.equals("gif")
-                || ext.equals("cr2") || ext.equals("nef") || ext.equals("arw") || ext.equals("dng"));
+        return ext != null && ( ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png")
+                                || ext.equals("tif") || ext.equals("tiff") || ext.equals("heic") || ext.equals("heif")
+                                || ext.equals("webp") || ext.equals("bmp") || ext.equals("gif")
+                                || ext.equals("cr2") || ext.equals("nef") || ext.equals("arw") || ext.equals("dng"));
     }
 
     private static String getExtension(File file)
@@ -83,5 +89,75 @@ public final class ImageMetadataExtractor
         String name = file.getName();
         int idx = name.lastIndexOf('.');
         return idx > 0 ? name.substring(idx + 1).toLowerCase() : null;
+    }
+
+    public static String getDimensions(File imageFile)
+    {
+        try
+        {
+            Metadata metadata = ImageMetadataReader.readMetadata(imageFile);
+            ExifSubIFDDirectory exif = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+
+            if (exif != null)
+            {
+                Integer width = exif.getInteger(ExifDirectoryBase.TAG_EXIF_IMAGE_WIDTH);
+                Integer height = exif.getInteger(ExifDirectoryBase.TAG_EXIF_IMAGE_HEIGHT);
+
+                if (width != null && height != null) { return width + "x" + height; }
+            }
+
+            JpegDirectory jpeg = metadata.getFirstDirectoryOfType(JpegDirectory.class);
+
+            if (jpeg != null)
+            {
+                Integer width = jpeg.getInteger(JpegDirectory.TAG_IMAGE_WIDTH);
+                Integer height = jpeg.getInteger(JpegDirectory.TAG_IMAGE_HEIGHT);
+
+                if (width != null && height != null) { return width + "x" + height; }
+            }
+
+            PngDirectory png = metadata.getFirstDirectoryOfType(PngDirectory.class);
+
+            if (png != null)
+            {
+                Integer width = png.getInteger(PngDirectory.TAG_IMAGE_WIDTH);
+                Integer height = png.getInteger(PngDirectory.TAG_IMAGE_HEIGHT);
+
+                if (width != null && height != null) { return width + "x" + height; }
+            }
+
+            BmpHeaderDirectory bmp = metadata.getFirstDirectoryOfType(BmpHeaderDirectory.class);
+
+            if (bmp != null)
+            {
+                Integer width = bmp.getInteger(BmpHeaderDirectory.TAG_IMAGE_WIDTH);
+                Integer height = bmp.getInteger(BmpHeaderDirectory.TAG_IMAGE_HEIGHT);
+
+                if (width != null && height != null) { return width + "x" + height; }
+            }
+
+            // Fallback (if metadata does not contain dimensions)
+            getDimensionsFromImage(imageFile);
+
+        }
+        catch (ImageProcessingException | IOException e)
+        {
+            logger.warn("Failed to read dimensions for {}", imageFile.getName(), e);
+        }
+
+        return "";
+    }
+
+    private static String getDimensionsFromImage(File file)
+    {
+        try
+        {
+            Image image = new Image( file.toURI().toString(),true);
+            return (int) image.getWidth() + "x" + (int) image.getHeight();
+        }
+        catch (Exception e)
+        {
+            return "";
+        }
     }
 }
