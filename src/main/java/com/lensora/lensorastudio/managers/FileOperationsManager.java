@@ -9,6 +9,7 @@ import com.lensora.lensorastudio.util.MetadataPanel;
 
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -26,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +52,7 @@ public class FileOperationsManager
     private final Runnable refreshCallback;
 
     private Stage ownerStage;
+    private BooleanBinding multiSelectBinding;
     private FileCopyTask currentCopyTask;
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
@@ -58,7 +61,7 @@ public class FileOperationsManager
                                 MenuItem ctxFileMove, MenuItem ctxFileDelete, MenuItem ctxFileShowInExplorer, MenuItem ctxFileProperties,
                                 HBox progressContainer, ProgressBar progressBar,
                                 Label progressLabel, Label progressSpeedLabel, Label progressEtaLabel,
-                                Supplier<File> selectedFileSupplier,  Supplier<List<File>> selectedFilesSupplier, Runnable refreshCallback)
+                                Supplier<File> selectedFileSupplier,  Supplier<List<File>> selectedFilesSupplier, Runnable refreshCallback, BooleanBinding multiSelectBinding)
     {
         this.ctxFileOpen = ctxFileOpen;
         this.ctxFileRename = ctxFileRename;
@@ -76,6 +79,7 @@ public class FileOperationsManager
         this.selectedFileSupplier = selectedFileSupplier;
         this.selectedFilesSupplier = selectedFilesSupplier;
         this.refreshCallback = refreshCallback;
+        this.multiSelectBinding = multiSelectBinding;
 
         setupContextMenu();
     }
@@ -89,22 +93,31 @@ public class FileOperationsManager
 
     private void setupContextMenu()
     {
-        ctxFileOpen.setOnAction(e -> openSelectedFile());
+        // Disable menuitems based on selcted file count
+        ctxFileRename.disableProperty().bind(multiSelectBinding);
+        ctxFileShowInExplorer.disableProperty().bind(multiSelectBinding);
+        ctxFileProperties.disableProperty().bind(multiSelectBinding);
+
+        // setup actions
+        ctxFileOpen.setOnAction(e -> openSelectedFiles());
         ctxFileRename.setOnAction(e -> renameSelectedFile());
         ctxFileCopy.setOnAction(e -> copySelectedFiles());
         ctxFileCut.setOnAction(e -> cutSelectedFiles());
-        ctxFileMove.setOnAction(e -> moveSelectedFile());
-        ctxFileDelete.setOnAction(e -> deleteSelectedFile());
+        ctxFileMove.setOnAction(e -> moveSelectedFiles());
+        ctxFileDelete.setOnAction(e -> deleteSelectedFiles());
         ctxFileShowInExplorer.setOnAction(e -> showInExplorer());
         ctxFileProperties.setOnAction(e -> showMetadata());
     }
 
-    private void openSelectedFile()
+    private void openSelectedFiles()
     {
-        File file = selectedFileSupplier.get();
-        if (file == null) return;
-        try { Desktop.getDesktop().open(file); }
-        catch (IOException ex) { ErrorHandler.show(null, "Could not open file", ex); }
+        List<File> files = selectedFilesSupplier.get();
+        if (files.isEmpty()) return;
+        for (File file : files) 
+        {
+            try { Desktop.getDesktop().open(file); }
+            catch (IOException ex) { ErrorHandler.show(null, "Could not open file", ex); }
+        }
     }
 
     private void renameSelectedFile()
@@ -124,36 +137,50 @@ public class FileOperationsManager
         });
     }
 
-    private void moveSelectedFile()
+    private void moveSelectedFiles()
     {
-        File file = selectedFileSupplier.get();
-        if (file == null) return;
+        List<File> files = selectedFilesSupplier.get();
+        if (files.isEmpty()) return;
+
         DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setInitialDirectory(file.getParentFile());
+        File initialDir = files.get(0).getParentFile();
+        chooser.setInitialDirectory(initialDir);
         chooser.setTitle("Select Destination Folder");
         File destDir = chooser.showDialog(ownerStage);
         if (destDir == null) return;
-        try
+        for (File file : files) 
         {
-            Files.move(file.toPath(), new File(destDir, file.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
-            refreshCallback.run();
+            try
+            {
+                Files.move(file.toPath(), new File(destDir, file.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+            }
+            catch (IOException ex) { ErrorHandler.show(null, "Move failed for " + file.getName(), ex); }
         }
-        catch (IOException ex) { ErrorHandler.show(null, "Move failed", ex); }
+        refreshCallback.run();
     }
 
-    private void deleteSelectedFile()
+    private void deleteSelectedFiles()
     {
-        File file = selectedFileSupplier.get();
-        if (file == null) return;
+        List<File> files = selectedFilesSupplier.get();
+        if (files.isEmpty()) return;
+        // Build a confirmation message
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                String fileList = files.stream()
+                .map(File::getName)
+                .collect(Collectors.joining("\n• ", "• ", ""));
         confirm.setTitle("Delete File");
-        confirm.setContentText("Are you sure you want to delete " + file.getName() + "?");
+        confirm.setHeaderText("Are you sure you want to delete the following " + files.size() + " files?");
+        confirm.setContentText(fileList);
         confirm.showAndWait().ifPresent(response -> {
-            if (response == ButtonType.OK)
+            if (response != ButtonType.OK) return;
+            for (File file : files) 
             {
-                if (file.delete()) refreshCallback.run();
-                else Dialogs.showInfo(null, "Delete", null, "Failed to delete file.");
+                if (!file.delete())
+                {
+                    Dialogs.showInfo(null, "Delete", null, "Failed to delete " + file.getName());
+                }
             }
+            refreshCallback.run();
         });
     }
 

@@ -1,13 +1,15 @@
 package com.lensora.lensorastudio.managers;
 
-import com.lensora.lensorastudio.docking.WorkspaceDockingService;
 import com.lensora.lensorastudio.util.ClipboardFormats;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
+import com.lensora.lensorastudio.util.ImageCache;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -131,6 +133,11 @@ public class FileListingManager
     private void setupSelectionMode() 
     {
         fileTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+    }
+
+    public BooleanBinding moreThanOneSelectedBinding() 
+    {
+        return Bindings.size(fileTable.getSelectionModel().getSelectedItems()).isNotEqualTo(1);
     }
 
     // ─── Loading ────────────────────────────────────────────────────────────
@@ -437,7 +444,7 @@ public class FileListingManager
     {
         Task<Image> task = new Task<>() {
             @Override
-            protected Image call() { return new Image(file.toURI().toString(), 80, 80, true, true); }
+            protected Image call() { return  ImageCache.getOrLoad(file, 80, 80);}
         };
         task.setOnSucceeded(e -> target.setImage(task.getValue()));
         new Thread(task).start();
@@ -583,7 +590,6 @@ public class FileListingManager
                     success = true;
                 }
             }
-
             event.setDropCompleted(success);
             event.consume();
         });

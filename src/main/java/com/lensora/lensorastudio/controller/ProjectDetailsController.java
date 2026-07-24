@@ -1,21 +1,37 @@
 package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.model.ProjectNote;
+import com.lensora.lensorastudio.repository.ProjectNoteRepository;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.NoteEditDialog;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
+import java.util.List;
 import java.util.function.Consumer;
+import java.time.format.DateTimeFormatter;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ProjectDetailsController
 {
+    private static final Logger logger = LoggerFactory.getLogger(ProjectDetailsController.class);
+
     // Overview tab
     @FXML private TextField detProjectNumber, detClientName, detClientPhone, detClientEmail,
             detEventType, detEventDate, detDueDate, detStatus, detPackage, detProjectPath,
@@ -41,6 +57,8 @@ public class ProjectDetailsController
     private ProjectsViewModel viewModel;
     private Consumer<String> onProjectPathChanged;
 
+    private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a");
+
     public void bind(ProjectsViewModel viewModel)
     {
         this.viewModel = viewModel;
@@ -51,9 +69,9 @@ public class ProjectDetailsController
         btnDetailOpenFolder.setOnAction(e -> openProjectFolder());
 
         // Not implemented yet — wired so the buttons don't silently do nothing.
-        btnDetailEdit.setOnAction(e -> { /* TODO: open edit dialog */ });
+        btnDetailEdit.setOnAction(e -> { });
         btnDetailArchive.setOnAction(e -> { /* TODO: archive project */ });
-        btnAddNote.setOnAction(e -> { /* TODO: append a note card to notesContainer */ });
+        btnAddNote.setOnAction(e -> {  addNote(); });
         btnAddReminder.setOnAction(e -> { /* TODO: insert into reminder table */ });
         btnAddPayment.setOnAction(e -> { /* TODO: insert into payment table */ });
 
@@ -88,6 +106,8 @@ public class ProjectDetailsController
         progressStepper.getChildren().add(statusLabel);
 
         if (onProjectPathChanged != null) onProjectPathChanged.accept(project.getProjectPath());
+        // load notes when the project is loading
+        loadNotes(project.getProjectId());
     }
 
     private void clearFields()
@@ -118,5 +138,144 @@ public class ProjectDetailsController
         {
             ErrorHandler.show(null, "Could not open folder", ex);
         }
+    }
+
+
+    // ─── Notes ──────────────────────────────────────────────────────────────
+
+    private void loadNotes(int projectId)
+    {
+        notesContainer.getChildren().clear();
+
+        try
+        {
+            List<ProjectNote> notes = ProjectNoteRepository.findByProject(projectId);
+            logger.info("Loading notes for project ID: {}", projectId);
+            if (notes.isEmpty())
+            {
+                Label empty = new Label("No notes yet. Click \"+ Add Note\" to create one.");
+                notesContainer.getChildren().add(empty);
+                return;
+            }
+
+            for (ProjectNote note : notes)
+            {
+                notesContainer.getChildren().add(buildNoteCard(note));
+            }
+        }
+        catch (SQLException e)
+        {
+            logger.error("Failed to load notes for project {}", projectId, e);
+            ErrorHandler.show(null, "Failed to load notes", e);
+        }
+    }
+
+    private VBox buildNoteCard(ProjectNote note)
+    {
+        Label titleLabel = new Label(
+                note.getNoteTitle() != null && !note.getNoteTitle().isBlank()
+                        ? note.getNoteTitle()
+                        : "(Untitled Note)");
+        titleLabel.setStyle("-fx-font-weight: bold;");
+
+        Label dateLabel = new Label(note.getCreatedAt() != null ? note.getCreatedAt().format(DATE_TIME_FORMAT) : "");
+        dateLabel.setStyle("-fx-opacity: 0.6; -fx-font-size: 11px;");
+
+        Label contentLabel = new Label(note.getNoteContent());
+        contentLabel.setWrapText(true);
+
+        Button editBtn = new Button("Edit");
+        editBtn.setOnAction(e -> editNote(note));
+
+        Button deleteBtn = new Button("Delete");
+        deleteBtn.setOnAction(e -> deleteNote(note));
+
+        HBox header = new HBox(8, titleLabel, spacer(), dateLabel);
+        header.setAlignment(Pos.CENTER_LEFT);
+
+        HBox actions = new HBox(6, editBtn, deleteBtn);
+        actions.setAlignment(Pos.CENTER_RIGHT);
+
+        VBox card = new VBox(6, header, contentLabel, actions);
+        card.setPadding(new Insets(10));
+        card.setStyle("""
+                -fx-background-color: -color-bg-subtle;
+                -fx-background-radius: 6;
+                -fx-border-color: -color-border-default;
+                -fx-border-radius: 6;
+                """);
+
+        return card;
+    }
+
+    private Region spacer()
+    {
+        Region region = new Region();
+        HBox.setHgrow(region, Priority.ALWAYS);
+        return region;
+    }
+
+    private void addNote()
+    {
+        Project current = viewModel.getSelectedProject();
+        if (current == null) return;
+
+        NoteEditDialog.show(notesContainer.getScene().getWindow(), current.getProjectId(), null)
+                .ifPresent(note -> {
+                    try
+                    {
+                        ProjectNoteRepository.insert(note);
+                        loadNotes(current.getProjectId());
+                    }
+                    catch (SQLException e)
+                    {
+                        logger.error("Failed to save note", e);
+                        ErrorHandler.show(null, "Failed to save note", e);
+                    }
+                });
+    }
+
+    private void editNote(ProjectNote note)
+    {
+        Project current = viewModel.getSelectedProject();
+        if (current == null) return;
+
+        NoteEditDialog.show(notesContainer.getScene().getWindow(), current.getProjectId(), note)
+                .ifPresent(updated -> {
+                    try
+                    {
+                        ProjectNoteRepository.update(updated);
+                        loadNotes(current.getProjectId());
+                    }
+                    catch (SQLException e)
+                    {
+                        logger.error("Failed to update note", e);
+                        ErrorHandler.show(null, "Failed to update note", e);
+                    }
+                });
+    }
+
+    private void deleteNote(ProjectNote note)
+    {
+        Project current = viewModel.getSelectedProject();
+        if (current == null) return;
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Delete Note");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Delete this note? This cannot be undone.");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+            try
+            {
+                ProjectNoteRepository.delete(note.getNoteId());
+                loadNotes(current.getProjectId());
+            }
+            catch (SQLException e)
+            {
+                logger.error("Failed to delete note", e);
+                ErrorHandler.show(null, "Failed to delete note", e);
+            }
+        });
     }
 }

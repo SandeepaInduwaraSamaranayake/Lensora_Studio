@@ -27,7 +27,7 @@
             <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;"/>
             <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
             <Pane HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="fileSearchField" promptText="Search..." style="-fx-padding: 2 6;"/>
+            <TextField fx:id="fileSearchField" promptText="Search (ALT + F)" style="-fx-padding: 2 6;"/>
             <Separator orientation="VERTICAL"/>
             <HBox spacing="2">
                 <ToggleButton fx:id="btnDetails" selected="true">

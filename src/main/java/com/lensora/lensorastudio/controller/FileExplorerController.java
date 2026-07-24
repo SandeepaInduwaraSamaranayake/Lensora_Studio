@@ -2,11 +2,14 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.managers.FileManager;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -37,6 +40,14 @@ public class FileExplorerController
     private FileManager fileManager;
     private final ToggleGroup viewToggleGroup = new ToggleGroup();
 
+    private KeyCombination fileCopyAccel                = new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN);
+    private KeyCombination fileDeleteAccel              = new KeyCodeCombination(KeyCode.DELETE, KeyCombination.SHIFT_DOWN);
+    private KeyCombination fileMoveAccel                = new KeyCodeCombination(KeyCode.M, KeyCombination.CONTROL_DOWN);
+    private KeyCombination fileCutAccel                 = new KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN);
+    private KeyCombination fileRenameAccel              = new KeyCodeCombination(KeyCode.R, KeyCombination.CONTROL_DOWN);
+    private KeyCombination fileOpenExplorerAccel        = new KeyCodeCombination(KeyCode.E, KeyCombination.CONTROL_DOWN);
+    private KeyCombination filePropertiesAccel          = new KeyCodeCombination(KeyCode.D, KeyCombination.CONTROL_DOWN);
+
     @FXML
     public void initialize()
     {
@@ -53,7 +64,9 @@ public class FileExplorerController
     public void wireProgressUi(HBox progressContainer, ProgressBar progressBar,
                                 Label progressLabel, Label progressSpeedLabel, Label progressEtaLabel)
     {
-        fileManager = new FileManager(
+        BooleanBinding multiSelectBinding = Bindings.size(fileTable.getSelectionModel().getSelectedItems()).isNotEqualTo(1);
+        fileManager = new FileManager
+        (
                 folderTree, fileTable,
                 colFileName, colFileType, colFileSize, colFileDimensions, colFileModified,
                 lblCurrentFolder, lblFileCount, lblFolderHeader,
@@ -61,21 +74,51 @@ public class FileExplorerController
                 ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer,
                 ctxFileProperties, breadcrumbContainer, btnFolderBack, btnFolderForward, fileSearchField,
                 viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
-                fileListView, iconScrollPane, iconFlowPane
+                fileListView, iconScrollPane, iconFlowPane,  multiSelectBinding
         );
+
+        // Listen for selection changes
+        multiSelectBinding.addListener((obs, oldVal, isMulti) -> {
+            updateKeyboardAccelerators(isMulti);
+        });
+
+        // Initial key shortcut 
+        updateKeyboardAccelerators(multiSelectBinding.get());
     }
 
-        private void setupKeyboardShortcuts()
-        {
-            if (ctxFileCopy != null) 
-                ctxFileCopy.setAccelerator(new KeyCodeCombination(KeyCode.C, KeyCombination.CONTROL_DOWN));
-            if (ctxFileDelete != null)
-                ctxFileDelete.setAccelerator(new KeyCodeCombination(KeyCode.DELETE, KeyCombination.SHIFT_DOWN));
-            if (ctxFileMove != null)
-                ctxFileMove.setAccelerator(new KeyCodeCombination(KeyCode.M, KeyCombination.CONTROL_DOWN));
-            if (ctxFileCut != null)
-                ctxFileCut.setAccelerator(new KeyCodeCombination(KeyCode.X, KeyCombination.CONTROL_DOWN));
-        }
+    private void setupKeyboardShortcuts()
+    {
+        if (ctxFileCopy != null)
+            ctxFileCopy.setAccelerator(fileCopyAccel);
+        if (ctxFileDelete != null)
+            ctxFileDelete.setAccelerator(fileDeleteAccel);
+        if (ctxFileMove != null)
+            ctxFileMove.setAccelerator(fileMoveAccel);
+        if (ctxFileCut != null)
+            ctxFileCut.setAccelerator(fileCutAccel);
+
+        fileSearchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null)
+            {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
+                    if (e.isAltDown() && e.getCode() == KeyCode.F)
+                    {
+                        fileSearchField.requestFocus();
+                        fileSearchField.selectAll();
+                        e.consume();
+                    }
+                });
+            }
+        });
+    }
+
+    private void updateKeyboardAccelerators(boolean multipleSelected) 
+    {
+        ctxFileRename.setAccelerator(multipleSelected ? null : fileRenameAccel);
+        ctxFileShowInExplorer.setAccelerator(multipleSelected ? null : fileOpenExplorerAccel);
+        ctxFileProperties.setAccelerator(multipleSelected ? null : filePropertiesAccel);
+    }
+
 
 
     public void setStage(Stage stage)

@@ -27,6 +27,7 @@ public class AppSettings
     private static final String     KEY_SEARCH_DEBOUNCE_MS                          = "advanced.search_debounce_ms";
     private static final String     KEY_DOCK_LAYOUT                                 = "ui.dock_layout";
     private static final String     KEY_FFPROBE_PATH                                = "advanced.ffprobe_path";
+    private static final String     KEY_SHOW_METADATA_PREVIEW                       = "metadata.show_preview";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -41,6 +42,7 @@ public class AppSettings
     public static final boolean     DEFAULT_OPEN_LAST_PROJECT                       = true;
     public static final int         DEFAULT_SEARCH_DEBOUNCE_MS                      = 50;
     public static final String      DEFAULT_FFPROBE_PATH                            = ""; // empty = rely on system PATH
+    public static final boolean     DEFAULT_SHOW_METADATA_PREVIEW                   = true;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -221,4 +223,13 @@ public class AppSettings
         prefs.put(KEY_FFPROBE_PATH, path);
     }
 
+    public boolean getShowMetadataImagePreview() 
+    {
+        return prefs.getBoolean(KEY_SHOW_METADATA_PREVIEW, DEFAULT_SHOW_METADATA_PREVIEW);
+    }
+
+    public void setShowMetadataImagePreview(boolean show) 
+    {
+        prefs.putBoolean(KEY_SHOW_METADATA_PREVIEW, show);
+    }
 }

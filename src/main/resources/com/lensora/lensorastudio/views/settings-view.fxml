@@ -168,6 +168,7 @@
                                  </HBox>
                                  <!-- Placeholder for template list - can be replaced with TableView later -->
                                  <Label style="-fx-font-style: italic; -fx-text-fill: #888;" text="(Template management UI will be implemented here)" />
+                                 <CheckBox fx:id="showMetadataImagePreviewCheck" text="Show image preview in metadata panel" />
                               </VBox>
                         </content>
                      </Tab>

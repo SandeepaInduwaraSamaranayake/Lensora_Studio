@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.managers;
 
+import javafx.beans.binding.BooleanBinding;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
@@ -62,7 +63,8 @@ public class FileManager
                         ToggleButton btnThumbnails,
                         ListView<File> fileListView,
                         ScrollPane iconScrollPane,
-                        FlowPane iconFlowPane)
+                        FlowPane iconFlowPane,
+                        BooleanBinding multiSelectBinding)
     {
         this.folderTreeManager = new FolderTreeManager(folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader);
 
@@ -77,7 +79,7 @@ public class FileManager
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
                 fileListingManager::getSelectedFile,
                 fileListingManager::getSelectedFiles,
-                folderTreeManager::refreshSelected);
+                folderTreeManager::refreshSelected, multiSelectBinding);
 
         // Selecting a folder in the tree loads its files into the listing.
         folderTreeManager.setOnFolderSelected(fileListingManager::loadFolder);

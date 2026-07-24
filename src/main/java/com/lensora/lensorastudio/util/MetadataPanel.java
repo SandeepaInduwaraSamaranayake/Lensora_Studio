@@ -1,6 +1,10 @@
 package com.lensora.lensorastudio.util;
 
+import com.lensora.lensorastudio.managers.FileListingManager;
 import com.lensora.lensorastudio.model.MediaMetadata;
+import com.lensora.lensorastudio.services.AppSettings;
+
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -8,13 +12,20 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TitledPane;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.snapfx.SnapFX;
 import org.snapfx.model.DockNode;
 
@@ -23,6 +34,8 @@ import java.util.Map;
 
 public final class MetadataPanel
 {
+    private static final Logger logger = LoggerFactory.getLogger(MetadataPanel.class);
+
     private MetadataPanel() {}
 
     // ─────────────────────────────────────────────────────────────────────
@@ -71,16 +84,31 @@ public final class MetadataPanel
         VBox container = new VBox(8);
         container.setPadding(new Insets(10));
 
+        ScrollPane scrollPane = new ScrollPane(container);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(false);
+
+        // Preview for images
+        if (AppSettings.getInstance().getShowMetadataImagePreview() && metadata.getType() == MediaMetadata.MediaType.IMAGE) 
+        {
+            try 
+            {
+                TitledPane previewPane = new TitledPane("Preview", createPreview(new File(metadata.getFilePath()), scrollPane));
+                previewPane.setExpanded(true);
+                container.getChildren().add(previewPane);
+            }
+            catch (Exception e) 
+            {
+                logger.info("Image preview is not available right now. Ignoring ...");
+            }
+        }
+
         for (Map.Entry<String, Map<String, String>> group : metadata.getGroups().entrySet())
         {
             TitledPane pane = new TitledPane( group.getKey(), createPropertyGrid(group.getValue()));
             pane.setExpanded(true);
             container.getChildren().add(pane);
         }
-
-        ScrollPane scrollPane = new ScrollPane(container);
-        scrollPane.setFitToWidth(true);
-        scrollPane.setFitToHeight(false);
 
         return scrollPane;
     }
@@ -99,7 +127,8 @@ public final class MetadataPanel
 
         ColumnConstraints propertyColumn = new ColumnConstraints();
         propertyColumn.setPrefWidth(220);
-        propertyColumn.setMinWidth(180);
+        propertyColumn.setMinWidth(Region.USE_PREF_SIZE);
+        propertyColumn.setHgrow(Priority.NEVER);
 
         ColumnConstraints valueColumn = new ColumnConstraints();
         valueColumn.setHgrow(Priority.ALWAYS);
@@ -133,4 +162,44 @@ public final class MetadataPanel
 
         return grid;
     }
+
+    private static Parent createPreview(File file, ScrollPane scrollPane)
+    {
+        ImageView imageView = new ImageView();
+        imageView.setPreserveRatio(true);
+        imageView.setSmooth(true);
+        
+
+        StackPane pane = new StackPane(imageView);
+        pane.setPadding(new Insets(10));
+        
+        // Load a cached, background-loaded image sized to a sensible max -
+        // actual on-screen width is controlled by the binding below, not by
+        // the loaded image's native resolution.
+        Image cachedImage = ImageCache.getOrLoad(file, 600, 0);
+        imageView.setImage(cachedImage);
+
+        // Bind to the ScrollPane's actual VIEWPORT width, not the
+        // StackPane's own layout width. The container VBox's width can be
+        // forced wider than the viewport by sibling content (e.g. the
+        // property grids' fixed-width columns), which triggers ScrollPane's
+        // horizontal scrollbar instead of shrinking further. The viewport
+        // itself, however, always reflects the real visible width — so
+        // binding to it lets the image keep shrinking even after the
+        // scrollbar appears, instead of getting stuck at the content's
+        // forced minimum width.
+
+        imageView.fitWidthProperty().bind(Bindings.createDoubleBinding(
+                () -> {
+                    double viewportWidth = scrollPane.getViewportBounds() != null
+                            ? scrollPane.getViewportBounds().getWidth()
+                            : scrollPane.getWidth();
+                    return Math.max(50, viewportWidth - 40); // 40 = left+right padding
+                },
+                scrollPane.viewportBoundsProperty()
+        ));
+
+        return pane;
+    }
+
 }

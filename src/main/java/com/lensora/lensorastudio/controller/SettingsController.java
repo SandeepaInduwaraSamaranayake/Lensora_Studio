@@ -56,7 +56,8 @@ public class SettingsController implements DialogController
     private CheckBox                        openOnStartupCheck, 
                                             openLastProjectCheck, 
                                             clearSearchOnProjectSelectCheck,
-                                            resetStatusOnClearSearchCheck;
+                                            resetStatusOnClearSearchCheck,
+                                            showMetadataImagePreviewCheck;
 
     private final AppSettings settings = AppSettings.getInstance();
 
@@ -72,6 +73,7 @@ public class SettingsController implements DialogController
     private boolean             tempOpenLastProject;
     private boolean             tempResetStatusOnClearSearch;
     private int                 tempSearchDebounce;
+    private boolean             tempShowImagePreviewInMetadata;
 
     // ----------------------------- DialogController ---------------------------
     @Override
@@ -97,15 +99,16 @@ public class SettingsController implements DialogController
     private void loadCurrentSettingsIntoTemp() 
     {
         // Load current settings into temp variables
-        tempTheme                    = settings.getTheme();
-        tempFontSize                 = settings.getFontSize();
-        tempProjectRoot              = settings.getDefaultProjectRoot();
-        tempLogDir                   = settings.getDefaultLogDir();
-        tempOpenOnStartup            = settings.getOpenOnStartup();
-        tempOpenLastProject          = settings.getOpenLastProject();
-        tempClearSearchOnSelect      = settings.getClearSearchOnProjectSelect();
-        tempResetStatusOnClearSearch = settings.getResetStatusOnClearSearch();
-        tempSearchDebounce           = settings.getSearchDebounceMs();
+        tempTheme                       = settings.getTheme();
+        tempFontSize                    = settings.getFontSize();
+        tempProjectRoot                 = settings.getDefaultProjectRoot();
+        tempLogDir                      = settings.getDefaultLogDir();
+        tempOpenOnStartup               = settings.getOpenOnStartup();
+        tempOpenLastProject             = settings.getOpenLastProject();
+        tempClearSearchOnSelect         = settings.getClearSearchOnProjectSelect();
+        tempResetStatusOnClearSearch    = settings.getResetStatusOnClearSearch();
+        tempSearchDebounce              = settings.getSearchDebounceMs();
+        tempShowImagePreviewInMetadata  = settings.getShowMetadataImagePreview();
     }
 
     private void setupThemeCombo() 
@@ -169,6 +172,9 @@ public class SettingsController implements DialogController
 
         // Clear Search On Project Select
         clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
+
+        // set image preview in metedata
+        showMetadataImagePreviewCheck.setSelected(tempShowImagePreviewInMetadata);
 
         // Open Last Project
         openLastProjectCheck.setSelected(tempOpenLastProject);
@@ -303,6 +309,9 @@ public class SettingsController implements DialogController
 
         // Reset status on clear search toggle
         settings.setResetStatusOnClearSearch(resetStatusOnClearSearchCheck.isSelected());
+
+        // apply show imeage preview in metadata section
+        settings.setShowMetadataImagePreview(showMetadataImagePreviewCheck.isSelected());
     }
 
     private void saveAndClose()
@@ -336,6 +345,7 @@ public class SettingsController implements DialogController
         tempClearSearchOnSelect          = AppSettings.DEFAULT_CLEAR_SEARCH_ON_PROJECT_SELECT;
         tempResetStatusOnClearSearch     = AppSettings.DEFAULT_RESET_STATUS_ON_CLEAR_SEARCH;
         tempSearchDebounce               = AppSettings.DEFAULT_SEARCH_DEBOUNCE_MS;
+        tempShowImagePreviewInMetadata   = AppSettings.DEFAULT_SHOW_METADATA_PREVIEW;
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -354,6 +364,9 @@ public class SettingsController implements DialogController
 
         // Open last project
         openLastProjectCheck.setSelected(tempOpenLastProject);
+
+        // Reset show metadata preview
+        showMetadataImagePreviewCheck.setSelected(tempShowImagePreviewInMetadata);
 
         // Reset clear search on project select
         clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);

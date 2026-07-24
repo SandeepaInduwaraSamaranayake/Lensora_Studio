@@ -27,6 +27,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
@@ -257,7 +258,7 @@ public class MainController
         projectSearchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null)
             {
-                newScene.setOnKeyPressed(e -> {
+                newScene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
                     if (e.isControlDown() && e.getCode() == KeyCode.F)
                     {
                         projectSearchField.requestFocus();
