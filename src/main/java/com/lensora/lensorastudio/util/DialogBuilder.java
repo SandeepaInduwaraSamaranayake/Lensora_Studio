@@ -39,7 +39,7 @@ public class DialogBuilder
         this.owner = owner;
     }
 
-    public static DialogBuilder of(URL fxmlUrl, String title, Stage owner) 
+    public static DialogBuilder of(URL fxmlUrl, String title, Stage owner)
     {
         return new DialogBuilder(fxmlUrl, title, owner);
     }
@@ -135,7 +135,7 @@ public class DialogBuilder
             }
             else
             {
-                logger.warn("Controller does not implement DialogController – no drag support for {}", title);
+                logger.warn("Controller does not implement DialogController - no drag support for {}", title);
             }
 
             // Set up dragging for the given header Node

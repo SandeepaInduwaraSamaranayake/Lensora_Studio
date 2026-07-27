@@ -44,9 +44,9 @@ CREATE TABLE IF NOT EXISTS project_note (
                                                 note_content TEXT          NOT NULL,
                                                 created_at   TIMESTAMP     NOT NULL,
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id)
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id)
 );
 
 -- project note indexes
@@ -57,17 +57,17 @@ CREATE TABLE IF NOT EXISTS project_tag (
                                                 project_id INTEGER NOT NULL,
                                                 tag_id     INTEGER NOT NULL,
                                                 PRIMARY KEY (
-                                                            project_id,
-                                                            tag_id
-                                                    ),
+                                                        project_id,
+                                                        tag_id
+                                                ),
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id),
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id),
                                                 FOREIGN KEY (
-                                                            tag_id
-                                                    )
-                                                    REFERENCES tag (tag_id)
+                                                        tag_id
+                                                )
+                                                REFERENCES tag (tag_id)
 );
 
 
@@ -79,12 +79,12 @@ CREATE TABLE IF NOT EXISTS reminder (
                                                 reminder_description TEXT,
                                                 reminder_date        DATE          NOT NULL,
                                                 is_completed         BOOLEAN       NOT NULL
-                                                    DEFAULT 0,
+                                                DEFAULT 0,
                                                 created_at           TIMESTAMP     NOT NULL,
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id)
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id)
 );
 
 -- reminder indexes
@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_reminder_completed ON reminder(is_completed);
 CREATE TABLE IF NOT EXISTS tag (
                                                 tag_id   INTEGER       PRIMARY KEY AUTOINCREMENT,
                                                 tag_name VARCHAR (100) UNIQUE
-                                                    NOT NULL
+                                                NOT NULL
 );
 
 -- deliverable
@@ -109,9 +109,9 @@ CREATE TABLE IF NOT EXISTS deliverable (
                                                 delivery_date    DATE,
                                                 remarks          TEXT,
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id)
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id)
 );
 
 -- deliverable indexes
@@ -132,9 +132,9 @@ CREATE TABLE IF NOT EXISTS folder_template_item (
                                                 folder_name VARCHAR (255) NOT NULL,
                                                 sequence_no INTEGER       NOT NULL,
                                                 FOREIGN KEY (
-                                                            template_id
-                                                    )
-                                                    REFERENCES folder_template (template_id)
+                                                        template_id
+                                                )
+                                                REFERENCES folder_template (template_id)
 );
 
 -- folder template item indexes
@@ -155,9 +155,9 @@ CREATE TABLE IF NOT EXISTS image_cache (
                                                 camera_model        VARCHAR (255),
                                                 thumbnail_generated BOOLEAN        DEFAULT 0,
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id)
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id)
 );
 
 -- image cache indexes
@@ -174,9 +174,9 @@ CREATE TABLE IF NOT EXISTS payment (
                                                 reference_no   VARCHAR (100),
                                                 remarks        TEXT,
                                                 FOREIGN KEY (
-                                                            project_id
-                                                    )
-                                                    REFERENCES project (project_id)
+                                                        project_id
+                                                )
+                                                REFERENCES project (project_id)
 );
 
 -- payment indexes
@@ -194,41 +194,41 @@ CREATE TABLE IF NOT EXISTS user_settings (
 -- ═══════════════════════════════════════════════════════════════════════════
 
 INSERT OR IGNORE INTO folder_template (template_name, description) VALUES
-    ('Wedding Standard',    'Standard wedding photography folder layout'),
-    ('Event Standard',      'Standard event photography folder layout'),
-    ('Graduation Standard', 'Standard graduation photography folder layout');
+        ('Wedding Standard',    'Standard wedding photography folder layout'),
+        ('Event Standard',      'Standard event photography folder layout'),
+        ('Graduation Standard', 'Standard graduation photography folder layout');
 
 
 -- Wedding Standard folders
 INSERT OR IGNORE INTO folder_template_item (template_id, folder_name, sequence_no)
 SELECT t.template_id, f.folder_name, f.seq
 FROM folder_template t, 
-     (SELECT '01_RAW'       AS folder_name, 1 AS seq UNION ALL
-      SELECT '02_SELECTED',                           2        UNION ALL
-      SELECT '03_EDITED',                             3        UNION ALL
-      SELECT '04_ALBUM',                              4        UNION ALL
-      SELECT '05_DELIVERED',                          5) f
+        (SELECT '01_RAW'       AS folder_name, 1 AS seq UNION ALL
+        SELECT '02_SELECTED',                           2        UNION ALL
+        SELECT '03_EDITED',                             3        UNION ALL
+        SELECT '04_ALBUM',                              4        UNION ALL
+        SELECT '05_DELIVERED',                          5) f
 WHERE t.template_name = 'Wedding Standard';
 
 -- Event Standard folders
 INSERT OR IGNORE INTO folder_template_item (template_id, folder_name, sequence_no)
 SELECT t.template_id, f.folder_name, f.seq
 FROM folder_template t,
-     (SELECT '01_RAW' AS folder_name, 1 AS seq UNION ALL
-      SELECT '02_EDITED',   2 UNION ALL
-      SELECT '03_DELIVERED',3) f
+        (SELECT '01_RAW' AS folder_name, 1 AS seq UNION ALL
+        SELECT '02_EDITED',   2 UNION ALL
+        SELECT '03_DELIVERED',3) f
 WHERE t.template_name = 'Event Standard';
 
 -- Graduation Standard folders
 INSERT OR IGNORE INTO folder_template_item (template_id, folder_name, sequence_no)
 SELECT t.template_id, f.folder_name, f.seq
 FROM folder_template t,
-     (SELECT '01_RAW'AS folder_name, 1 AS seq UNION ALL
-      SELECT '02_EDITED',   2 UNION ALL
-      SELECT '03_PRINTS',   3 UNION ALL
-      SELECT '04_DELIVERED',4) f
+        (SELECT '01_RAW'AS folder_name, 1 AS seq UNION ALL
+        SELECT '02_EDITED',   2 UNION ALL
+        SELECT '03_PRINTS',   3 UNION ALL
+        SELECT '04_DELIVERED',4) f
 WHERE t.template_name = 'Graduation Standard';
 
 -- Add unique constraint to prevent duplicate folders per template
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_template_folder 
-    ON folder_template_item(template_id, folder_name);
+        ON folder_template_item(template_id, folder_name);

@@ -20,10 +20,14 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -32,8 +36,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,13 +58,19 @@ public class MainController
     @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project,
                         mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout;
     @FXML private Button btnNewProject;
+    @FXML private ToggleButton btnLockLayout;
+    @FXML private FontIcon lockLayoutIcon;
+    @FXML private Tooltip lockLayoutTooltip;
+
 
     private final ProjectsViewModel projectsViewModel = new ProjectsViewModel();
     private final StatusBarViewModel statusBarViewModel = new StatusBarViewModel();
     private final WorkspaceDockingService dockingService = new WorkspaceDockingService();
-    private final Map<String, javafx.scene.control.CheckMenuItem> panelCheckItems = new java.util.HashMap<>();
+    private final Map<String, CheckMenuItem> panelCheckItems = new java.util.HashMap<>();
 
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(50));
+
+    CheckMenuItem lockLayoutMenuItem;
 
     private ProjectListController projectListController;
     private FileExplorerController fileExplorerController;
@@ -72,6 +84,7 @@ public class MainController
         loadStatusBar();
         loadDockablePanels();
         setupPanelsMenu();
+        setupLayoutLockToggle();
         setupMenuItems();
         setupKeyboardShortcuts();
         setupSearchField();
@@ -202,8 +215,7 @@ public class MainController
         });
     }
 
-    // ─── Menu / shortcuts / search (unchanged behaviour, just slimmer) ─────
-
+    // ─── Menu / shortcuts / search ─────
     private void setupMenuItems()
     {
         if (mnu_btn_exit != null)
@@ -212,8 +224,7 @@ public class MainController
                 Stage stage = (Stage) headerBar.getScene().getWindow();
                 if (stage != null)
                 {
-                    stage.fireEvent(new javafx.stage.WindowEvent(stage,
-                            javafx.stage.WindowEvent.WINDOW_CLOSE_REQUEST));
+                    stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
                 }
             });
         }
@@ -233,6 +244,29 @@ public class MainController
                 refreshPanelsMenuChecks();
                 });
         }
+
+        // lock layout menu handle
+        if (mnu_view != null)
+        {
+            lockLayoutMenuItem = new CheckMenuItem("Lock Layout");
+            lockLayoutMenuItem.setSelected(dockingService.isLocked());
+            lockLayoutMenuItem.setOnAction(e -> {
+                boolean locked = lockLayoutMenuItem.isSelected();
+                dockingService.setLocked(locked);
+                AppSettings.getInstance().setLayoutLocked(locked);
+                if (btnLockLayout != null) btnLockLayout.setSelected(locked);
+                updateLockLayoutVisuals(locked);
+            });
+
+            // Keep toolbar toggle and menu item in sync in both directions
+            if (btnLockLayout != null)
+            {
+                btnLockLayout.selectedProperty().addListener((obs, old, val) -> lockLayoutMenuItem.setSelected(val));
+            }
+
+            mnu_view.getItems().add(2, lockLayoutMenuItem);
+            mnu_view.getItems().add(3, new SeparatorMenuItem());
+        }
     }
 
     private void setupKeyboardShortcuts()
@@ -247,6 +281,8 @@ public class MainController
             mnu_btn_new_project.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
         if (mnu_btn_view_logs != null)
             mnu_btn_view_logs.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
+        if (lockLayoutMenuItem != null)
+            lockLayoutMenuItem.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.SHIFT_DOWN));
 
         headerBar.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null && fileExplorerController != null)
@@ -404,5 +440,36 @@ public class MainController
     {
         dockHost.getChildren().setAll(dockingService.buildLayout());
         refreshPanelsMenuChecks();
+    }
+
+    // ─── Layout lock toggle ─────────────────────────────────────────────────
+
+    private void setupLayoutLockToggle()
+    {
+        if (btnLockLayout == null) return;
+
+        boolean savedLocked = AppSettings.getInstance().getLayoutLocked();
+        dockingService.setLocked(savedLocked);
+        btnLockLayout.setSelected(savedLocked);
+        updateLockLayoutVisuals(savedLocked);
+
+        btnLockLayout.setOnAction(e -> {
+            boolean locked = btnLockLayout.isSelected();
+            dockingService.setLocked(locked);
+            AppSettings.getInstance().setLayoutLocked(locked);
+            updateLockLayoutVisuals(locked);
+        });
+    }
+
+    private void updateLockLayoutVisuals(boolean locked)
+    {
+        if (lockLayoutIcon != null)
+        {
+            lockLayoutIcon.setIconLiteral(locked ? "fas-lock" : "fas-lock-open");
+        }
+        if (lockLayoutTooltip != null)
+        {
+            lockLayoutTooltip.setText(locked ? "Unlock Layout (SHIFT + L)" : "Lock Layout (SHIFT +L)");
+        }
     }
 }

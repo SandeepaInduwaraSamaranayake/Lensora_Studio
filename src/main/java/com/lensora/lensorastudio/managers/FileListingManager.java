@@ -2,6 +2,7 @@ package com.lensora.lensorastudio.managers;
 
 import com.lensora.lensorastudio.util.ClipboardFormats;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.ExternalAppLauncher;
 import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.ImageCache;
@@ -452,8 +453,7 @@ public class FileListingManager
 
     private void openFile(File file)
     {
-        try { Desktop.getDesktop().open(file); }
-        catch (IOException ex) { ErrorHandler.show(null, "Could not open file", ex); }
+        ExternalAppLauncher.openWithSystemDefault(file);
     }
 
     private boolean isImageFile(File file)

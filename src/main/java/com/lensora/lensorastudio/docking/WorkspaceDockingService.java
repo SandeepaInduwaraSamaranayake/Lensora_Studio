@@ -290,6 +290,24 @@ public class WorkspaceDockingService
         });
     }
 
+    // ─── Layout locking ─────────────────────────────────────────────────────
+
+    public boolean isLocked()
+    {
+        return snapFX.isLocked();
+    }
+
+    public void setLocked(boolean locked)
+    {
+        snapFX.setLocked(locked);
+        logger.info("[Docking] Layout {}", locked ? "locked" : "unlocked");
+    }
+
+    public void toggleLocked()
+    {
+        setLocked(!isLocked());
+    }
+
     public DockNode getNode(String id) 
     {
         return nodes.get(id);

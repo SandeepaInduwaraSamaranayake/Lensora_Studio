@@ -1,9 +1,13 @@
 package com.lensora.lensorastudio.managers;
 
+import com.lensora.lensorastudio.model.ExternalApp;
+import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.ClipboardFormats;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.ExternalAppLauncher;
+import com.lensora.lensorastudio.util.ExternalAppsDialog;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.MetadataPanel;
 
@@ -47,6 +51,8 @@ public class FileOperationsManager
     private final ProgressBar progressBar;
     private final Label progressLabel, progressSpeedLabel, progressEtaLabel;
 
+    private final Menu ctxOpenWithMenu;
+
     private final Supplier<File> selectedFileSupplier;
     private final Supplier<List<File>> selectedFilesSupplier;
     private final Runnable refreshCallback;
@@ -57,13 +63,14 @@ public class FileOperationsManager
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
 
-    public FileOperationsManager(MenuItem ctxFileOpen, MenuItem ctxFileRename, MenuItem ctxFileCopy, MenuItem ctxFileCut,
+    public FileOperationsManager(MenuItem ctxFileOpen, Menu ctxOpenWithMenu, MenuItem ctxFileRename, MenuItem ctxFileCopy, MenuItem ctxFileCut,
                                 MenuItem ctxFileMove, MenuItem ctxFileDelete, MenuItem ctxFileShowInExplorer, MenuItem ctxFileProperties,
                                 HBox progressContainer, ProgressBar progressBar,
                                 Label progressLabel, Label progressSpeedLabel, Label progressEtaLabel,
                                 Supplier<File> selectedFileSupplier,  Supplier<List<File>> selectedFilesSupplier, Runnable refreshCallback, BooleanBinding multiSelectBinding)
     {
         this.ctxFileOpen = ctxFileOpen;
+        this.ctxOpenWithMenu = ctxOpenWithMenu;
         this.ctxFileRename = ctxFileRename;
         this.ctxFileCopy = ctxFileCopy;
         this.ctxFileCut = ctxFileCut;
@@ -107,6 +114,8 @@ public class FileOperationsManager
         ctxFileDelete.setOnAction(e -> deleteSelectedFiles());
         ctxFileShowInExplorer.setOnAction(e -> showInExplorer());
         ctxFileProperties.setOnAction(e -> showMetadata());
+        if (ctxOpenWithMenu != null) ctxOpenWithMenu.getParentPopup().setOnShowing(e -> rebuildOpenWithMenu());
+
     }
 
     private void openSelectedFiles()
@@ -471,5 +480,52 @@ public class FileOperationsManager
         progressLabel.setText("0%");
         progressSpeedLabel.setText("0 B/s");
         progressEtaLabel.setText("ETA: --");
+    }
+
+    /** Rebuilds the Open With submenu each time it's about to show, so newly
+     *  configured apps (added via the manage dialog) appear without a restart. */
+    private void rebuildOpenWithMenu()
+    {
+        logger.info("rebuildOpenWithMenu() called");
+        ctxOpenWithMenu.getItems().clear();
+
+        List<File> selected = selectedFilesSupplier.get();
+        boolean hasSelection = selected != null && !selected.isEmpty();
+
+        List<ExternalApp> configuredApps = AppSettings.getInstance().getExternalApps();
+
+        if (configuredApps.isEmpty())
+        {
+            MenuItem noneItem = new MenuItem("(No applications configured)");
+            noneItem.setDisable(true);
+            ctxOpenWithMenu.getItems().add(noneItem);
+        }
+        else
+        {
+            for (ExternalApp app : configuredApps)
+            {
+                MenuItem item = new MenuItem(app.getName()
+                        + (selected != null && selected.size() > 1 ? " (" + selected.size() + " files)" : ""));
+                item.setDisable(!hasSelection);
+                item.setOnAction(e -> ExternalAppLauncher.openWith(app, selected));
+                ctxOpenWithMenu.getItems().add(item);
+            }
+        }
+
+        ctxOpenWithMenu.getItems().add(new SeparatorMenuItem());
+
+        MenuItem nativePickerItem = new MenuItem("Choose Application…");
+        nativePickerItem.setDisable(!hasSelection || selected.size() != 1);
+        nativePickerItem.setOnAction(e -> {
+            if (selected != null && selected.size() == 1)
+            {
+                ExternalAppLauncher.showNativeOpenWithDialog(selected.get(0));
+            }
+        });
+        ctxOpenWithMenu.getItems().add(nativePickerItem);
+
+        MenuItem manageAppsItem = new MenuItem("Manage Applications…");
+        manageAppsItem.setOnAction(e -> ExternalAppsDialog.show(ownerStage));
+        ctxOpenWithMenu.getItems().add(manageAppsItem);
     }
 }

@@ -1,6 +1,12 @@
 package com.lensora.lensorastudio.services;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.prefs.Preferences;
+
+import com.google.gson.Gson;
+import  com.lensora.lensorastudio.model.ExternalApp;
 
 /**
  * Singleton that persists user-configurable UI preferences using the Java
@@ -28,6 +34,8 @@ public class AppSettings
     private static final String     KEY_DOCK_LAYOUT                                 = "ui.dock_layout";
     private static final String     KEY_FFPROBE_PATH                                = "advanced.ffprobe_path";
     private static final String     KEY_SHOW_METADATA_PREVIEW                       = "metadata.show_preview";
+    private static final String     KEY_LAYOUT_LOCKED                               = "layout.locked";
+    private static final String     KEY_EXTERNAL_APPS                               = "file.external_apps";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -43,6 +51,7 @@ public class AppSettings
     public static final int         DEFAULT_SEARCH_DEBOUNCE_MS                      = 50;
     public static final String      DEFAULT_FFPROBE_PATH                            = ""; // empty = rely on system PATH
     public static final boolean     DEFAULT_SHOW_METADATA_PREVIEW                   = true;
+    public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -231,5 +240,34 @@ public class AppSettings
     public void setShowMetadataImagePreview(boolean show) 
     {
         prefs.putBoolean(KEY_SHOW_METADATA_PREVIEW, show);
+    }
+
+    public boolean getLayoutLocked()
+    {
+        return prefs.getBoolean(KEY_LAYOUT_LOCKED, DEFAULT_LAYOUT_LOCKED);
+    }
+
+    public void setLayoutLocked(boolean locked)
+    {
+        prefs.putBoolean(KEY_LAYOUT_LOCKED, locked);
+    }
+
+    public List<ExternalApp> getExternalApps()
+    {
+        String json = prefs.get(KEY_EXTERNAL_APPS, "[]");
+        try
+        {
+            ExternalApp[] apps = new Gson().fromJson(json, ExternalApp[].class);
+            return apps != null ? new ArrayList<>(Arrays.asList(apps)) : new ArrayList<>();
+        }
+        catch (Exception e)
+        {
+            return new ArrayList<>();
+        }
+    }
+
+    public void setExternalApps(List<ExternalApp> apps)
+    {
+        prefs.put(KEY_EXTERNAL_APPS, new Gson().toJson(apps));
     }
 }

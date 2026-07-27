@@ -45,6 +45,7 @@ public class FileManager
                         Label progressSpeedLabel,
                         Label progressEtaLabel,
                         MenuItem ctxFileOpen,
+                        Menu ctxOpenWithMenu,
                         MenuItem ctxFileRename,
                         MenuItem ctxFileCopy,
                         MenuItem ctxFileCut,
@@ -75,7 +76,7 @@ public class FileManager
                 fileListView, iconScrollPane, iconFlowPane);
 
         this.fileOperationsManager = new FileOperationsManager(
-                ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties,
+                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties,
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
                 fileListingManager::getSelectedFile,
                 fileListingManager::getSelectedFiles,

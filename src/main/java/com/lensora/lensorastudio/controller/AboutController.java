@@ -106,4 +106,3 @@ public class AboutController implements DialogController
         stage.close();
     }
 }
-

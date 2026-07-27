@@ -84,6 +84,7 @@
                     <ContextMenu>
                         <items>
                             <MenuItem fx:id="ctxFileOpen" text="Open"/>
+                            <Menu     fx:id="ctxOpenWithMenu" text="Open With"/>
                             <SeparatorMenuItem/>
                             <MenuItem fx:id="ctxFileRename" text="Rename…"/>
                             <MenuItem fx:id="ctxFileCopy" text="Copy"/>

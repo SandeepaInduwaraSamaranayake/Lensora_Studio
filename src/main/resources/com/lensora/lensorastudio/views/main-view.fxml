@@ -52,10 +52,18 @@
                         <FontIcon iconLiteral="fas-folder-plus" iconSize="16"/>
                     </graphic>
                     <tooltip>
-                        <Tooltip text="Create a New Project"/>
+                        <Tooltip text="Create a New Project (CTRL + N)"/>
                     </tooltip>
                 </Button>
                 <Separator/>
+                <ToggleButton fx:id="btnLockLayout">
+                    <graphic>
+                        <FontIcon fx:id="lockLayoutIcon" iconLiteral="fas-lock-open" iconSize="16"/>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip fx:id="lockLayoutTooltip" text="Lock Layout (SHIFT + L)"/>
+                    </tooltip>
+                </ToggleButton>
                 <Pane HBox.hgrow="ALWAYS"/>
                 <Label text="Search:"/>
                 <TextField fx:id="projectSearchField" prefWidth="400" promptText="Project, Client, Phone, Email ...  (CTRL + F)"/>

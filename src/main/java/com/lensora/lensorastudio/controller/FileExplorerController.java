@@ -33,6 +33,7 @@ public class FileExplorerController
     @FXML private ScrollPane iconScrollPane;
     @FXML private FlowPane iconFlowPane;
     @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties;
+    @FXML private Menu ctxOpenWithMenu;
 
     // NOTE: FileManager still owns a progress bar/status area for copy-paste.
     // Those live in the status bar module now, so we pass in references
@@ -71,7 +72,7 @@ public class FileExplorerController
                 colFileName, colFileType, colFileSize, colFileDimensions, colFileModified,
                 lblCurrentFolder, lblFileCount, lblFolderHeader,
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
-                ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer,
+                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer,
                 ctxFileProperties, breadcrumbContainer, btnFolderBack, btnFolderForward, fileSearchField,
                 viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
                 fileListView, iconScrollPane, iconFlowPane,  multiSelectBinding
