@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -360,17 +361,19 @@ public class FolderTreeManager
     private void setupContextMenu()
     {
         ContextMenu contextMenu = new ContextMenu();
+        MenuItem newFolderItem = new MenuItem("New Folder");
         MenuItem copyItem = new MenuItem("Copy");
         MenuItem pasteItem = new MenuItem("Paste");
         MenuItem openItem = new MenuItem("Open in Explorer");
         MenuItem copyPathItem = new MenuItem("Copy Directory Path");
 
+        newFolderItem.setOnAction(e -> createNewFolder());
         copyItem.setOnAction(e -> copySelectedFolder());
         pasteItem.setOnAction(e -> pasteRequested.run());
         openItem.setOnAction(e -> openSelectedFolderInExplorer());
         copyPathItem.setOnAction(e -> copySelectedFolderPath());
 
-        contextMenu.getItems().addAll(copyItem, new SeparatorMenuItem(), pasteItem, openItem, copyPathItem);
+        contextMenu.getItems().addAll(newFolderItem, copyItem, new SeparatorMenuItem(), pasteItem, openItem, copyPathItem);
         folderTree.setContextMenu(contextMenu);
     }
 
@@ -426,6 +429,85 @@ public class FolderTreeManager
         Clipboard.getSystemClipboard().setContent(content);
         Dialogs.showInfo(null, "Copy Path", null, "Path copied to clipboard.");
     }
+
+    private void createNewFolder()
+    {
+        File parentFolder = getSelectedFolder();
+        if (parentFolder == null)
+        {
+            parentFolder = projectRoot; // right-click on empty area / nothing selected -> create at root
+        }
+        if (parentFolder == null || !parentFolder.isDirectory())
+        {
+            Dialogs.showInfo(null, "New Folder", null, "Please select a valid location.");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog("New Folder");
+        dialog.setTitle("New Folder");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Folder name:");
+
+        final File finalParent = parentFolder;
+        dialog.showAndWait().ifPresent(name -> {
+            if (name == null || name.isBlank()) return;
+
+            String sanitized = sanitizeFolderName(name.trim());
+            if (sanitized.isEmpty())
+            {
+                Dialogs.showInfo(null, "New Folder", null, "Invalid folder name.");
+                return;
+            }
+
+            File newFolder = new File(finalParent, sanitized);
+            if (newFolder.exists())
+            {
+                Dialogs.showInfo(null, "New Folder", null, "A folder with that name already exists.");
+                return;
+            }
+
+            try
+            {
+                Files.createDirectory(newFolder.toPath());
+                refreshTreeAfterFolderCreation(finalParent, newFolder);
+            }
+            catch (java.io.IOException ex)
+            {
+                ErrorHandler.show(null, "Failed to create folder", ex);
+            }
+        });
+    }
+
+    /** Strips characters that are invalid in folder names on Windows/macOS/Linux. */
+    private String sanitizeFolderName(String name)
+    {
+        return name.replaceAll("[\\\\/:*?\"<>|]", "").trim();
+    }
+
+    /** Rebuilds the affected TreeItem's children and selects/expands to the new folder. */
+    private void refreshTreeAfterFolderCreation(File parentFolder, File newFolder)
+    {
+        TreeItem<File> root = folderTree.getRoot();
+        if (root == null) return;
+
+        TreeItem<File> parentItem = findTreeItem(root, parentFolder);
+        if (parentItem != null)
+        {
+            parentItem.getChildren().clear();
+            addChildren(parentItem);
+            parentItem.setExpanded(true);
+
+            TreeItem<File> newItem = findTreeItem(parentItem, newFolder);
+            if (newItem != null)
+            {
+                folderTree.getSelectionModel().select(newItem);
+            }
+        }
+
+        navigateTo(newFolder);
+    }
+
+
 
     public boolean isFocused()
     {
