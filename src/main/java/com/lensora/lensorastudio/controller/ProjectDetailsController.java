@@ -2,6 +2,7 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.model.ProjectNote;
+import com.lensora.lensorastudio.repository.ProjectLastFolderRepository;
 import com.lensora.lensorastudio.repository.ProjectNoteRepository;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.NoteEditDialog;
@@ -56,6 +57,7 @@ public class ProjectDetailsController
 
     private ProjectsViewModel viewModel;
     private Consumer<String> onProjectPathChanged;
+    private Consumer<String> onRestoreLastFolder;
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a");
 
@@ -106,6 +108,10 @@ public class ProjectDetailsController
         progressStepper.getChildren().add(statusLabel);
 
         if (onProjectPathChanged != null) onProjectPathChanged.accept(project.getProjectPath());
+
+         // restore whichever folder the user was last browsing in it.
+        restoreLastFolderFor(project);
+
         // load notes when the project is loading
         loadNotes(project.getProjectId());
     }
@@ -277,5 +283,28 @@ public class ProjectDetailsController
                 ErrorHandler.show(null, "Failed to delete note", e);
             }
         });
+    }
+
+    // ─── Restore last visited folder ──────────────────────────────────────────────
+    private void restoreLastFolderFor(Project project)
+    {
+        if (onRestoreLastFolder == null) return;
+        try
+        {
+            String relativePath = ProjectLastFolderRepository.findByProject(project.getProjectId());
+            if (relativePath != null)
+            {
+                onRestoreLastFolder.accept(relativePath);
+            }
+        }
+        catch (SQLException e)
+        {
+            logger.warn("Failed to load last-visited folder for project {}", project.getProjectId(), e);
+        }
+    }
+
+    public void setOnRestoreLastFolder(Consumer<String> callback)
+    {
+        this.onRestoreLastFolder = callback;
     }
 }

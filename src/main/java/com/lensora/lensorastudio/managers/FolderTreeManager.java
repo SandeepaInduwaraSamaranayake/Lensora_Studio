@@ -47,6 +47,7 @@ public class FolderTreeManager
     private Consumer<File> onFolderSelected;
     private Runnable onRefreshRequested;
     private Consumer<String> onPathChanged;
+    private Consumer<File> onNavigationPersisted;
     /** Paste is delegated out — FileOperationsManager owns the actual copy-with-progress logic. */
     private Runnable pasteRequested = () -> {};
     /** (files, targetFolder, isMove) — isMove is true for internal drags, false for external OS drag-ins. */
@@ -102,7 +103,7 @@ public class FolderTreeManager
         }
 
         this.projectRoot = folder;
-        backStack.clear();
+        backStack.clear(); 
         forwardStack.clear();
 
         TreeItem<File> rootItem = new TreeItem<>(folder);
@@ -173,6 +174,15 @@ public class FolderTreeManager
         if (onPathChanged != null) 
         {
             onPathChanged.accept(folder.getAbsolutePath());
+        }
+
+        if (onNavigationPersisted != null)
+        {
+            String relative = getCurrentFolderRelativePath();
+            if (relative != null && !relative.isEmpty()) // only save if non-empty
+            { 
+                onNavigationPersisted.accept(folder);
+            }
         }
     }
 
@@ -507,7 +517,73 @@ public class FolderTreeManager
         navigateTo(newFolder);
     }
 
+    /**
+     * Expands every ancestor of the given relative path (relative to the
+     * current projectRoot) and selects the final folder. If any segment
+     * along the way no longer exists on disk, stops at the deepest folder
+     * that still exists.
+     */
+    public void expandAndSelectRelativePath(String relativePath)
+    {
+        if (projectRoot == null || relativePath == null || relativePath.isBlank())
+        {
+            return;
+        }
 
+        File target = new File(projectRoot, relativePath);
+
+        // Walk up until we find a folder that actually exists, in case
+        // the saved path was deleted/renamed since it was last visited.
+        while (!target.exists() && !target.equals(projectRoot))
+        {
+            target = target.getParentFile();
+        }
+
+        if (target == null || !target.exists())
+        {
+            return;
+        }
+
+        expandAncestorsInTree(target);
+        navigateTo(target);
+    }
+
+    /** Expands every TreeItem from the root down to (and including) the folder's ancestors. */
+    private void expandAncestorsInTree(File folder)
+    {
+        TreeItem<File> root = folderTree.getRoot();
+        if (root == null) return;
+
+        TreeItem<File> item = findTreeItem(root, folder);
+        TreeItem<File> current = item != null ? item : root;
+
+        // Expand from the found node up to the root so the whole chain is visible.
+        TreeItem<File> walker = current;
+        while (walker != null)
+        {
+            walker.setExpanded(true);
+            walker = walker.getParent();
+        }
+    }
+
+    /** Returns the current folder's path relative to projectRoot, or null if not under it. */
+    public String getCurrentFolderRelativePath()
+    {
+        if (projectRoot == null || currentFolder == null) return null;
+        try
+        {
+            return projectRoot.toPath().relativize(currentFolder.toPath()).toString();
+        }
+        catch (IllegalArgumentException e)
+        {
+            return null; // currentFolder isn't under projectRoot (shouldn't normally happen)
+        }
+    }
+
+    public void setOnNavigationPersisted(Consumer<File> callback)
+    {
+        this.onNavigationPersisted = callback;
+    }
 
     public boolean isFocused()
     {

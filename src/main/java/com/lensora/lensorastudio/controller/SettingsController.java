@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.controller;
 
 import java.io.File;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,12 +9,14 @@ import org.slf4j.LoggerFactory;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.Dialogs;
+import com.lensora.lensorastudio.util.ImageCache;
 import com.lensora.lensorastudio.util.StartupManager;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
@@ -33,9 +36,13 @@ public class SettingsController implements DialogController
     private ComboBox<AppSettings.Theme>     themeCombo;
 
     @FXML 
+    private ComboBox<Integer>               metadataPreviewQualityCombo;
+
+    @FXML 
     private Spinner<Double>                 fontSizeSpinner;
 
-    @FXML private Spinner<Integer>          searchDebounceSpinner;
+    @FXML private Spinner<Integer>          searchDebounceSpinner, 
+                                            folderSaveDebounceSpinner;
 
     @FXML
     private Button                          btnCancel, 
@@ -73,7 +80,9 @@ public class SettingsController implements DialogController
     private boolean             tempOpenLastProject;
     private boolean             tempResetStatusOnClearSearch;
     private int                 tempSearchDebounce;
+    private int                 tempFolderSaveDebounce;
     private boolean             tempShowImagePreviewInMetadata;
+    private int                 tempMetadataPreviewSize;
 
     // ----------------------------- DialogController ---------------------------
     @Override
@@ -82,7 +91,7 @@ public class SettingsController implements DialogController
         return prefHeaderBar;
     }
 
-    // ----------------------------- Initialisation ----------------------------
+    // ----------------------------- Initialization ----------------------------
     @FXML
     public void initialize()
     {
@@ -92,11 +101,13 @@ public class SettingsController implements DialogController
         setupThemeCombo();
         setupFontSizeSpinner();
         setupSearchDebounceSpinner();
+        setupFolderSaveDebounceSpinner();
+        setupMetadataPreviewQuality();
         updateUIFromTemp();
         setupButtonActions();
     }
 
-    private void loadCurrentSettingsIntoTemp() 
+    private void loadCurrentSettingsIntoTemp()
     {
         // Load current settings into temp variables
         tempTheme                       = settings.getTheme();
@@ -108,7 +119,9 @@ public class SettingsController implements DialogController
         tempClearSearchOnSelect         = settings.getClearSearchOnProjectSelect();
         tempResetStatusOnClearSearch    = settings.getResetStatusOnClearSearch();
         tempSearchDebounce              = settings.getSearchDebounceMs();
+        tempFolderSaveDebounce          = settings.getFolderSaveDelayMs();
         tempShowImagePreviewInMetadata  = settings.getShowMetadataImagePreview();
+        tempMetadataPreviewSize         = settings.getMetadataPreviewSize();
     }
 
     private void setupThemeCombo() 
@@ -130,7 +143,9 @@ public class SettingsController implements DialogController
             }
         });
 
-        themeCombo.setValue(tempTheme);
+        themeCombo.valueProperty().addListener((obs, old, val) -> {
+            if (val != null) tempTheme = val;
+        });
     }
 
     private void setupFontSizeSpinner() 
@@ -159,8 +174,39 @@ public class SettingsController implements DialogController
         });
     }
 
+    private void setupFolderSaveDebounceSpinner() 
+    {
+        SpinnerValueFactory<Integer> debounceFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1000, tempFolderSaveDebounce, 50);
+        folderSaveDebounceSpinner.setValueFactory(debounceFactory);
+
+        folderSaveDebounceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
+            tempFolderSaveDebounce = newVal;
+        });
+    }
+
+    private void setupMetadataPreviewQuality()
+    {
+        List<Integer> sizes = List.of(200, 400, 600, 800, 1200);
+        metadataPreviewQualityCombo.getItems().addAll(sizes);
+        metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
+        metadataPreviewQualityCombo.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(Integer item, boolean empty) 
+            {
+                super.updateItem(item, empty);
+                setText(item == null ? "" : item + "px");
+            }
+        });
+        metadataPreviewQualityCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) tempMetadataPreviewSize = newVal;
+        });
+    }
+
     private void updateUIFromTemp() 
     {
+        // set theme
+        themeCombo.setValue(tempTheme);
+
         // set project root directory
         projectRootField.setText(tempProjectRoot);
 
@@ -178,6 +224,9 @@ public class SettingsController implements DialogController
 
         // Open Last Project
         openLastProjectCheck.setSelected(tempOpenLastProject);
+
+        // Reset preview quality
+        metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
 
         // Sync the actual open-on-startup with the system (in case it changed externally)
         boolean actual = StartupManager.isStartupEnabled();
@@ -200,12 +249,13 @@ public class SettingsController implements DialogController
     }
 
 
-
     // -------- Save changes to preferences and apply to all windows ----------------
     private void applyChanges()
     {
         applyThemeAndFont();
         applySearchDebounce();
+        applyFolderSaveDebounce();
+        applyMetadataPreviewSize();
         applyProjectRoot();
         applyLogDirectory();
         applyStartupBehaviour();
@@ -214,10 +264,10 @@ public class SettingsController implements DialogController
         logger.info("[SettingsController] Settings applied.");
     }
 
-    private void applyThemeAndFont() 
+    private void applyThemeAndFont()
     {
         // Save theme if changed
-        AppSettings.Theme selectedTheme = themeCombo.getValue();
+        AppSettings.Theme selectedTheme = tempTheme;
         if (selectedTheme != null && !selectedTheme.equals(settings.getTheme())) 
         {
             settings.setTheme(selectedTheme);
@@ -240,6 +290,25 @@ public class SettingsController implements DialogController
         if (tempSearchDebounce != settings.getSearchDebounceMs()) 
         {
             settings.setSearchDebounceMs(tempSearchDebounce);
+        }
+    }
+
+    private void applyFolderSaveDebounce() 
+    {
+        // Save search debounce (already stored in tempSearchDebounce)
+        if (tempFolderSaveDebounce != settings.getFolderSaveDelayMs()) 
+        {
+            settings.setFolderSaveDelayMs(tempFolderSaveDebounce);
+        }
+    }
+
+    private void applyMetadataPreviewSize()
+    {
+        // Save preview quality (already stored in tempMetadataPreviewSize)
+        if (tempMetadataPreviewSize != settings.getMetadataPreviewSize())
+        {
+            settings.setMetadataPreviewSize(tempMetadataPreviewSize);
+            ImageCache.clear();
         }
     }
 
@@ -345,7 +414,9 @@ public class SettingsController implements DialogController
         tempClearSearchOnSelect          = AppSettings.DEFAULT_CLEAR_SEARCH_ON_PROJECT_SELECT;
         tempResetStatusOnClearSearch     = AppSettings.DEFAULT_RESET_STATUS_ON_CLEAR_SEARCH;
         tempSearchDebounce               = AppSettings.DEFAULT_SEARCH_DEBOUNCE_MS;
+        tempFolderSaveDebounce           = AppSettings.DEFAULT_FOLDER_SAVE_DELAY_MS;
         tempShowImagePreviewInMetadata   = AppSettings.DEFAULT_SHOW_METADATA_PREVIEW;
+        tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;         
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -368,6 +439,9 @@ public class SettingsController implements DialogController
         // Reset show metadata preview
         showMetadataImagePreviewCheck.setSelected(tempShowImagePreviewInMetadata);
 
+        // Reset metadata preview quality 
+        metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
+
         // Reset clear search on project select
         clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
 
@@ -376,6 +450,9 @@ public class SettingsController implements DialogController
 
         // Reset search debounce
         searchDebounceSpinner.getValueFactory().setValue(tempSearchDebounce);
+
+        // Reset folder save debounce
+        folderSaveDebounceSpinner.getValueFactory().setValue(tempFolderSaveDebounce);
 
         // Immediately preview the defaults
         ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);

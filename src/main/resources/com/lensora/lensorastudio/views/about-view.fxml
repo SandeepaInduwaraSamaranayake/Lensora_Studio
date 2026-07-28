@@ -73,7 +73,7 @@
 
                      <!-- Product Version -->
                      <Label style="-fx-font-weight: bold;" text="Product Version:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                     <Label fx:id="productVersionLabel" text="1.0.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                     <Label fx:id="productVersionLabel" text="N/A" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
                      <!-- Build Information -->
                      <Label style="-fx-font-weight: bold;" text="Build Information:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
@@ -81,19 +81,19 @@
 
                      <!-- JavaFX Version -->
                      <Label style="-fx-font-weight: bold;" text="JavaFX Version:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                     <Label fx:id="javafxVersionLabel" text="18" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                     <Label fx:id="javafxVersionLabel" text="N/A" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
                      <!-- Java Version -->
                      <Label style="-fx-font-weight: bold;" text="Java Version:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                     <Label fx:id="javaVersionLabel" text="17, OpenJDK Runtime Environment" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                     <Label fx:id="javaVersionLabel" text="N/A" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                      <!-- Operating System -->
                      <Label style="-fx-font-weight: bold;" text="Operating System:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                     <Label fx:id="osLabel" text="Windows 10, amd64" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                     <Label fx:id="osLabel" text="N/A" GridPane.columnIndex="1" GridPane.rowIndex="4" />
 
-
+                     <!-- Project Root -->
                      <Label style="-fx-font-weight: bold;" text="Application Data Folder:" GridPane.columnIndex="0" GridPane.rowIndex="5" />
-                     <Label fx:id="loggingLabel" text="C://Users/Data" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                     <Label fx:id="applicationProjectRootLabel" text="N/A" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
                      <Label style="-fx-font-weight: bold;" text="User Library Folder:" GridPane.columnIndex="0" GridPane.rowIndex="6" />
                      <Label fx:id="loggingLabel" text="C://Users/Data" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="6" />

@@ -176,7 +176,8 @@ public final class MetadataPanel
         // Load a cached, background-loaded image sized to a sensible max -
         // actual on-screen width is controlled by the binding below, not by
         // the loaded image's native resolution.
-        Image cachedImage = ImageCache.getOrLoad(file, 600, 0);
+        int previewSize = AppSettings.getInstance().getMetadataPreviewSize();
+        Image cachedImage = ImageCache.getOrLoad(file, previewSize, 0);
         imageView.setImage(cachedImage);
 
         // Bind to the ScrollPane's actual VIEWPORT width, not the

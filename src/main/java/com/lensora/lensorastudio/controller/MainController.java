@@ -5,6 +5,8 @@ import com.lensora.lensorastudio.managers.FileListingManager;
 import com.lensora.lensorastudio.managers.FileManager;
 import com.lensora.lensorastudio.managers.FileOperationsManager;
 import com.lensora.lensorastudio.managers.WindowDragManager;
+import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.repository.ProjectLastFolderRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.DialogBuilder;
@@ -44,6 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.Map;
 
 public class MainController
@@ -69,6 +72,7 @@ public class MainController
     private final Map<String, CheckMenuItem> panelCheckItems = new java.util.HashMap<>();
 
     private final PauseTransition searchDelay = new PauseTransition(Duration.millis(50));
+    private final PauseTransition folderSaveDelay = new PauseTransition(Duration.millis(400));
 
     CheckMenuItem lockLayoutMenuItem;
 
@@ -144,12 +148,15 @@ public class MainController
                     statusBarController.getProgressEtaLabel());
             dockingService.register("files", explorerRoot, "Files");
             detailsController.setOnProjectPathChanged(path -> {fileExplorerController.loadProjectPath(path); statusBarViewModel.currentPathProperty().set(path);});
-            
+            // restore last-visited folder once the new project's folder tree is loaded
+            detailsController.setOnRestoreLastFolder(fileExplorerController::restoreLastFolder);
+
+            // setup last folder save to db
+            setupLastFoldersave(fileExplorerController);
             
             FileManager fileManager = fileExplorerController.getFileManager();
             fileManager.setOnPathChanged(statusBarViewModel.currentPathProperty()::set);
 
-            
             // MetaData Panel
             FileListingManager fileListing = fileExplorerController.getFileManager().getFileListingManager();
             FileOperationsManager fileOps = fileExplorerController.getFileManager().getFileOperationsManager();
@@ -339,7 +346,11 @@ public class MainController
                 .withControllerConsumer(controller -> {
                     if (controller instanceof SettingsController sc)
                     {
-                        sc.setOnSettingsApplied(this::updateSearchDebounce);
+                        // sc.setOnSettingsApplied(this::updateSearchDebounce);
+                        sc.setOnSettingsApplied(() -> {
+                            updateSearchDebounce();
+                            updateFolderSaveDebounce();
+                        });
                     }
                 })
                 .build();
@@ -471,5 +482,37 @@ public class MainController
         {
             lockLayoutTooltip.setText(locked ? "Unlock Layout (SHIFT + L)" : "Lock Layout (SHIFT +L)");
         }
+    }
+
+    private void setupLastFoldersave(FileExplorerController fileExplorerController)
+    {
+        updateFolderSaveDebounce();
+
+        fileExplorerController.setOnNavigationPersisted(folder -> {
+                Project current = projectsViewModel.getSelectedProject();
+                if (current == null) return;
+
+                String relative = fileExplorerController.getCurrentFolderRelativePath();
+                if (relative == null) return;
+
+                folderSaveDelay.setOnFinished(e -> {
+                    // Save using the current project's ID
+                    try 
+                    {
+                        ProjectLastFolderRepository.save(current.getProjectId(), relative);
+                    } 
+                    catch (SQLException ex)
+                    {
+                        logger.warn("Failed to save last-visited folder", ex);
+                    }
+                });
+                folderSaveDelay.playFromStart();
+            });
+    }
+
+    private void updateFolderSaveDebounce()
+    {
+        int ms = AppSettings.getInstance().getFolderSaveDelayMs();
+        folderSaveDelay.setDuration(Duration.millis(ms));
     }
 }

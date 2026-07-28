@@ -15,6 +15,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.function.Consumer;
 
 import org.snapfx.SnapFX;
 
@@ -121,7 +122,6 @@ public class FileExplorerController
     }
 
 
-
     public void setStage(Stage stage)
     {
         if (fileManager != null) fileManager.setStage(stage);
@@ -137,9 +137,24 @@ public class FileExplorerController
         if (fileManager != null) fileManager.loadProjectPath(path);
     }
 
+    public String getCurrentFolderRelativePath()
+    {
+        return fileManager.getCurrentFolderRelativePath();
+    }
+
+    public void restoreLastFolder(String relativePath)
+    {
+        fileManager.expandAndSelectRelativePath(relativePath);
+    }
+
     public void setupCopyPasteShortcuts(javafx.scene.Scene scene)
     {
         if (fileManager != null) fileManager.setupCopyPasteShortcuts(scene);
+    }
+
+    public void setOnNavigationPersisted(Consumer<File> callback)
+    {
+        fileManager.setOnNavigationPersisted(callback);
     }
 
     public void goBack()    { if (fileManager != null) fileManager.goBack(); }

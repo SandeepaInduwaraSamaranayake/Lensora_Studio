@@ -34,12 +34,14 @@ public class AppSettings
     private static final String     KEY_DOCK_LAYOUT                                 = "ui.dock_layout";
     private static final String     KEY_FFPROBE_PATH                                = "advanced.ffprobe_path";
     private static final String     KEY_SHOW_METADATA_PREVIEW                       = "metadata.show_preview";
+    private static final String     KEY_METADATA_PREVIEW_SIZE                       = "metadata.preview_quality";
     private static final String     KEY_LAYOUT_LOCKED                               = "layout.locked";
     private static final String     KEY_EXTERNAL_APPS                               = "file.external_apps";
+    private static final String     KEY_FOLDER_SAVE_DELAY_MS                        = "folder.save_delay_ms";
 
     // ------------------------------- Defaults --------------------------------------
 
-    public static final Theme       DEFAULT_THEME                                   = Theme.CUPERTINO_DARK;
+    public static final Theme       DEFAULT_THEME                                   = Theme.MODENA;
     public static final double      DEFAULT_FONT_SIZE                               = 12.0;
     public static final String      DEFAULT_PROJECT_ROOT                            = System.getProperty("user.home") + "/LensoraProjects";
     public static final String      DEFAULT_LOG_DIR                                 = System.getProperty("user.home") + "/.lensorastudio/logs";
@@ -51,7 +53,9 @@ public class AppSettings
     public static final int         DEFAULT_SEARCH_DEBOUNCE_MS                      = 50;
     public static final String      DEFAULT_FFPROBE_PATH                            = ""; // empty = rely on system PATH
     public static final boolean     DEFAULT_SHOW_METADATA_PREVIEW                   = true;
+    public static final int         DEFAULT_METADATA_PREVIEW_SIZE                   = 600;
     public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
+    public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -62,8 +66,8 @@ public class AppSettings
         NORD_DARK       ("Nord Dark" ),
         PRIMER_DARK     ("Primer Dark" ),
         PRIMER_LIGHT    ("Primer Light" ),
-        MODENA          ("JavaFX Modena (native SnapFX)"),
-        CASPIAN         ("JavaFX Caspian (native SnapFX)");
+        MODENA          ("JavaFX Modena (Native SnapFX)"),
+        CASPIAN         ("JavaFX Caspian (Native SnapFX)");
 
         public final String displayName;
         Theme(String displayName) { this.displayName = displayName; }
@@ -212,6 +216,7 @@ public class AppSettings
         prefs.putInt(KEY_SEARCH_DEBOUNCE_MS, ms);
     }
 
+    // ------------------------- Dock Layout ------------------------------
     public String getDockLayout()
     {
         return prefs.get(KEY_DOCK_LAYOUT, "");
@@ -222,6 +227,7 @@ public class AppSettings
         prefs.put(KEY_DOCK_LAYOUT, layout);
     }
 
+    // ------------------------- FFProbe Path ------------------------------
     public String getFfprobePath()
     {
         return prefs.get(KEY_FFPROBE_PATH, DEFAULT_FFPROBE_PATH);
@@ -232,6 +238,7 @@ public class AppSettings
         prefs.put(KEY_FFPROBE_PATH, path);
     }
 
+    // 
     public boolean getShowMetadataImagePreview() 
     {
         return prefs.getBoolean(KEY_SHOW_METADATA_PREVIEW, DEFAULT_SHOW_METADATA_PREVIEW);
@@ -269,5 +276,27 @@ public class AppSettings
     public void setExternalApps(List<ExternalApp> apps)
     {
         prefs.put(KEY_EXTERNAL_APPS, new Gson().toJson(apps));
+    }
+
+    // --------------------- Folder Save Debounce  -------------------------
+    public int getFolderSaveDelayMs() 
+    {
+        return prefs.getInt(KEY_FOLDER_SAVE_DELAY_MS, DEFAULT_FOLDER_SAVE_DELAY_MS);
+    }
+
+    public void setFolderSaveDelayMs(int ms) 
+    {
+        prefs.putInt(KEY_FOLDER_SAVE_DELAY_MS, ms);
+    }
+
+    // --------------- Metadata image preview quality  --------------------
+    public int getMetadataPreviewSize() 
+    {
+        return prefs.getInt(KEY_METADATA_PREVIEW_SIZE, DEFAULT_METADATA_PREVIEW_SIZE);
+    }
+
+    public void setMetadataPreviewSize(int size) 
+    {
+        prefs.putInt(KEY_METADATA_PREVIEW_SIZE, size);
     }
 }

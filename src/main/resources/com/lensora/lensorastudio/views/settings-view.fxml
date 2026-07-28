@@ -190,11 +190,14 @@
                                     <Label text="Search Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="0" />
                                     <Spinner fx:id="searchDebounceSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                                    <Label text="Thumbnail Cache Size (MB)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                    <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                                    <Label text="Last Folder Save Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                    <Spinner fx:id="folderSaveDebounceSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                                    <Label text="Thumbnail Cache Size (MB)" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                    <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
                               
-                                    <Label text="Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                    <ComboBox fx:id="previewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                    <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                    <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
                               <rowConstraints>
                                  <RowConstraints />

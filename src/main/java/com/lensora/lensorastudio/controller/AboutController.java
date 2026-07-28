@@ -17,6 +17,7 @@ import java.util.jar.Attributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.Resources;
 
 
@@ -30,7 +31,8 @@ public class AboutController implements DialogController
                         javafxVersionLabel, 
                         javaVersionLabel,
                         osLabel, 
-                        loggingLabel;
+                        loggingLabel,
+                        applicationProjectRootLabel;
     
     @FXML
     private Button      closeButton;
@@ -94,6 +96,10 @@ public class AboutController implements DialogController
         String osVersion = System.getProperty("os.version");
         osLabel.setText(osName + " " + osArch + " " + osVersion);
 
+        // project root
+        String projectRoot = AppSettings.getInstance().getDefaultProjectRoot();
+        applicationProjectRootLabel.setText(projectRoot);
+        
         // 5. Logging (example)
         String logDir = com.lensora.lensorastudio.services.AppSettings.getInstance().getDefaultLogDir();
         loggingLabel.setText("Logs stored in " + logDir);

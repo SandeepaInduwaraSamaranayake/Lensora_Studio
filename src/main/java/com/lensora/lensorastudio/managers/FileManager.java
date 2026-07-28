@@ -10,6 +10,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.snapfx.SnapFX;
@@ -144,5 +145,20 @@ public class FileManager
                 }
             }
         });
+    }
+
+    public void setOnNavigationPersisted(Consumer<File> callback)
+    {
+        folderTreeManager.setOnNavigationPersisted(callback);
+    }
+
+    public String getCurrentFolderRelativePath()
+    {
+        return folderTreeManager.getCurrentFolderRelativePath();
+    }
+
+    public void expandAndSelectRelativePath(String relativePath)
+    {
+        folderTreeManager.expandAndSelectRelativePath(relativePath);
     }
 }

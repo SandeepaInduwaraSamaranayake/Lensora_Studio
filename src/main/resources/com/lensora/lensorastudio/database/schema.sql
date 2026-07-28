@@ -184,8 +184,19 @@ CREATE INDEX IF NOT EXISTS idx_payment_project ON payment(project_id);
 
 -- user settings
 CREATE TABLE IF NOT EXISTS user_settings (
-                                                setting_key   VARCHAR (100) PRIMARY KEY,
+                                                setting_key   VARCHAR (100)    PRIMARY KEY,
                                                 setting_value TEXT
+);
+
+-- Remembers, per project, the last folder the user was browsing (relative
+-- to the project's root folder) so it can be restored on revisit.
+CREATE TABLE IF NOT EXISTS project_last_folder (
+                                                project_id       INTEGER        PRIMARY KEY,
+                                                relative_path    VARCHAR (2000) NOT NULL,
+                                                FOREIGN KEY (
+                                                        project_id
+                                                ) 
+                                                REFERENCES project (project_id)
 );
 
 

@@ -17,6 +17,9 @@ cd Lensora_Studio
 -- Windows Registry Path
 Computer\HKEY_CURRENT_USER\SOFTWARE\JavaSoft\Prefs\com\lensora\lensorastudio\services
 
+-- db path
+C:\Users\Hp\.lensorastudio
+
 
 -- warning solution
 $env:MAVEN_OPTS="--enable-native-access=ALL-UNNAMED --enable-final-field-mutation=ALL-UNNAMED --sun-misc-unsafe-memory-access=allow"
