@@ -37,7 +37,7 @@
                <Separator prefWidth="300.0" />
 
                <!-- Info Grid -->
-               <GridPane hgap="15.0" prefHeight="189.0" prefWidth="360.0" vgap="10.0">
+               <GridPane hgap="15.0" prefHeight="200.0" prefWidth="360.0" vgap="10.0">
                   <columnConstraints>
                      <ColumnConstraints halignment="RIGHT" hgrow="NEVER" minWidth="120.0" />
                      <ColumnConstraints hgrow="ALWAYS" />
