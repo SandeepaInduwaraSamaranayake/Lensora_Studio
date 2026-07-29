@@ -201,5 +201,4 @@ public final class MetadataPanel
 
         return pane;
     }
-
 }

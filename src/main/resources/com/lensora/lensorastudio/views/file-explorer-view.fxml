@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
-<SplitPane fx:id="fileSplitPane" dividerPositions="0.3"
+<SplitPane fx:id="fileSplitPane" dividerPositions="0.2"
     xmlns="http://javafx.com/javafx/17"
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.FileExplorerController">
 

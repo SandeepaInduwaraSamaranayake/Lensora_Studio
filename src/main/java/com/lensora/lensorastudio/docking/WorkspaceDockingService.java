@@ -244,13 +244,13 @@ public class WorkspaceDockingService
         DockSplitPane left = new DockSplitPane(Orientation.VERTICAL);
         left.addChild(projectsNode);
         left.addChild(detailsNode);
-        left.setDividerPosition(0, 0.50);      // projects 50% details 50%
+        left.setDividerPosition(0, 0.50);      // projects 50%  details 50%
 
         // Right side: horizontal split with files on left, metadata on right
         DockSplitPane right = new DockSplitPane(Orientation.HORIZONTAL);
         right.addChild(filesNode);
-        right.addChild(metadataNode);          // <-- metadata now in default layout
-        right.setDividerPosition(0, 0.70);      // files get 70%, metadata 30%
+        right.addChild(metadataNode);
+        right.setDividerPosition(0, 0.80);     // files get 80% metadata 20%
 
         // Root: horizontal split with left and right
         DockSplitPane root = new DockSplitPane(Orientation.HORIZONTAL);
@@ -281,10 +281,10 @@ public class WorkspaceDockingService
     public void registerThemeListener()
     {
         ThemeManager.setThemeChangeListener(theme -> {
-            boolean isAtlantaFx =   theme == AppSettings.Theme.CUPERTINO_DARK ||
+            boolean isAtlantaFx =   theme == AppSettings.Theme.CUPERTINO_DARK  ||
                                     theme == AppSettings.Theme.CUPERTINO_LIGHT ||
-                                    theme == AppSettings.Theme.NORD_DARK ||
-                                    theme == AppSettings.Theme.PRIMER_DARK ||
+                                    theme == AppSettings.Theme.NORD_DARK       ||
+                                    theme == AppSettings.Theme.PRIMER_DARK     ||
                                     theme == AppSettings.Theme.PRIMER_LIGHT;
             syncTheme(isAtlantaFx);
         });
