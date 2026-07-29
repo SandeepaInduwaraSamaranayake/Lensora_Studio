@@ -1,33 +1,22 @@
 package com.lensora.lensorastudio.services;
 
-
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.value.ChangeListener;
-import javafx.scene.control.SplitPane;
+import javafx.geometry.Rectangle2D;
 import javafx.stage.Stage;
 import javafx.stage.Screen;
 
 import javafx.util.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.prefs.Preferences;
 
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 /* ------------------------------ Usage ------------------------------------------
- * In MainController.initialize():
- *   LayoutPersistence.bindSplitPane("main.horizontal", mainSplitPane);
- *   LayoutPersistence.bindSplitPane("detail.vertical", projectWorkspace);
- *   LayoutPersistence.bindSplitPane("file.horizontal", fileSplitPane);
  *
- * In App.start() inside Platform.runLater() after stage.show():
- *   LayoutPersistence.bindWindow(stage);
+ *  In App.start()
+ *      LayoutPersistence.bindWindow(stage);
  */
 public class LayoutPersistence 
 {
@@ -35,35 +24,13 @@ public class LayoutPersistence
 
     // --------------------- Preference key namespace ---------------------------
 
-    private static final String PREFIX_SPLIT  = "layout.split.";
     private static final String KEY_WIN_X     = "layout.window.x";
     private static final String KEY_WIN_Y     = "layout.window.y";
     private static final String KEY_WIN_W     = "layout.window.width";
     private static final String KEY_WIN_H     = "layout.window.height";
     private static final String KEY_WIN_MAX   = "layout.window.maximised";
 
-    /** Values outside this range are layout drift, not user intent. */
-    private static final double MIN_SAVE = 0.10;
-    private static final double MAX_SAVE = 0.90;
-
     private static final Preferences PREFS = Preferences.userNodeForPackage(LayoutPersistence.class);
-    private static final List<PaneEntry> registeredPanes = new ArrayList<>();
-    private record PaneEntry(String key, SplitPane pane) {}
-
-
-    /**
-     * False during the entire startup sequence (FXML load → window show →
-     * geometry restore → maximise animation). Set to true by App.start()
-     * once everything has settled. Saves are blocked until then.
-     */
-    private static volatile boolean startupComplete = false;
-
-    /**
-     * Set to true while the window is in the process of maximising.
-     * Saves are blocked during this window to prevent layout-drift values
-     * from overwriting the real saved position.
-     */
-    private static volatile boolean isMaximising = false;
 
     private LayoutPersistence() {}
 
@@ -75,8 +42,7 @@ public class LayoutPersistence
      * Restores the window's last size/position and attaches listeners to
      * save future changes.
      *
-     * Call from App.start() inside {@code Platform.runLater} after
-     * {@code stage.show()}.
+     * Call from App.start()
      *
      * The window is kept on-screen even if the saved position was on a monitor
      * that is no longer connected.
@@ -98,70 +64,30 @@ public class LayoutPersistence
                 // For maximised windows, also wait for the animation.
                 if (stage.isMaximized()) 
                 {
-                    PauseTransition wait = new PauseTransition(Duration.millis(300));
-                    wait.setOnFinished(e -> {
-                        isMaximising = false;
-                        applyDividersAndEnableSaves();
-                        onLayoutReady.run();
-                    });
+                    PauseTransition wait = new PauseTransition(Duration.millis(100));
+                    wait.setOnFinished(e -> 
+                        onLayoutReady.run()
+                    );
                     wait.play();
-                } 
+                }
                 else 
                 {
                     // Non-maximised: just wait for the next layout pulse.
-                    Platform.runLater(() -> {
-                        applyDividersAndEnableSaves();
-                        onLayoutReady.run();
-                    });
+                    Platform.runLater(
+                        onLayoutReady
+                    );
                 }
             }
         });
 
         // Guard against save attempts while the maximise animation is running
         stage.maximizedProperty().addListener((obs, wasMax, isNowMax) -> {
-        isMaximising = true;
-        PREFS.putBoolean(KEY_WIN_MAX, isNowMax);
-        PauseTransition reset = new PauseTransition(Duration.millis(300));
-        reset.setOnFinished(e -> {
-            isMaximising = false;
-            applyDividersAndEnableSaves();
-        });
-        reset.play();
+            PREFS.putBoolean(KEY_WIN_MAX, isNowMax);
         });
 
         // Save window geometry on changes
         attachWindowSaveListeners(stage);
     }
-
-    /**
-     * 
-     */
-    private static void applyDividersAndEnableSaves() 
-    {
-        reapplyAllDividers();
-        startupComplete = true;
-    }
-
-    /**
-     * Forcibly reapplies all stored divider positions to every registered SplitPane.
-     * Used after the window geometry has changed (e.g. after maximising).
-     */
-    private static void reapplyAllDividers()
-    {
-        for (PaneEntry entry : registeredPanes)
-        {
-            var dividers = entry.pane().getDividers();
-            for (int i = 0; i < dividers.size(); i++)
-            {
-                double saved = PREFS.getDouble(PREFIX_SPLIT + entry.key() + "." + i, -1.0);
-                if (saved >= MIN_SAVE && saved <= MAX_SAVE)
-                {
-                    dividers.get(i).setPosition(saved);
-                }
-            }
-        }
-    }
-
 
     // ----------------------------- Restore window -------------------------------------
 
@@ -203,7 +129,7 @@ public class LayoutPersistence
         // a safe centered position on the primary screen.
         if (!isOnScreen(savedX, savedY, savedW, savedH))
         {
-            javafx.geometry.Rectangle2D primary = Screen.getPrimary().getVisualBounds();
+            Rectangle2D primary = Screen.getPrimary().getVisualBounds();
             stage.setX((primary.getWidth()  - savedW) / 2.0);
             stage.setY((primary.getHeight() - savedH) / 2.0);
             logger.info("[Layout] restoreWindow() - saved position off-screen, centered instead.");

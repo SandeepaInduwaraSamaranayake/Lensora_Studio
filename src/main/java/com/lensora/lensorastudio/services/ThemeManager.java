@@ -7,9 +7,6 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 
 import org.slf4j.LoggerFactory;
-import org.snapfx.SnapFX;
-
-import com.lensora.lensorastudio.docking.WorkspaceDockingService;
 
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -117,10 +114,8 @@ public class ThemeManager
         applyFontSizeToScene(scene, AppSettings.getInstance().getFontSize());
     }
 
-
     public static void setThemeChangeListener(Consumer<AppSettings.Theme> listener) 
     {
         themeChangeListener = listener;
     }
-
 }
