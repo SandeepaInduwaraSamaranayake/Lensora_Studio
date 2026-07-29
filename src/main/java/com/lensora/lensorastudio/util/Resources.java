@@ -15,6 +15,7 @@ public enum Resources
     PROJECT_DETAILS_VIEW("/com/lensora/lensorastudio/views/project-details-view.fxml"),
     FILE_EXPLORER_VIEW("/com/lensora/lensorastudio/views/file-explorer-view.fxml"),
     STATUS_BAR_VIEW("/com/lensora/lensorastudio/views/status-bar-view.fxml"),
+    FOLDER_TEMPLATE_MANAGER_VIEW("/com/lensora/lensorastudio/views/folder-template-manager-view.fxml"),
 
     SQL_SCHEMA("/com/lensora/lensorastudio/database/schema.sql"),
     MANIFEST("/META-INF/MANIFEST.MF"),

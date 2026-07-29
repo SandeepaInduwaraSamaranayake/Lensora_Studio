@@ -59,8 +59,8 @@ public class MainController
 
     @FXML private Menu mnu_view;
     @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project,
-                        mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout;
-    @FXML private Button btnNewProject;
+                        mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout, mnu_btn_new_template;
+    @FXML private Button btnNewProject, btnNewTemplate;
     @FXML private ToggleButton btnLockLayout;
     @FXML private FontIcon lockLayoutIcon;
     @FXML private Tooltip lockLayoutTooltip;
@@ -238,7 +238,9 @@ public class MainController
         if (mnu_btn_preferences != null) mnu_btn_preferences.setOnAction(e -> showPreferencesWindow());
         if (mnu_btn_about != null) mnu_btn_about.setOnAction(e -> showAboutWindow());
         if (mnu_btn_new_project != null) mnu_btn_new_project.setOnAction(e -> showNewProjectDialog());
+        if (mnu_btn_new_template != null) mnu_btn_new_template.setOnAction(e -> showTemplateManager());
         if (btnNewProject != null) btnNewProject.setOnAction(e -> showNewProjectDialog());
+        if (btnNewTemplate != null) btnNewTemplate.setOnAction(e -> showTemplateManager());
         if (mnu_btn_view_logs != null) mnu_btn_view_logs.setOnAction(e -> showLogViewer());
         if (mnu_btn_reset_layout != null)
         {
@@ -286,6 +288,8 @@ public class MainController
             mnu_btn_about.setAccelerator(new KeyCodeCombination(KeyCode.A, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         if (mnu_btn_new_project != null)
             mnu_btn_new_project.setAccelerator(new KeyCodeCombination(KeyCode.N, KeyCombination.CONTROL_DOWN));
+        if(mnu_btn_new_template != null)
+            mnu_btn_new_template.setAccelerator(new KeyCodeCombination(KeyCode.T, KeyCombination.CONTROL_DOWN));
         if (mnu_btn_view_logs != null)
             mnu_btn_view_logs.setAccelerator(new KeyCodeCombination(KeyCode.L, KeyCombination.CONTROL_DOWN, KeyCombination.SHIFT_DOWN));
         if (lockLayoutMenuItem != null)
@@ -342,6 +346,7 @@ public class MainController
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
+                .icon("⚙")
                 .resizable(false)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof SettingsController sc)
@@ -360,6 +365,7 @@ public class MainController
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
+                .icon("🛈")
                 .resizable(false)
                 .build();
     }
@@ -368,6 +374,7 @@ public class MainController
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
+                .icon("📁")
                 .resizable(false)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof NewProjectController npc)
@@ -386,12 +393,30 @@ public class MainController
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.LOG_VIEWER_VIEW.url(), "Lensora Studio Log", mainStage)
+                .icon("📄")
                 .resizable(true)
                 .modality(Modality.NONE)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof LogViewerController lvc)
                     {
                         lvc.setStage(mainStage);
+                    }
+                })
+                .build();
+    }
+
+    private void showTemplateManager()
+    {
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of(Resources.FOLDER_TEMPLATE_MANAGER_VIEW.url(), "Manage Folder Templates", mainStage)
+                .icon("📁")
+                .resizable(true)
+                .minSize(640, 460)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof FolderTemplateManagerController ftmc)
+                    {
+                        ftmc.setOnTemplatesChanged(() ->
+                                logger.info("[MainController] Folder templates updated."));
                     }
                 })
                 .build();

@@ -38,6 +38,7 @@ public class AppSettings
     private static final String     KEY_LAYOUT_LOCKED                               = "layout.locked";
     private static final String     KEY_EXTERNAL_APPS                               = "file.external_apps";
     private static final String     KEY_FOLDER_SAVE_DELAY_MS                        = "folder.save_delay_ms";
+    private static final String     KEY_IMAGE_CACHE_SIZE                            = "image.cache.size";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -56,6 +57,7 @@ public class AppSettings
     public static final int         DEFAULT_METADATA_PREVIEW_SIZE                   = 600;
     public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
     public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
+    public static final int        DEFAULT_IMAGE_CACHE_SIZE                        = 200;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -298,5 +300,16 @@ public class AppSettings
     public void setMetadataPreviewSize(int size) 
     {
         prefs.putInt(KEY_METADATA_PREVIEW_SIZE, size);
+    }
+
+    // ------------------------ Cache size  --------------------------------
+    public int getImageCacheSize() 
+    {
+        return prefs.getInt(KEY_IMAGE_CACHE_SIZE, DEFAULT_IMAGE_CACHE_SIZE);
+    }
+
+    public void setImageCacheSize(int size) 
+    {
+        prefs.putInt(KEY_IMAGE_CACHE_SIZE, size);
     }
 }

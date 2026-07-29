@@ -11,6 +11,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+
 import java.util.jar.Manifest;
 
 import java.util.jar.Attributes;
@@ -40,12 +42,6 @@ public class AboutController implements DialogController
     @FXML
     private HBox        aboutHeaderBar;
     
-
-    @Override
-    public Node getHeaderNode() 
-    {
-        return aboutHeaderBar;
-    }
 
     @FXML
     public void initialize()
@@ -109,6 +105,6 @@ public class AboutController implements DialogController
     private void handleClose() 
     {
         Stage stage = (Stage) closeButton.getScene().getWindow();
-        stage.close();
+        if (stage != null) stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
     }
 }

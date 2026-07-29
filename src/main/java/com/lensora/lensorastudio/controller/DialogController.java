@@ -1,16 +1,27 @@
 package com.lensora.lensorastudio.controller;
 
-import javafx.scene.Node;
-
 /**
- * Contract for dialog controllers that provide a draggable header.
- * Implement this to allow the {@link DialogBuilder} to set up window dragging
- * without using string‑based lookups.
+ * Optional contract for dialog controllers.
+ *
+ * The header/title-bar/close-button are now built by DialogBuilder itself,
+ * so implementing this interface is no longer required just to get a
+ * draggable window. Implement it only if the controller needs to:
+ *   - supply a custom icon/title (via getDialogIcon/getDialogTitle), or
+ *   - intercept close (e.g. block closing while unsaved changes exist).
+ *
+ * All methods have defaults, so implementing zero, one, or all of them is fine.
  */
 public interface DialogController 
 {
-    /**
-     * @return the {@link Node} (typically an {@link HBox}) that should be draggable
-     */
-    Node getHeaderNode();
+    /** Return false to block the close button / window-close request. */
+    default boolean canClose()
+    {
+        return true;
+    }
+
+    /** Called right after the close is confirmed and the stage is about to hide. */
+    default void onClosing()
+    {
+        
+    }
 }

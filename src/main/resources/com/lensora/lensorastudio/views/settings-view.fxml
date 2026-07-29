@@ -18,226 +18,210 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefWidth="687.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.SettingsController">
-   <children>
-      <VBox prefWidth="687.0">
-         <children>
-            <!-- Title Bar -->
-            <HBox fx:id="prefHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" prefWidth="833.0" spacing="8.0">
-               <children>
-                  <Label text="⚙">
-                     <font>
-                        <Font size="25.0" />
-                     </font>
-                  </Label>
-                  <Label text="Lensora Studio Preferences" />
-                  <Region HBox.hgrow="ALWAYS" />
-                  <Button onAction="#closeWindow" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕">
-                     <font>
-                        <Font size="11.0" />
-                     </font>
-                  </Button>
-               </children>
-               <padding>
-                  <Insets bottom="8.0" left="8.0" right="10.0" top="8.0" />
-               </padding>
-            </HBox>
-            <!-- Main Content Container -->
-            <TabPane fx:id="settingsTabPane" prefWidth="687.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
-                  
-                  <!-- Tab 1: General -->
-                  <tabs>
-                     <Tab text="General">
-                        <content>
-                           <VBox prefHeight="381.0" prefWidth="728.0" spacing="15">
-                                 <padding>
-                                    <Insets bottom="30" left="30" right="30" top="25" />
-                                 </padding>
-      
-                                       <Label text="General Settings" />
-      
-                                       <CheckBox fx:id="startMaximizedCheck" text="Start application maximized" />
-                                       <CheckBox fx:id="openLastProjectCheck" text="Open last selected project" />
-                                       <CheckBox fx:id="clearSearchOnProjectSelectCheck" text="Clear search field when a project is selected" />
-                                       <CheckBox fx:id="resetStatusOnClearSearchCheck" text="Reset status filter when search is cleared" />
-                                       <CheckBox fx:id="confirmDeleteCheck" text="Confirm before deleting files" />
-                                       <CheckBox fx:id="openOnStartupCheck" text="Open Lensora Studio on system startup" />
+<AnchorPane xmlns="http://javafx.com/javafx/18"
+   xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.SettingsController">
+   <VBox >
+      <children>
+         <!-- Main Content Container -->
+         <TabPane fx:id="settingsTabPane" prefWidth="700.0" prefHeight="400.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
 
-                           <Label text="Default Log Directory:" />
-                           <HBox maxWidth="Infinity" HBox.hgrow="ALWAYS" spacing="15">
-                              <children>
-                                 <TextField fx:id="logDirField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
-                                 <Button fx:id="btnBrowseLogDir" text="Browse" minWidth="80" />
-                              </children>
-                           </HBox>
-                           </VBox>
-                        </content>
-                     </Tab>
+            <!-- Tab 1: General -->
+            <tabs>
+               <Tab text="General">
+                  <content>
+                     <VBox spacing="15">
+                        <padding>
+                           <Insets bottom="30" left="30" right="30" top="25" />
+                        </padding>
 
-                     <!-- Tab 2: Appearance -->
-                     <Tab text="Appearance">
-                        <content>
-                           <VBox spacing="15" maxWidth="Infinity">
-                                 <padding>
-                                    <Insets bottom="30" left="30" right="30" top="25" />
-                                 </padding>
-      
-                                       <Label text="Appearance" />
-      
-                                       <GridPane hgap="15" vgap="12" maxWidth="Infinity" GridPane.hgrow="ALWAYS">
-                                          <columnConstraints>
-                                             <ColumnConstraints minWidth="120" />    <!-- labels -->
-                                             <ColumnConstraints hgrow="ALWAYS"/>     <!-- input fields -->
-                                          </columnConstraints>
-      
-                                          <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                          <ComboBox fx:id="themeCombo" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
-      
-                                          <Label text="Font Size" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                          <Spinner fx:id="fontSizeSpinner" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
-      
-                                          <Label text="UI Density" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                          <ComboBox fx:id="uiDensityCombo" GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
-                                          
-                                          <rowConstraints>
-                                             <RowConstraints />
-                                             <RowConstraints />
-                                             <RowConstraints />
-                                          </rowConstraints>
-      
-                                       </GridPane>
-      
-                                       <CheckBox fx:id="rememberLayoutCheck" text="Remember layout" />
-                                       <CheckBox fx:id="restorePanelSizesCheck" text="Restore panel sizes" />
-                           </VBox>
-                        </content>
-                     </Tab>
-               
-                     <!-- Tab 3: Projects -->
-                     <Tab text="Projects">
-                        <content>
-                           <VBox spacing="15" maxWidth="Infinity">
-                                 <padding>
-                                    <Insets bottom="30" left="30" right="30" top="25" />
-                                 </padding>
+                        <Label text="General Settings" />
 
-                                 <Label text="Project Defaults" />
+                        <CheckBox fx:id="startMaximizedCheck" text="Start application maximized" />
+                        <CheckBox fx:id="openLastProjectCheck" text="Open last selected project" />
+                        <CheckBox fx:id="clearSearchOnProjectSelectCheck" text="Clear search field when a project is selected" />
+                        <CheckBox fx:id="resetStatusOnClearSearchCheck" text="Reset status filter when search is cleared" />
+                        <CheckBox fx:id="confirmDeleteCheck" text="Confirm before deleting files" />
+                        <CheckBox fx:id="openOnStartupCheck" text="Open Lensora Studio on system startup" />
 
-                                 <GridPane hgap="15" vgap="12" maxWidth="Infinity" GridPane.hgrow="ALWAYS">
-                                    <columnConstraints>
-                                       <ColumnConstraints minWidth="120" />       <!-- labels -->
-                                       <ColumnConstraints hgrow="ALWAYS" />       <!-- input fields -->
-                                       <ColumnConstraints />                      <!-- buttons -->
-                                    </columnConstraints>
+                        <Label text="Default Log Directory:" />
+                        <HBox maxWidth="Infinity" HBox.hgrow="ALWAYS" spacing="15">
+                           <children>
+                              <TextField fx:id="logDirField" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                              <Button fx:id="btnBrowseLogDir" text="Browse" minWidth="80" />
+                           </children>
+                        </HBox>
+                     </VBox>
+                  </content>
+               </Tab>
 
-                                    <!-- Row 0: Project Root -->
-                                    <Label text="Project Root Folder" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                    <TextField fx:id="projectRootField" GridPane.columnIndex="1" GridPane.rowIndex="0" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
-                                    <Button fx:id="btnBrowseDefaultRoot" text="Browse" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+               <!-- Tab 2: Appearance -->
+               <Tab text="Appearance">
+                  <content>
+                     <VBox spacing="15" maxWidth="Infinity">
+                        <padding>
+                           <Insets bottom="30" left="30" right="30" top="25" />
+                        </padding>
 
-                                    <!-- Row 1: Default Template -->
-                                    <Label text="Default Template" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                    <ComboBox fx:id="defaultTemplateCombo" GridPane.columnIndex="1" GridPane.rowIndex="1"  maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
+                        <Label text="Appearance" />
 
-                                    <!-- Row 2: Default Status -->
-                                    <Label text="Default Status" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                    <ComboBox fx:id="defaultStatusCombo" GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
+                        <GridPane hgap="15" vgap="12" maxWidth="Infinity" GridPane.hgrow="ALWAYS">
+                           <columnConstraints>
+                              <ColumnConstraints minWidth="120" />
+                              <!-- labels -->
+                              <ColumnConstraints hgrow="ALWAYS"/>
+                              <!-- input fields -->
+                           </columnConstraints>
 
-                                    <rowConstraints>
-                                       <RowConstraints />
-                                       <RowConstraints />
-                                       <RowConstraints />
-                                    </rowConstraints>
-                                 </GridPane>
-                           </VBox>
-                        </content>
-                     </Tab>
+                           <Label text="Theme" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <ComboBox fx:id="themeCombo" GridPane.columnIndex="1" GridPane.rowIndex="0" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
 
-                     <!-- Tab 4: File Management -->
-                     <Tab text="File Management">
-                        <content>
-                              <VBox spacing="15.0">
-                                 <padding>
-                                    <Insets bottom="30.0" left="30.0" right="30.0" top="25.0" />
-                                 </padding>
-                                 <Label text="Manage Folder Templates" />
-                                 <HBox spacing="10.0">
-                                    <Button fx:id="btnNewTemplate" text="New Template" />
-                                    <Button fx:id="btnEditTemplate" text="Edit Selected" />
-                                    <Button fx:id="btnDeleteTemplate" text="Delete Selected" />
-                                 </HBox>
-                                 <!-- Placeholder for template list - can be replaced with TableView later -->
-                                 <Label style="-fx-font-style: italic; -fx-text-fill: #888;" text="(Template management UI will be implemented here)" />
-                                 <CheckBox fx:id="showMetadataImagePreviewCheck" text="Show image preview in metadata panel" />
-                              </VBox>
-                        </content>
-                     </Tab>
+                           <Label text="Font Size" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                           <Spinner fx:id="fontSizeSpinner" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
 
-                     <!-- Tab 5: Advanced -->
-                     <Tab text="Advanced">
-                        <content>
-                              <VBox spacing="20.0">
-                                 <padding>
-                                    <Insets bottom="30.0" left="30.0" right="30.0" top="25.0" />
-                                 </padding>
-                                 <Label text="Advanced Settings" />
-                                 <GridPane hgap="15.0" vgap="12.0">
-                                    <columnConstraints>
-                                          <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
-                                          <ColumnConstraints hgrow="ALWAYS" />
-                                    </columnConstraints>
+                           <Label text="UI Density" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                           <ComboBox fx:id="uiDensityCombo" GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
 
-                                    <Label text="Search Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                    <Spinner fx:id="searchDebounceSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
 
-                                    <Label text="Last Folder Save Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                    <Spinner fx:id="folderSaveDebounceSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        </GridPane>
 
-                                    <Label text="Thumbnail Cache Size (MB)" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                    <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="140.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
-                              
-                                    <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                                    <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <CheckBox fx:id="rememberLayoutCheck" text="Remember layout" />
+                        <CheckBox fx:id="restorePanelSizesCheck" text="Restore panel sizes" />
+                     </VBox>
+                  </content>
+               </Tab>
 
-                              <rowConstraints>
-                                 <RowConstraints />
-                                 <RowConstraints />
-                              </rowConstraints>
-                                 </GridPane>
-                              </VBox>
-                        </content>
-                     </Tab>
-                  </tabs>
-            </TabPane>
-      
-                  <HBox alignment="CENTER" prefHeight="40.0" prefWidth="676.0">
-               <children>
+               <!-- Tab 3: Projects -->
+               <Tab text="Projects">
+                  <content>
+                     <VBox spacing="15" maxWidth="Infinity">
+                        <padding>
+                           <Insets bottom="30" left="30" right="30" top="25" />
+                        </padding>
+
+                        <Label text="Project Defaults" />
+
+                        <GridPane hgap="15" vgap="12" maxWidth="Infinity" GridPane.hgrow="ALWAYS">
+                           <columnConstraints>
+                              <ColumnConstraints minWidth="120" />
+                              <!-- labels -->
+                              <ColumnConstraints hgrow="ALWAYS" />
+                              <!-- input fields -->
+                              <ColumnConstraints />
+                              <!-- buttons -->
+                           </columnConstraints>
+
+                           <!-- Row 0: Project Root -->
+                           <Label text="Project Root Folder" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <TextField fx:id="projectRootField" GridPane.columnIndex="1" GridPane.rowIndex="0" HBox.hgrow="ALWAYS" maxWidth="Infinity" />
+                           <Button fx:id="btnBrowseDefaultRoot" text="Browse" GridPane.columnIndex="2" GridPane.rowIndex="0" />
+
+                           <!-- Row 1: Default Template -->
+                           <Label text="Default Template" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                           <ComboBox fx:id="defaultTemplateCombo" GridPane.columnIndex="1" GridPane.rowIndex="1" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
+
+                           <!-- Row 2: Default Status -->
+                           <Label text="Default Status" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                           <ComboBox fx:id="defaultStatusCombo" GridPane.columnIndex="1" GridPane.rowIndex="2" maxWidth="Infinity" GridPane.hgrow="ALWAYS" />
+
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
+                        </GridPane>
+                     </VBox>
+                  </content>
+               </Tab>
+
+               <!-- Tab 4: File Management -->
+               <Tab text="File Management">
+                  <content>
+                     <VBox spacing="15.0">
+                        <padding>
+                           <Insets bottom="30.0" left="30.0" right="30.0" top="25.0" />
+                        </padding>
+                        <Label text="Manage Folder Templates" />
+                        <HBox spacing="10.0">
+                           <Button fx:id="btnNewTemplate" text="New Template" />
+                           <Button fx:id="btnEditTemplate" text="Edit Selected" />
+                           <Button fx:id="btnDeleteTemplate" text="Delete Selected" />
+                        </HBox>
+                        <!-- Placeholder for template list - can be replaced with TableView later -->
+                        <Label style="-fx-font-style: italic; -fx-text-fill: #888;" text="(Template management UI will be implemented here)" />
+                        <CheckBox fx:id="showMetadataImagePreviewCheck" text="Show image preview in metadata panel" />
+                     </VBox>
+                  </content>
+               </Tab>
+
+               <!-- Tab 5: Advanced -->
+               <Tab text="Advanced">
+                  <content>
+                     <VBox spacing="20.0">
+                        <padding>
+                           <Insets bottom="30.0" left="30.0" right="30.0" top="25.0" />
+                        </padding>
+                        <Label text="Advanced Settings" />
+                        <GridPane hgap="15.0" vgap="12.0">
+                           <columnConstraints>
+                              <ColumnConstraints hgrow="ALWAYS" minWidth="220.0" />
+                              <ColumnConstraints hgrow="ALWAYS" />
+                           </columnConstraints>
+
+                           <Label text="Search Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                           <Spinner fx:id="searchDebounceSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+
+                           <Label text="Last Folder Save Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                           <Spinner fx:id="folderSaveDebounceSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+
+                           <Label text="Thumbnail Cache Size (Entries)" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                           <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+
+                           <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                           <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+
+                           <rowConstraints>
+                              <RowConstraints />
+                              <RowConstraints />
+                           </rowConstraints>
+                        </GridPane>
+                     </VBox>
+                  </content>
+               </Tab>
+            </tabs>
+         </TabPane>
+
+         <HBox alignment="CENTER" prefHeight="40.0">
+            <children>
 
                <!-- Footer Buttons -->
                <HBox alignment="CENTER_LEFT" prefHeight="50.0" spacing="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
-                        <padding>
-                           <Insets bottom="15.0" left="30.0" right="30.0" top="15.0" />
-                        </padding>
-                        <children>
-                           <Button fx:id="btnRestoreDefaults" mnemonicParsing="false" text="Restore Defaults" />
-                        </children>
-                  </HBox>
-                  <HBox alignment="CENTER_RIGHT" spacing="10.0" HBox.hgrow="ALWAYS">
-                     <children>
-                        <Button fx:id="btnCancel" mnemonicParsing="false" text="Cancel" />
-                        <Button fx:id="btnSave" mnemonicParsing="false" text="OK" />
-                        <Button fx:id="btnApply" mnemonicParsing="false" text="Apply" />
-                     </children>
-                     <HBox.margin>
-                        <Insets />
-                     </HBox.margin>
-                     <padding>
-                        <Insets bottom="15.0" left="30.0" right="30.0" top="15.0" />
-                     </padding>
-                  </HBox>
-               </children>
-            </HBox>
-         </children>
-      </VBox>
-   </children>
+                  <padding>
+                     <Insets bottom="15.0" left="30.0" right="30.0" top="15.0" />
+                  </padding>
+                  <children>
+                     <Button fx:id="btnRestoreDefaults" mnemonicParsing="false" text="Restore Defaults" />
+                  </children>
+               </HBox>
+               <HBox alignment="CENTER_RIGHT" spacing="10.0" HBox.hgrow="ALWAYS">
+                  <children>
+                     <Button fx:id="btnCancel" mnemonicParsing="false" text="Cancel" />
+                     <Button fx:id="btnSave" mnemonicParsing="false" text="OK" />
+                     <Button fx:id="btnApply" mnemonicParsing="false" text="Apply" />
+                  </children>
+                  <HBox.margin>
+                     <Insets />
+                  </HBox.margin>
+                  <padding>
+                     <Insets bottom="15.0" left="30.0" right="30.0" top="15.0" />
+                  </padding>
+               </HBox>
+            </children>
+         </HBox>
+      </children>
+   </VBox>
 </AnchorPane>

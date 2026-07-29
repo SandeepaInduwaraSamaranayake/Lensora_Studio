@@ -23,6 +23,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.StringConverter;
 import javafx.scene.Node;
 
@@ -42,7 +43,8 @@ public class SettingsController implements DialogController
     private Spinner<Double>                 fontSizeSpinner;
 
     @FXML private Spinner<Integer>          searchDebounceSpinner, 
-                                            folderSaveDebounceSpinner;
+                                            folderSaveDebounceSpinner,
+                                            cacheSizeSpinner;
 
     @FXML
     private Button                          btnCancel, 
@@ -83,13 +85,7 @@ public class SettingsController implements DialogController
     private int                 tempFolderSaveDebounce;
     private boolean             tempShowImagePreviewInMetadata;
     private int                 tempMetadataPreviewSize;
-
-    // ----------------------------- DialogController ---------------------------
-    @Override
-    public Node getHeaderNode()
-    {
-        return prefHeaderBar;
-    }
+    private int                 tempCacheSize;
 
     // ----------------------------- Initialization ----------------------------
     @FXML
@@ -103,6 +99,7 @@ public class SettingsController implements DialogController
         setupSearchDebounceSpinner();
         setupFolderSaveDebounceSpinner();
         setupMetadataPreviewQuality();
+        setupCacheSizeSpinner();
         updateUIFromTemp();
         setupButtonActions();
     }
@@ -122,6 +119,7 @@ public class SettingsController implements DialogController
         tempFolderSaveDebounce          = settings.getFolderSaveDelayMs();
         tempShowImagePreviewInMetadata  = settings.getShowMetadataImagePreview();
         tempMetadataPreviewSize         = settings.getMetadataPreviewSize();
+        tempCacheSize                   = settings.getImageCacheSize();
     }
 
     private void setupThemeCombo() 
@@ -186,7 +184,7 @@ public class SettingsController implements DialogController
 
     private void setupMetadataPreviewQuality()
     {
-        List<Integer> sizes = List.of(200, 400, 600, 800, 1200);
+        List<Integer> sizes = List.of(100, 200, 400, 600, 800, 1200);
         metadataPreviewQualityCombo.getItems().addAll(sizes);
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
         metadataPreviewQualityCombo.setCellFactory(lv -> new ListCell<>() {
@@ -199,6 +197,15 @@ public class SettingsController implements DialogController
         });
         metadataPreviewQualityCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) tempMetadataPreviewSize = newVal;
+        });
+    }
+
+    private void setupCacheSizeSpinner() 
+    {
+        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2000, tempCacheSize, 50);
+        cacheSizeSpinner.setValueFactory(valueFactory);
+        cacheSizeSpinner.valueProperty().addListener((obs, old, val) -> {
+            tempCacheSize = val;
         });
     }
 
@@ -228,6 +235,9 @@ public class SettingsController implements DialogController
         // Reset preview quality
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
 
+        // Reset cache size
+        cacheSizeSpinner.getValueFactory().setValue(tempCacheSize);
+
         // Sync the actual open-on-startup with the system (in case it changed externally)
         boolean actual = StartupManager.isStartupEnabled();
         if (actual != tempOpenOnStartup) 
@@ -256,6 +266,7 @@ public class SettingsController implements DialogController
         applySearchDebounce();
         applyFolderSaveDebounce();
         applyMetadataPreviewSize();
+        applyCacheSize();
         applyProjectRoot();
         applyLogDirectory();
         applyStartupBehaviour();
@@ -309,6 +320,15 @@ public class SettingsController implements DialogController
         {
             settings.setMetadataPreviewSize(tempMetadataPreviewSize);
             ImageCache.clear();
+        }
+    }
+
+    private void applyCacheSize() 
+    {
+        if (tempCacheSize != settings.getImageCacheSize()) 
+        {
+            settings.setImageCacheSize(tempCacheSize);
+            ImageCache.setMaxEntries(tempCacheSize);
         }
     }
 
@@ -416,7 +436,8 @@ public class SettingsController implements DialogController
         tempSearchDebounce               = AppSettings.DEFAULT_SEARCH_DEBOUNCE_MS;
         tempFolderSaveDebounce           = AppSettings.DEFAULT_FOLDER_SAVE_DELAY_MS;
         tempShowImagePreviewInMetadata   = AppSettings.DEFAULT_SHOW_METADATA_PREVIEW;
-        tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;         
+        tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;        
+        tempCacheSize                    = AppSettings.DEFAULT_IMAGE_CACHE_SIZE;
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -441,6 +462,9 @@ public class SettingsController implements DialogController
 
         // Reset metadata preview quality 
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
+
+        // Reset cache size
+        cacheSizeSpinner.getValueFactory().setValue(tempCacheSize);
 
         // Reset clear search on project select
         clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
@@ -487,7 +511,7 @@ public class SettingsController implements DialogController
     private void closeWindow() 
     {
         Stage stage = (Stage) btnCancel.getScene().getWindow();
-        stage.close();
+        stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
     }
 
     // ----------------------------- Callback for MainController ----------------

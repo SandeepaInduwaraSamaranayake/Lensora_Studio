@@ -17,245 +17,222 @@
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
 <AnchorPane xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.NewProjectController">
 
-    <children>
-        <!--TITLE BAR – same as About window -->
-        <HBox fx:id="newProjectHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" prefWidth="720.0" spacing="8.0">
-            <children>
-                <Label text="📁">
-                    <font>
-                        <Font size="25.0" />
-                    </font>
-                </Label>
-                <Label text="New Project" />
-                <Region HBox.hgrow="ALWAYS" />
-                <Button mnemonicParsing="false" onAction="#onCancel" prefHeight="35.0" prefWidth="35.0" text="✕">
-                    <font>
-                    <Font size="11.0" />
-                </font>
-                </Button>
-            </children>
-            <padding>
-                <Insets bottom="8.0" left="8.0" right="10.0" top="8.0" />
-            </padding>
-        </HBox>
+    <!-- BODY - Scrollable form -->
+    <VBox prefHeight="750.0" prefWidth="650.0">
+        <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS"
+        style="-fx-background-color: transparent; -fx-border-color: transparent; -fx-padding: 0; -fx-background-insets: 0;">
+            <VBox spacing="0">
+                <padding>
+                    <Insets bottom="20.0" left="25.0" right="20.0" top="25.0" />
+                </padding>
 
-        <!-- BODY - Scrollable form -->
-        <VBox layoutY="51.0" prefHeight="700.0" prefWidth="720.0">
-            <ScrollPane fitToWidth="true" hbarPolicy="NEVER" VBox.vgrow="ALWAYS">
-                <VBox spacing="0">
-                    <padding>
-                        <Insets bottom="20.0" left="25.0" right="20.0" top="25.0" />
-                    </padding>
-
-                    <!--PROJECT TYPE -->
-                    <VBox spacing="8">
-                        <Label text="PROJECT TYPE" style="-fx-font-weight: bold;"/>
-                        <HBox alignment="CENTER_LEFT" spacing="10">
-                            <RadioButton fx:id="rbWedding"     maxWidth="Infinity"  text="Wedding"     HBox.hgrow="ALWAYS" />
-                            <RadioButton fx:id="rbEvent"       maxWidth="Infinity"  text="Event"       HBox.hgrow="ALWAYS" />
-                            <RadioButton fx:id="rbGraduation"  maxWidth="Infinity"  text="Graduation"  HBox.hgrow="ALWAYS" />
-                            <RadioButton fx:id="rbCustom"      maxWidth="Infinity"  text="Custom"      HBox.hgrow="ALWAYS" />
-                        </HBox>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- PROJECT DETAILS -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="PROJECT DETAILS" />
-                        <GridPane hgap="16" vgap="14">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="50" />
-                                <ColumnConstraints percentWidth="50" />
-                            </columnConstraints>
-
-                            <!-- Project Number -->
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Project Number *" />
-                                <HBox alignment="CENTER_LEFT" spacing="6">
-                                    <TextField fx:id="fldProjectNumber" maxWidth="Infinity" promptText="Auto-generated" HBox.hgrow="ALWAYS" />
-                                    <Button fx:id="btnRegenNumber" onAction="#onRegenNumber" style="=-fx-padding: 2 6;" text="⟳" />
-                                </HBox>
-                                <Label fx:id="errProjectNumber" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <!-- Status -->
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Status *" />
-                                <ComboBox fx:id="cmbStatus" maxWidth="Infinity" promptText="Select status…" />
-                                <Label fx:id="errStatus" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-                    <rowConstraints>
-                        <RowConstraints />
-                    </rowConstraints>
-                        </GridPane>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- CLIENT INFORMATION -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="CLIENT INFORMATION" />
-                        <GridPane hgap="16" vgap="14">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="50" />
-                                <ColumnConstraints percentWidth="50" />
-                            </columnConstraints>
-
-                            <!-- Name -->
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Client Name *" />
-                                <TextField fx:id="fldClientName" promptText="Full name" />
-                                <Label fx:id="errClientName" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <!-- Phone -->
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Phone Number" />
-                                <TextField fx:id="fldClientPhone" promptText="+94 77 000 0000" />
-                                <Label fx:id="errClientPhone" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <!-- Email -->
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label style="-fx-font-weight: bold;" text="Email Address" />
-                                <TextField fx:id="fldClientEmail" promptText="client@email.com" />
-                                <Label fx:id="errClientEmail" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <!-- Package -->
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <Label style="-fx-font-weight: bold;" text="Package" />
-                                <TextField fx:id="fldPackageName" promptText="e.g. Wedding Gold" />
-                            </VBox>
-                    <rowConstraints>
-                        <RowConstraints />
-                        <RowConstraints />
-                    </rowConstraints>
-                        </GridPane>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- ── EVENT DATES ────────────────────── -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="EVENT DATES" />
-                        <GridPane hgap="16" vgap="14">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="50" />
-                                <ColumnConstraints percentWidth="50" />
-                            </columnConstraints>
-
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Event Date *" />
-                                <DatePicker fx:id="dpEventDate" maxWidth="Infinity" />
-                                <Label fx:id="errEventDate" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Delivery Due Date" />
-                                <DatePicker fx:id="dpDueDate" maxWidth="Infinity" />
-                            </VBox>
-                    <rowConstraints>
-                        <RowConstraints />
-                    </rowConstraints>
-                        </GridPane>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- PAYMENT DETAILS -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="PAYMENT DETAILS" />
-                        <GridPane hgap="16" vgap="14">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="33.33" />
-                                <ColumnConstraints percentWidth="33.33" />
-                                <ColumnConstraints percentWidth="33.33" />
-                            </columnConstraints>
-
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Total Amount" />
-                                <TextField fx:id="fldTotalAmount" promptText="0.00" />
-                                <Label fx:id="errTotalAmount" style="-fx-text-fill: red; " visible="false" />
-                            </VBox>
-
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Advance Paid" />
-                                <TextField fx:id="fldAdvanceAmount" promptText="0.00" />
-                            </VBox>
-
-                            <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Balance (auto)" />
-                                <TextField fx:id="fldBalanceAmount" editable="false" promptText="0.00" />
-                            </VBox>
-                    <rowConstraints>
-                        <RowConstraints />
-                    </rowConstraints>
-                        </GridPane>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- FOLDER SETUP -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="FOLDER SETUP" />
-                        <GridPane hgap="16" vgap="14">
-                            <columnConstraints>
-                                <ColumnConstraints percentWidth="50" />
-                                <ColumnConstraints percentWidth="50" />
-                            </columnConstraints>
-
-                            <!-- Root Folder -->
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
-                                <Label style="-fx-font-weight: bold;" text="Root Project Folder *" />
-                                <HBox alignment="CENTER_LEFT" spacing="6">
-                                    <TextField fx:id="fldProjectPath" editable="false" maxWidth="Infinity" promptText="Select a folder…" HBox.hgrow="ALWAYS" />
-                                    <Button fx:id="btnBrowsePath" onAction="#onBrowseProjectPath" text="Browse…" />
-                                </HBox>
-                                <Label fx:id="errProjectPath" style="-fx-text-fill: red;" visible="false" />
-                            </VBox>
-
-                            <!-- Template -->
-                            <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
-                                <Label style="-fx-font-weight: bold;" text="Folder Template" />
-                                <ComboBox fx:id="cmbFolderTemplate" maxWidth="Infinity" promptText="None-empty folder" />
-                            </VBox>
-
-                            <!-- Preview -->
-                            <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <Label style="-fx-font-weight: bold;" text="Template Preview" />
-                                <Label fx:id="lblTemplatePreview" text="No template selected" wrapText="true" />
-                            </VBox>
-                    <rowConstraints>
-                        <RowConstraints />
-                        <RowConstraints />
-                    </rowConstraints>
-                        </GridPane>
-                    </VBox>
-
-                    <Separator style="-fx-padding: 15 0 15 0;" />
-
-                    <!-- NOTES & REMARKS -->
-                    <VBox spacing="14">
-                        <Label style="-fx-font-weight: bold;" text="NOTES &amp; REMARKS" />
-                        <TextArea fx:id="fldRemarks" prefRowCount="3" promptText="Any additional notes about this project…" wrapText="true" />
-                    </VBox>
-
-                    <Region prefHeight="20" />
+                <!--PROJECT TYPE -->
+                <VBox spacing="8">
+                    <Label style="-fx-font-weight: bold;" text="PROJECT TYPE" />
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <RadioButton fx:id="rbWedding" maxWidth="Infinity" text="Wedding" HBox.hgrow="ALWAYS" />
+                        <RadioButton fx:id="rbEvent" maxWidth="Infinity" text="Event" HBox.hgrow="ALWAYS" />
+                        <RadioButton fx:id="rbGraduation" maxWidth="Infinity" text="Graduation" HBox.hgrow="ALWAYS" />
+                        <RadioButton fx:id="rbCustom" maxWidth="Infinity" text="Custom" HBox.hgrow="ALWAYS" />
+                    </HBox>
                 </VBox>
-            </ScrollPane>
 
-            <!--FOOTER - same button style as About -->
-            <HBox alignment="CENTER_RIGHT" spacing="10" style="-fx-padding: 15 24 15 24;">
-                <Label fx:id="lblFormError" managed="false" style="-fx-text-fill: red; " visible="false" HBox.hgrow="ALWAYS" />
-                <Button fx:id="btnCancel" onAction="#onCancel" text="Cancel" />
-                <Button fx:id="btnCreateProject" defaultButton="true" onAction="#onCreateProject" style="-fx-font-weight: bold;" text="Create Project" />
-            </HBox>
-        </VBox>
-    </children>
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- PROJECT DETAILS -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="PROJECT DETAILS" />
+                    <GridPane hgap="16" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" />
+                            <ColumnConstraints percentWidth="50" />
+                        </columnConstraints>
+
+                        <!-- Project Number -->
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Project Number *" />
+                            <HBox alignment="CENTER_LEFT" spacing="6">
+                                <TextField fx:id="fldProjectNumber" maxWidth="Infinity" promptText="Auto-generated" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnRegenNumber" onAction="#onRegenNumber" style="=-fx-padding: 2 6;" text="⟳" />
+                            </HBox>
+                            <Label fx:id="errProjectNumber" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <!-- Status -->
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Status *" />
+                            <ComboBox fx:id="cmbStatus" maxWidth="Infinity" promptText="Select status…" />
+                            <Label fx:id="errStatus" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+                        <rowConstraints>
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- CLIENT INFORMATION -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="CLIENT INFORMATION" />
+                    <GridPane hgap="16" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" />
+                            <ColumnConstraints percentWidth="50" />
+                        </columnConstraints>
+
+                        <!-- Name -->
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Client Name *" />
+                            <TextField fx:id="fldClientName" promptText="Full name" />
+                            <Label fx:id="errClientName" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <!-- Phone -->
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Phone Number" />
+                            <TextField fx:id="fldClientPhone" promptText="+94 77 000 0000" />
+                            <Label fx:id="errClientPhone" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <!-- Email -->
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label style="-fx-font-weight: bold;" text="Email Address" />
+                            <TextField fx:id="fldClientEmail" promptText="client@email.com" />
+                            <Label fx:id="errClientEmail" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <!-- Package -->
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label style="-fx-font-weight: bold;" text="Package" />
+                            <TextField fx:id="fldPackageName" promptText="e.g. Wedding Gold" />
+                        </VBox>
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- ── EVENT DATES ────────────────────── -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="EVENT DATES" />
+                    <GridPane hgap="16" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" />
+                            <ColumnConstraints percentWidth="50" />
+                        </columnConstraints>
+
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Event Date *" />
+                            <DatePicker fx:id="dpEventDate" maxWidth="Infinity" />
+                            <Label fx:id="errEventDate" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Delivery Due Date" />
+                            <DatePicker fx:id="dpDueDate" maxWidth="Infinity" />
+                        </VBox>
+                        <rowConstraints>
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- PAYMENT DETAILS -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="PAYMENT DETAILS" />
+                    <GridPane hgap="16" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="33.33" />
+                            <ColumnConstraints percentWidth="33.33" />
+                            <ColumnConstraints percentWidth="33.33" />
+                        </columnConstraints>
+
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Total Amount" />
+                            <TextField fx:id="fldTotalAmount" promptText="0.00" />
+                            <Label fx:id="errTotalAmount" style="-fx-text-fill: red; " visible="false" />
+                        </VBox>
+
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Advance Paid" />
+                            <TextField fx:id="fldAdvanceAmount" promptText="0.00" />
+                        </VBox>
+
+                        <VBox spacing="4" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Balance (auto)" />
+                            <TextField fx:id="fldBalanceAmount" editable="false" promptText="0.00" />
+                        </VBox>
+                        <rowConstraints>
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- FOLDER SETUP -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="FOLDER SETUP" />
+                    <GridPane hgap="16" vgap="14">
+                        <columnConstraints>
+                            <ColumnConstraints percentWidth="50" />
+                            <ColumnConstraints percentWidth="50" />
+                        </columnConstraints>
+
+                        <!-- Root Folder -->
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.columnSpan="2" GridPane.rowIndex="0">
+                            <Label style="-fx-font-weight: bold;" text="Root Project Folder *" />
+                            <HBox alignment="CENTER_LEFT" spacing="6">
+                                <TextField fx:id="fldProjectPath" editable="false" maxWidth="Infinity" promptText="Select a folder…" HBox.hgrow="ALWAYS" />
+                                <Button fx:id="btnBrowsePath" onAction="#onBrowseProjectPath" text="Browse…" />
+                            </HBox>
+                            <Label fx:id="errProjectPath" style="-fx-text-fill: red;" visible="false" />
+                        </VBox>
+
+                        <!-- Template -->
+                        <VBox spacing="4" GridPane.columnIndex="0" GridPane.rowIndex="1">
+                            <Label style="-fx-font-weight: bold;" text="Folder Template" />
+                            <ComboBox fx:id="cmbFolderTemplate" maxWidth="Infinity" promptText="None-empty folder" />
+                        </VBox>
+
+                        <!-- Preview -->
+                        <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                            <Label style="-fx-font-weight: bold;" text="Template Preview" />
+                            <Label fx:id="lblTemplatePreview" text="No template selected" wrapText="true" />
+                        </VBox>
+                        <rowConstraints>
+                            <RowConstraints />
+                            <RowConstraints />
+                        </rowConstraints>
+                    </GridPane>
+                </VBox>
+
+                <Separator style="-fx-padding: 15 0 15 0;" />
+
+                <!-- NOTES & REMARKS -->
+                <VBox spacing="12">
+                    <Label style="-fx-font-weight: bold;" text="NOTES &amp; REMARKS" />
+                    <TextArea fx:id="fldRemarks" prefRowCount="3" promptText="Any additional notes about this project…" wrapText="true" />
+                </VBox>
+
+                <Region prefHeight="20" />
+            </VBox>
+        </ScrollPane>
+
+        <!--FOOTER - same button style as About -->
+        <HBox alignment="CENTER_RIGHT" spacing="10" style="-fx-padding: 15 24 15 24;">
+            <Label fx:id="lblFormError" managed="false" style="-fx-text-fill: red; " visible="false" HBox.hgrow="ALWAYS" />
+            <Button fx:id="btnCancel" onAction="#onCancel" text="Cancel" />
+            <Button fx:id="btnCreateProject" defaultButton="true" onAction="#onCreateProject" style="-fx-font-weight: bold;" text="Create Project" />
+        </HBox>
+    </VBox>
 </AnchorPane>

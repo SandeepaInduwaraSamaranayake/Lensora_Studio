@@ -14,7 +14,7 @@ import java.util.Map;
  */
 public final class ImageCache
 {
-    private static final int MAX_ENTRIES = 200;
+    private static volatile int maxEntries = 200;
 
     private static final Map<String, Image> cache =
             new LinkedHashMap<>(16, 0.75f, true)
@@ -22,7 +22,7 @@ public final class ImageCache
                 @Override
                 protected boolean removeEldestEntry(Map.Entry<String, Image> eldest)
                 {
-                    return size() > MAX_ENTRIES;
+                    return size() > maxEntries;
                 }
             };
 
@@ -59,6 +59,23 @@ public final class ImageCache
     private static String buildKey(File file, double width, double height)
     {
         return file.getAbsolutePath() + "|" + file.lastModified() + "|" + (int) width + "x" + (int) height;
+    }
+
+    /**
+     * Updates the maximum number of cached images. If the new limit is smaller,
+     * the cache is trimmed immediately (oldest entries removed).
+     */
+    public static synchronized void setMaxEntries(int newMax) 
+    {
+        if (newMax < 1) newMax = 1; // sanity check
+        maxEntries = newMax;
+        // Trim if necessary
+        while (cache.size() > maxEntries) 
+        {
+            // Remove the eldest entry (first in iteration order)
+            Map.Entry<String, Image> eldest = cache.entrySet().iterator().next();
+            cache.remove(eldest.getKey());
+        }
     }
 
     public static synchronized void clear()

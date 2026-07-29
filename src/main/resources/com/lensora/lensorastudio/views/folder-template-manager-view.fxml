@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.FolderTemplateManagerController">
+
+    <!-- Body: template list (left) + editor (right) -->
+    <center>
+        <HBox spacing="15" prefWidth="640" prefHeight="400">
+            <padding>
+                <Insets top="15" right="15" bottom="0" left="15"/>
+            </padding>
+
+            <!-- LEFT: template list -->
+            <VBox spacing="8" prefWidth="220">
+                <Label text="Templates" style="-fx-font-weight: bold;"/>
+                <ListView fx:id="templateListView" VBox.vgrow="ALWAYS"/>
+                <Button fx:id="btnNewTemplate" text="New Template" maxWidth="Infinity"/>
+            </VBox>
+
+            <!-- RIGHT: template editor -->
+            <VBox spacing="8" HBox.hgrow="ALWAYS">
+                <Label text="Name" style="-fx-font-weight: bold;"/>
+                <TextField fx:id="nameField" promptText="Template name"/>
+
+                <Label text="Description" style="-fx-font-weight: bold;"/>
+                <TextArea fx:id="descriptionField" promptText="Description (optional)" prefRowCount="2" wrapText="true"/>
+
+                <Label text="Folders" style="-fx-font-weight: bold;"/>
+                <ListView fx:id="folderListView" editable="true" VBox.vgrow="ALWAYS"/>
+
+                <HBox spacing="6" alignment="CENTER_LEFT">
+                    <TextField fx:id="newFolderField" promptText="New folder name" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnAddFolder" text="Add"/>
+                    <Button fx:id="btnRemoveFolder" text="Remove"/>
+                    <Button fx:id="btnMoveFolderUp" text="↑"/>
+                    <Button fx:id="btnMoveFolderDown" text="↓"/>
+                </HBox>
+            </VBox>
+        </HBox>
+    </center>
+
+    <!-- Footer -->
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="15" right="15" bottom="15" left="15"/>
+            </padding>
+            <Button fx:id="btnDeleteTemplate" text="Delete Template"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="btnSaveTemplate" text="Save Changes" defaultButton="true"/>
+            <Button fx:id="btnClose" text="Close"/>
+        </HBox>
+    </bottom>
+</BorderPane>

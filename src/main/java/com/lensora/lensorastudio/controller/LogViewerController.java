@@ -11,6 +11,8 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,12 +42,6 @@ public class LogViewerController implements DialogController
 
 
     private Stage stage;
-
-    @Override
-    public Node getHeaderNode() 
-    {
-        return logHeaderBar;
-    }
 
     @FXML
     public void initialize() 
@@ -128,7 +124,7 @@ public class LogViewerController implements DialogController
     private void handleClose() 
     {
         Stage stage = (Stage) closeButton.getScene().getWindow();
-        stage.close();
+        if (stage != null) stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
     }
 
     public void setStage(Stage stage) 

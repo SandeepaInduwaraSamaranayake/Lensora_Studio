@@ -14,29 +14,6 @@
     xmlns="http://javafx.com/javafx/17"
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.LogViewerController">
 
-    <!-- Title Bar -->
-    <top>
-        <HBox fx:id="logHeaderBar" alignment="CENTER_RIGHT" prefHeight="51.0" spacing="8.0">
-            <children>
-                <Label text="📄">
-                    <font>
-                        <Font size="25.0" />
-                    </font>
-                </Label>
-                <Label text="Application Log"/>
-                <Region HBox.hgrow="ALWAYS" />
-                <Button fx:id="closeButton" onAction="#handleClose" mnemonicParsing="false" prefHeight="35.0" prefWidth="35.0" text="✕">
-                    <font>
-                        <Font size="11.0" />
-                    </font>
-                </Button>
-            </children>
-            <padding>
-                <Insets bottom="8.0" left="8.0" right="10.0" top="8.0" />
-            </padding>
-        </HBox>
-    </top>
-
     <!-- Center: Log content -->
     <center>
         <VBox spacing="10" style="-fx-padding: 12 16 12 16;">

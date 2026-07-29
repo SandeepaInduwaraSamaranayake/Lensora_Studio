@@ -13,6 +13,8 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,14 +71,6 @@ public class NewProjectController implements DialogController
     private String selectedPrefix = "CUS"; // default
     private List<String> currentTemplateFolders;
     private Consumer<Integer> onProjectCreated;
-
-    // -------------------------- DialogController implementation ----------------------------------
-
-    @Override
-    public Node getHeaderNode() 
-    {
-        return newProjectHeaderBar;
-    }
 
     // ------------------------------------- Initialisation ----------------------------------------
 
@@ -517,7 +511,7 @@ public class NewProjectController implements DialogController
     private void closeDialog() 
     {
         Stage stage = (Stage) fldProjectNumber.getScene().getWindow();
-        if (stage != null) stage.close();
+        if (stage != null) stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
     }
 
     public void setOnProjectCreated(Consumer<Integer> callback) 

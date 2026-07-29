@@ -3,9 +3,18 @@ package com.lensora.lensorastudio.util;
 import com.lensora.lensorastudio.controller.DialogController;
 import com.lensora.lensorastudio.services.ThemeManager;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
@@ -28,9 +37,11 @@ public class DialogBuilder
     private final Stage owner;
 
     private Consumer<Object> controllerConsumer;
-
+    private String icon = "🗔";
     private boolean resizable = false;
     private Modality modality = Modality.APPLICATION_MODAL;
+    private double minWidth = 300;
+    private double minHeight = 150;
 
     private DialogBuilder(URL fxmlUrl, String title, Stage owner) 
     {
@@ -44,7 +55,6 @@ public class DialogBuilder
         return new DialogBuilder(fxmlUrl, title, owner);
     }
 
-
     public DialogBuilder resizable(boolean resizable) 
     {
         this.resizable = resizable;
@@ -54,6 +64,26 @@ public class DialogBuilder
     public DialogBuilder modality(Modality modality)
     {
         this.modality = modality;
+        return this;
+    }
+
+    /** Sets the header icon glyph/emoji shown to the left of the title. Defaults to "🗔". */
+    public DialogBuilder icon(String icon)
+    {
+        this.icon = icon;
+        return this;
+    }
+
+    public DialogBuilder minSize(double minWidth, double minHeight)
+    {
+        this.minWidth = minWidth;
+        this.minHeight = minHeight;
+        return this;
+    }
+
+    public DialogBuilder withControllerConsumer(Consumer<Object> consumer) 
+    {
+        this.controllerConsumer = consumer;
         return this;
     }
 
@@ -76,7 +106,7 @@ public class DialogBuilder
 
             // Load the FXML file (absolute resource path)
             FXMLLoader loader = new FXMLLoader(fxmlUrl);
-            Parent root = loader.load();
+            Parent bodyContent  = loader.load();
             Object controller = loader.getController();
             if (controllerConsumer != null) controllerConsumer.accept(controller);
 
@@ -91,8 +121,17 @@ public class DialogBuilder
             // Anchors this window directly to owner window
             if(owner != null) stage.initOwner(owner);
             
+            // Build the shared header bar 
+            HBox header = buildHeader(stage, controller);
+
+            BorderPane root = new BorderPane();
+            root.setTop(header);
+            root.setCenter(bodyContent);
+
             Scene scene = new Scene(root);
             stage.setScene(scene);
+            stage.setMinWidth(minWidth);
+            stage.setMinHeight(minHeight);
 
             // Apply current font size to this new scene
             ThemeManager.applyCurrentFontSizeToScene(scene);
@@ -122,29 +161,17 @@ public class DialogBuilder
             });
 
 
-            // --- Set up dragging ---
-            Node header = null;
-
-            if (controller instanceof DialogController) 
-            {
-                header = ((DialogController) controller).getHeaderNode();
-                if (header == null) 
+            // Route the OS-level close request (Alt+F4, taskbar close, etc.)
+            // through the same canClose()/onClosing() hook as the header button.
+            stage.setOnCloseRequest(event -> {
+                if (!requestClose(controller, stage))
                 {
-                    logger.warn("DialogController returned null header for {}", title);
+                    event.consume();
                 }
-            }
-            else
-            {
-                logger.warn("Controller does not implement DialogController - no drag support for {}", title);
-            }
+            });
 
-            // Set up dragging for the given header Node
-            if (header != null) 
-            {
-                setupWindowDrag(stage, header);
-            }
+            setupWindowDrag(stage, header);
 
-            // Show the window
             stage.show();
             return stage;
 
@@ -156,10 +183,45 @@ public class DialogBuilder
         }
     }
 
-    public DialogBuilder withControllerConsumer(Consumer<Object> consumer) 
+    // ─── Header construction ────────────────────────────────────────────────
+
+    private HBox buildHeader(Stage stage, Object controller)
     {
-        this.controllerConsumer = consumer;
-        return this;
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setSpacing(8);
+        header.setPadding(new Insets(8, 8, 8, 8));
+
+        Label iconLabel = new Label(icon);
+        iconLabel.setFont(Font.font(25));
+
+        Label titleLabel = new Label(title);
+
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+        Button closeButton = new Button("✕");
+        closeButton.setPrefSize(35.0, 35.0);
+        closeButton.setFont(Font.font(11));
+        closeButton.setOnAction(e -> requestClose(controller, stage));
+
+        header.getChildren().addAll(iconLabel, titleLabel, spacer, closeButton);
+        return header;
+    }
+
+    /** Asks the controller (if it opts in) whether closing is allowed, then closes if so. */
+    private boolean requestClose(Object controller, Stage stage)
+    {
+        if (controller instanceof DialogController dc && !dc.canClose())
+        {
+            return false;
+        }
+        if (controller instanceof DialogController dc)
+        {
+            dc.onClosing();
+        }
+        stage.close();
+        return true;
     }
 
     // --- DRAG SETUP ---
