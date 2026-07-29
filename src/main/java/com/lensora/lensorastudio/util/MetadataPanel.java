@@ -1,6 +1,5 @@
 package com.lensora.lensorastudio.util;
 
-import com.lensora.lensorastudio.managers.FileListingManager;
 import com.lensora.lensorastudio.model.MediaMetadata;
 import com.lensora.lensorastudio.services.AppSettings;
 
