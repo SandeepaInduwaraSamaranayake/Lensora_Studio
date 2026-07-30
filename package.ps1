@@ -354,6 +354,26 @@ if (-not (Test-Path "pom.xml")) {
     exit 1
 }
 
+# Install unreleased local dependencies into Maven local repository
+$LocalJarPath = "lib/snapfx-core-0.8.0.jar"
+if (Test-Path $LocalJarPath) {
+    Write-Host "`n[*] Installing local dependency: SnapFX..." -ForegroundColor Yellow
+    & $MvnCmd install:install-file `
+        "-Dfile=$LocalJarPath" `
+        "-DgroupId=org.snapfx" `
+        "-DartifactId=snapfx-core" `
+        "-Dversion=0.8.0" `
+        "-Dpackaging=jar" `
+        "-q"
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Failed to install local SnapFX dependency" -ForegroundColor Red
+        exit 1
+    }
+} else {
+    Write-Host "WARNING: Local jar not found at $LocalJarPath" -ForegroundColor Yellow
+}
+
 # Build
 Write-Host "`n[1/4] Building with Maven..." -ForegroundColor Yellow
 & $MvnCmd clean package -DskipTests -q
