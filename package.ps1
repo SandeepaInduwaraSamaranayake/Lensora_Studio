@@ -303,7 +303,7 @@
 
 param
 (
-    [string]$OutputDir = ".\.dist",
+    [string]$OutputDir = "./.dist",
     [string]$AppVersion = "1.0.0",
     [string]$InstallerType = ""
 )
@@ -354,6 +354,9 @@ if (-not (Test-Path "pom.xml")) {
     exit 1
 }
 
+#################################################################################################
+############## NEED TO DELETE BELOW AFTER SNAPFX PUBLISHED TO MAVEN CENTRAL######################
+#################################################################################################
 # Install unreleased local dependencies into Maven local repository
 $LocalJarPath = "lib/snapfx-core-0.8.0.jar"
 if (Test-Path $LocalJarPath) {
@@ -373,6 +376,10 @@ if (Test-Path $LocalJarPath) {
 } else {
     Write-Host "WARNING: Local jar not found at $LocalJarPath" -ForegroundColor Yellow
 }
+
+#################################################################################################
+#################################################################################################
+#################################################################################################
 
 # Build
 Write-Host "`n[1/4] Building with Maven..." -ForegroundColor Yellow
@@ -508,7 +515,7 @@ if ($IsWin) {
 
 # README
 $Readme = "Lensora Studio PORTABLE`nVersion: $AppVersion`n`nREQUIREMENTS:`n- Java 21+ or Java 26+`n`nHOW TO RUN:`n" + 
-          $(if ($IsWin) { "- Double-click Start-LensoraStudio.bat" } else { "- Run: ./Start-LensoraStudio.sh" })
+            $(if ($IsWin) { "- Double-click Start-LensoraStudio.bat" } else { "- Run: ./Start-LensoraStudio.sh" })
 [System.IO.File]::WriteAllText((Join-Path $AppDir "README.txt"), $Readme)
 
 # Compress Portable Package
@@ -516,7 +523,7 @@ if ($IsWin) {
     Compress-Archive -Path $AppDir -DestinationPath (Join-Path $OutputDir "$AppName-$AppVersion-portable.zip") -Force
 } else {
     $TarPath = Join-Path $OutputDir "$AppName-$AppVersion-portable.tar.gz"
-    tar -czf $TarPath -C $ZipTemp "$AppName-$AppVersion"
+    & tar -czf $TarPath -C $ZipTemp "$AppName-$AppVersion"
 }
 
 # Cleanup
