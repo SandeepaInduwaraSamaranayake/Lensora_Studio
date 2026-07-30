@@ -23,6 +23,10 @@ $Vendor      = "Lensora Foundation"
 $MainClass   = "com.lensora.lensorastudio.Launcher"
 $JarFile     = "lensora-studio-1.0-SNAPSHOT-all.jar"
 
+# Sanitize AppVersion for jpackage (strip leading 'v' or non-digit characters)
+$AppVersion = $AppVersion -replace '^[^\d]+', ''
+if (-not $AppVersion) { $AppVersion = "1.0.0" }
+
 # Convert all backslashes to forward slashes and build absolute path
 $OutputDir = $OutputDir.Replace('\', '/')
 if (-not [System.IO.Path]::IsPathRooted($OutputDir)) {
