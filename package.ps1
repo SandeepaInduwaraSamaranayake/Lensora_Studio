@@ -318,6 +318,12 @@ $Vendor      = "Lensora Foundation"
 $MainClass   = "com.lensora.lensorastudio.Launcher"
 $JarFile     = "lensora-studio-1.0-SNAPSHOT-all.jar"
 
+# Convert all backslashes to forward slashes and build absolute path
+$OutputDir = $OutputDir.Replace('\', '/')
+if (-not [System.IO.Path]::IsPathRooted($OutputDir)) {
+    $OutputDir = [System.IO.Path]::Combine((Get-Location).ProviderPath, $OutputDir).Replace('\', '/')
+}
+
 # Set default installer type based on OS
 if (-not $InstallerType) {
     if ($IsWin)     { $InstallerType = "exe" }
