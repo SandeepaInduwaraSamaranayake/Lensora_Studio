@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-# Lensora Studio - Multi-Platform Packaging Script
+# Lensora Studio - Multi-Platform Packaging Script (Windows, Linux & Mac OS)
 #
 # Usage:
 #   .\package.ps1
