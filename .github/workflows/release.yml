@@ -48,16 +48,25 @@ jobs:
       - name: Ensure Maven Wrapper executable
         if: runner.os != 'Windows'
         run: chmod +x mvnw || true
+      
+      - name: Clean Version Tag
+        id: version
+        shell: pwsh
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart('v')
+          if (-not $ver -or "${{ github.ref_type }}" -ne "tag") { $ver = "1.0.0" }
+          Write-Output "VERSION=$ver" >> $env:GITHUB_OUTPUT
 
       - name: Run Packaging Script
         shell: pwsh
-        run: .\package.ps1 -AppVersion "${{ github.ref_type == 'tag' && github.ref_name || '1.0.0' }}"
+        run: .\package.ps1 -AppVersion "${{ steps.version.outputs.VERSION }}"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact-name }}
           path: .dist/*
+          if-no-files-found: error
 
 
   create-release:
@@ -71,10 +80,14 @@ jobs:
         - name: Checkout repository
           uses: actions/checkout@v4
 
+        - name: Create release directory
+          run: mkdir -p release-assets
+
         - name: Download all build artifacts
           uses: actions/download-artifact@v4
           with:
             path: release-assets
+            pattern: '*-installer'
             merge-multiple: true
 
         - name: Display downloaded assets
