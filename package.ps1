@@ -8,7 +8,7 @@
 
 param
 (
-    [string]$OutputDir = "./.dist",
+    [string]$OutputDir = "./dist",
     [string]$AppVersion = "1.0.0",
     [string]$InstallerType = ""
 )
