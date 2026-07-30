@@ -128,7 +128,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # Set this to your required JDK version (e.g., 21, 22, 26)
+          java-version: '26' # Set this to your required JDK version (e.g., 21, 22, 26)
           distribution: 'temurin'
           cache: 'maven'
 
