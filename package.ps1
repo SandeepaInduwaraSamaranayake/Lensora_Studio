@@ -27,11 +27,9 @@ $JarFile     = "lensora-studio-1.0-SNAPSHOT-all.jar"
 $AppVersion = $AppVersion -replace '^[^\d]+', ''
 if (-not $AppVersion) { $AppVersion = "1.0.0" }
 
-# Convert all backslashes to forward slashes and build absolute path
-$OutputDir = $OutputDir.Replace('\', '/')
-if (-not [System.IO.Path]::IsPathRooted($OutputDir)) {
-    $OutputDir = [System.IO.Path]::Combine((Get-Location).ProviderPath, $OutputDir).Replace('\', '/')
-}
+# Ensure OutputDir is normalized to a clean, canonical absolute path
+$OutputDir = $OutputDir -replace '\\', '/'
+$OutputDir = [System.IO.Path]::GetFullPath([System.IO.Path]::Combine($PWD.Path, $OutputDir))
 
 # Set default installer type based on OS
 if (-not $InstallerType) {
