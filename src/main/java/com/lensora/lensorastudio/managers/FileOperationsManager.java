@@ -33,6 +33,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import javafx.application.Platform;
+import java.util.concurrent.CompletableFuture;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snapfx.SnapFX;
@@ -122,11 +125,19 @@ public class FileOperationsManager
     {
         List<File> files = selectedFilesSupplier.get();
         if (files.isEmpty()) return;
-        for (File file : files) 
-        {
-            try { Desktop.getDesktop().open(file); }
-            catch (IOException ex) { ErrorHandler.show(null, "Could not open file", ex); }
-        }
+        // Run OS file launches in the background
+        CompletableFuture.runAsync(() -> {
+            for (File file : files) 
+            {
+                try { Desktop.getDesktop().open(file); }
+                catch (IOException ex) 
+                {
+                    Platform.runLater(() ->
+                        ErrorHandler.show(null, "Could not open file", ex)
+                    );
+                }
+            }
+        });
     }
 
     private void renameSelectedFile()
@@ -198,31 +209,44 @@ public class FileOperationsManager
         File file = selectedFileSupplier.get();
         if (file == null) return;
 
-        if (!Desktop.isDesktopSupported())
-        {
-            Dialogs.showInfo(null, "Not Supported", null, "Desktop API is not supported.");
-            return;
-        }
-
-        try
-        {
-            Desktop desktop = Desktop.getDesktop();
-            if (desktop.isSupported(Desktop.Action.BROWSE_FILE_DIR))
+        // Offload native OS calls to a background thread to prevent UI freezing on Linux
+        CompletableFuture.runAsync(() -> {
+            if (!Desktop.isDesktopSupported())
             {
-                desktop.browseFileDirectory(file);
+                Platform.runLater(() -> 
+                    Dialogs.showInfo(null, "Not Supported", null, "Desktop API is not supported.")
+                );
                 return;
             }
 
-            // Fallback: open the parent folder
-            File parent = file.getParentFile();
-            if (parent != null && parent.exists() && desktop.isSupported(Desktop.Action.OPEN)) 
+            try
             {
-                desktop.open(parent);
-                return;
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.BROWSE_FILE_DIR))
+                {
+                    desktop.browseFileDirectory(file);
+                    return;
+                }
+
+                // Fallback: open the parent folder
+                File parent = file.getParentFile();
+                if (parent != null && parent.exists() && desktop.isSupported(Desktop.Action.OPEN)) 
+                {
+                    desktop.open(parent);
+                    return;
+                }
+
+                Platform.runLater(() -> 
+                    Dialogs.showInfo(null, "Not Supported", null, "Cannot open file browser.")
+                );
             }
-            Dialogs.showInfo(null, "Not Supported", null, "Cannot open file browser.");
-        }
-        catch (Exception e) { ErrorHandler.show(null, "Could not open in explorer", e); }
+            catch (Exception e) 
+            { 
+                Platform.runLater(() -> 
+                    ErrorHandler.show(null, "Could not open in explorer", e)
+                ); 
+            }
+        });
     }
 
     private void showMetadata() 
