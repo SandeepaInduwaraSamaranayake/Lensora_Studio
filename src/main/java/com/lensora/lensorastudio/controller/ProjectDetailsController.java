@@ -8,6 +8,7 @@ import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.NoteEditDialog;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -22,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
 
@@ -132,17 +134,22 @@ public class ProjectDetailsController
     {
         Project current = viewModel.getSelectedProject();
         if (current == null || current.getProjectPath() == null) return;
-        try
-        {
-            if (Desktop.isDesktopSupported())
+        // Run in the background
+        CompletableFuture.runAsync(() -> {
+            try
             {
-                Desktop.getDesktop().open(new File(current.getProjectPath()));
+                if (Desktop.isDesktopSupported())
+                {
+                    Desktop.getDesktop().open(new File(current.getProjectPath()));
+                }
             }
-        }
-        catch (IOException ex)
-        {
-            ErrorHandler.show(null, "Could not open folder", ex);
-        }
+            catch (IOException ex)
+            {
+                Platform.runLater(() ->
+                    ErrorHandler.show(null, "Could not open folder", ex)
+                );
+            }
+        });
     }
 
 

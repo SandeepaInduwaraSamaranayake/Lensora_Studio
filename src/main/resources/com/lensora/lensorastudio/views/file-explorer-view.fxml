@@ -85,6 +85,7 @@
                         <items>
                             <MenuItem fx:id="ctxFileOpen" text="Open"/>
                             <Menu     fx:id="ctxOpenWithMenu" text="Open With"/>
+                            <MenuItem fx:id="ctxOpenInAnotherWindow" text="Open in Another Window"/>
                             <SeparatorMenuItem/>
                             <MenuItem fx:id="ctxFileRename" text="Rename…"/>
                             <MenuItem fx:id="ctxFileCopy" text="Copy"/>

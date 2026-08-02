@@ -54,6 +54,7 @@ public class FileManager
                         MenuItem ctxFileDelete,
                         MenuItem ctxFileShowInExplorer,
                         MenuItem ctxFileProperties,
+                        MenuItem ctxOpenInAnotherWindow,
                         HBox breadcrumbContainer,
                         Button btnBack,
                         Button btnForward,
@@ -77,7 +78,7 @@ public class FileManager
                 fileListView, iconScrollPane, iconFlowPane);
 
         this.fileOperationsManager = new FileOperationsManager(
-                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties,
+                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInAnotherWindow,
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
                 fileListingManager::getSelectedFile,
                 fileListingManager::getSelectedFiles,

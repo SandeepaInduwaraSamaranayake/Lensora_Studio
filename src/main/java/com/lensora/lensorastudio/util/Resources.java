@@ -19,7 +19,8 @@ public enum Resources
 
     SQL_SCHEMA("/com/lensora/lensorastudio/database/schema.sql"),
     MANIFEST("/META-INF/MANIFEST.MF"),
-    APP_ICON("/com/lensora/lensorastudio/images/lensora_32x32.png");
+    APP_ICON("/com/lensora/lensorastudio/images/lensora_32x32.png"),
+    SPLASH_SCREEN("/com/lensora/lensorastudio/images/lensora_splash.png");
     
 
     private final String path;

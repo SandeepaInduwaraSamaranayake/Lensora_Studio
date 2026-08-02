@@ -167,34 +167,32 @@ public final class MetadataPanel
         ImageView imageView = new ImageView();
         imageView.setPreserveRatio(true);
         imageView.setSmooth(true);
-        
 
         StackPane pane = new StackPane(imageView);
         pane.setPadding(new Insets(10));
-        
-        // Load a cached, background-loaded image sized to a sensible max -
-        // actual on-screen width is controlled by the binding below, not by
-        // the loaded image's native resolution.
+
         int previewSize = AppSettings.getInstance().getMetadataPreviewSize();
         Image cachedImage = ImageCache.getOrLoad(file, previewSize, 0);
         imageView.setImage(cachedImage);
 
-        // Bind to the ScrollPane's actual VIEWPORT width, not the
-        // StackPane's own layout width. The container VBox's width can be
-        // forced wider than the viewport by sibling content (e.g. the
-        // property grids' fixed-width columns), which triggers ScrollPane's
-        // horizontal scrollbar instead of shrinking further. The viewport
-        // itself, however, always reflects the real visible width — so
-        // binding to it lets the image keep shrinking even after the
-        // scrollbar appears, instead of getting stuck at the content's
-        // forced minimum width.
+        // Force the StackPane to track the ScrollPane's viewport width exactly
+        // - this breaks the circular sizing dependency (pane sized by content,
+        // content sized by pane) that prevents shrinking. minWidth(0) is
+        // essential: without it, Region defaults minWidth to prefWidth, which
+        // is exactly what was blocking shrink-below-content-size before.
+        pane.minWidthProperty().set(0);
+        pane.prefWidthProperty().bind(scrollPane.viewportBoundsProperty()
+                .map(b -> b.getWidth()));
 
         imageView.fitWidthProperty().bind(Bindings.createDoubleBinding(
                 () -> {
+                    double insetLeft = pane.getInsets().getLeft();
+                    double insetRight = pane.getInsets().getRight();
                     double viewportWidth = scrollPane.getViewportBounds() != null
                             ? scrollPane.getViewportBounds().getWidth()
                             : scrollPane.getWidth();
-                    return Math.max(50, viewportWidth - 40); // 40 = left+right padding
+                    double available = viewportWidth - (insetLeft + insetRight + 20);  // added 20 as the padding
+                    return Math.max(50, available);
                 },
                 scrollPane.viewportBoundsProperty()
         ));

@@ -158,7 +158,22 @@
                   </content>
                </Tab>
 
-               <!-- Tab 5: Advanced -->
+               <!-- Tab 5: External Applications -->
+               <Tab text="External Applications">
+                  <content>
+                     <VBox spacing="15.0">
+                        <padding>
+                           <Insets bottom="30.0" left="30.0" right="30.0" top="25.0" />
+                        </padding>
+                        <HBox spacing="10.0">
+                           <Label text="Manage External Applications" />
+                           <Button fx:id="btnManageApps" text="Manage" />
+                        </HBox>
+                     </VBox>
+                  </content>
+               </Tab>
+
+               <!-- Tab 6: Advanced -->
                <Tab text="Advanced">
                   <content>
                      <VBox spacing="20.0">

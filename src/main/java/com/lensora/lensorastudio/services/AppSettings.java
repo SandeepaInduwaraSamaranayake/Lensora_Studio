@@ -57,22 +57,27 @@ public class AppSettings
     public static final int         DEFAULT_METADATA_PREVIEW_SIZE                   = 600;
     public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
     public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
-    public static final int        DEFAULT_IMAGE_CACHE_SIZE                        = 200;
+    public static final int         DEFAULT_IMAGE_CACHE_SIZE                        = 200;
 
     // --------------------------- Supported themes ----------------------------------
 
     public enum Theme
     {
-        CUPERTINO_DARK  ("Cupertino Dark" ),
-        CUPERTINO_LIGHT ("Cupertino Light" ),
-        NORD_DARK       ("Nord Dark" ),
-        PRIMER_DARK     ("Primer Dark" ),
-        PRIMER_LIGHT    ("Primer Light" ),
-        MODENA          ("JavaFX Modena (Native SnapFX)"),
-        CASPIAN         ("JavaFX Caspian (Native SnapFX)");
+        CUPERTINO_DARK  ("Cupertino Dark", true),
+        CUPERTINO_LIGHT ("Cupertino Light", true),
+        NORD_DARK       ("Nord Dark", true),
+        PRIMER_DARK     ("Primer Dark", true),
+        PRIMER_LIGHT    ("Primer Light", true),
+        MODENA          ("JavaFX Modena (Native SnapFX)", false),
+        CASPIAN         ("JavaFX Caspian (Native SnapFX)", false);
 
         public final String displayName;
-        Theme(String displayName) { this.displayName = displayName; }
+        public final boolean atlantaFxBased;
+        Theme(String displayName, boolean atlantaFxBased) 
+        {
+            this.displayName = displayName;
+            this.atlantaFxBased = atlantaFxBased;
+        }
     }
 
     // ----------------------------- Singleton ---------------------------------------

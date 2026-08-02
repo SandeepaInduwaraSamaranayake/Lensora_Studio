@@ -8,6 +8,9 @@ cd Lensora_Studio
 --run
 .\mvnw clean javafx:run
 
+--run debug
+.\mvnw clean javafx:run -X
+
 -- build
 .\mvnw compile
 

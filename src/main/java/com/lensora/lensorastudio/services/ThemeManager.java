@@ -8,6 +8,8 @@ import javafx.stage.Window;
 
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -20,7 +22,7 @@ import org.slf4j.Logger;
 public class ThemeManager
 {
     private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
-    private static Consumer<AppSettings.Theme> themeChangeListener;
+    private static final List<Consumer<AppSettings.Theme>> themeChangeListeners = new CopyOnWriteArrayList<>();
 
     private ThemeManager() {}
 
@@ -58,9 +60,9 @@ public class ThemeManager
             case CASPIAN         -> Application.setUserAgentStylesheet(Application.STYLESHEET_CASPIAN);
         }
 
-        if (themeChangeListener != null) 
+        for (Consumer<AppSettings.Theme> listener : themeChangeListeners)
         {
-            themeChangeListener.accept(theme);
+            listener.accept(theme);
         }
     }
 
@@ -114,8 +116,37 @@ public class ThemeManager
         applyFontSizeToScene(scene, AppSettings.getInstance().getFontSize());
     }
 
+/**
+     * Back-compat single-listener setter. Replaces any previously
+     * registered listeners with just this one — kept so existing call
+     * sites (e.g. MainController) don't need to change.
+     */
     public static void setThemeChangeListener(Consumer<AppSettings.Theme> listener) 
     {
-        themeChangeListener = listener;
+        themeChangeListeners.clear();
+        if (listener != null)
+        {
+            themeChangeListeners.add(listener);
+        }
+    }
+
+    /**
+     * Adds an additional theme-change listener without disturbing any
+     * others already registered (e.g. MainController's dock-sync
+     * listener). Used by secondary windows such as the image viewer,
+     * which only need to listen while their window is open.
+     */
+    public static void addThemeChangeListener(Consumer<AppSettings.Theme> listener)
+    {
+        if (listener != null)
+        {
+            themeChangeListeners.add(listener);
+        }
+    }
+
+    /** Removes a previously added listener — call when the owning window closes. */
+    public static void removeThemeChangeListener(Consumer<AppSettings.Theme> listener)
+    {
+        themeChangeListeners.remove(listener);
     }
 }

@@ -3,12 +3,12 @@ package com.lensora.lensorastudio;
 import atlantafx.base.theme.CupertinoDark;
 
 import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-
-import org.slf4j.Logger;
+import java.util.concurrent.CompletableFuture;
 
 import com.lensora.lensorastudio.controller.MainController;
 import com.lensora.lensorastudio.services.AppSettings;
@@ -17,6 +17,7 @@ import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.Resources;
+import com.lensora.lensorastudio.util.SplashScreen;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -32,8 +33,8 @@ import javafx.stage.StageStyle;
  * <p>
  * Responsibilities:
  * <ul>
- *   <li>Initialise the database schema</li>
- *   <li>Install global exception handlers</li>
+ *   <li>Install global exception handlers and display splash screen</li>
+ *   <li>Asynchronously initialise the database schema off the UI thread</li>
  *   <li>Load the main FXML and apply the dark theme</li>
  *   <li>Restore window geometry (size/position/maximised) via {@link LayoutPersistence}</li>
  * </ul>
@@ -63,98 +64,148 @@ public class App extends Application
      * Used for heavy initialisation that doesn't need the UI thread.
      */
     @Override
-    public void init() throws Exception 
+    public void init()
     {
-        DatabaseManager.initializeDatabase();
+        logger.info("[Lensora] Application starting up...");
     }
 
-    /**
-     * The main entry point for the JavaFX UI thread.
-     * Builds the primary stage, sets up the scene, and restores the layout.
-     */
     @Override
     public void start(Stage stage)
     {
-        // Install the global uncaught-exception handler.
         ErrorHandler.installGlobalHandler();
-        try
-        {
-            //------------------------------- Theme and window style ------------------------------------
-            Application.setUserAgentStylesheet(new CupertinoDark().getUserAgentStylesheet());
 
-            stage.initStyle(StageStyle.EXTENDED);
-            
-            //------------------------------------- Load FXML -------------------------------------------
-            FXMLLoader fxmlLoader = new FXMLLoader(Resources.MAIN_VIEW.url());
-            Parent root = fxmlLoader.load();
+        // Splash screen renders immediately
+        SplashScreen.show();
 
+        // Begin startup pipeline
+        initializeDatabaseAsync(stage);
+    }
 
-            //------------------------------------- Scene ----------------------------------------------
-            Scene scene = new Scene(root);
+    /**
+     * Runs long-running database initialisation off the UI thread.
+     */
+    private void initializeDatabaseAsync(Stage stage)
+    {
+        CompletableFuture.runAsync(() -> {
+            SplashScreen.update("Initializing database...", 0.20);
+            DatabaseManager.initializeDatabase();
+        })
+        .thenRun(() -> Platform.runLater(() -> {
+            try
+            {
+                initializeUI(stage);
+            }
+            catch (Exception e)
+            {
+                handleStartupFailure(e);
+            }
+        }))
+        .exceptionally(ex -> {
+            Platform.runLater(() -> handleStartupFailure(ex.getCause() != null ? ex.getCause() : ex));
+            return null;
+        });
+    }
 
-            // Load font-size override after the AtlantaFX stylesheet so it wins
-            // scene.getStylesheets().add(
-            //     App.class.getResource("styles/app-overrides.css").toExternalForm()
-            // );
+    /**
+     * Builds and presents the JavaFX primary stage once asynchronous prerequisites complete.
+     */
+    private void initializeUI(Stage stage) throws IOException
+    {
+        SplashScreen.update("Applying theme...", 0.40);
+        applyTheme(stage);
 
-            //------------------------------------- Stage Setup ---------------------------------------
-            // Clear any default icons just in case
-            stage.getIcons().clear();
+        SplashScreen.update("Loading workspace UI...", 0.65);
+        FXMLLoader fxmlLoader = new FXMLLoader(Resources.MAIN_VIEW.url());
+        Parent root = fxmlLoader.load();
+        Scene scene = new Scene(root);
 
-            // Add multiple resolutions for Windows Taskbar scaling (Highly Recommended)
-            // Windows uses 16x16 for the top corner, 32x32 for the taskbar / minimize state
-            stage.getIcons().addAll(
-                new Image(Resources.APP_ICON.getResourceAsStream())
-            );
-            stage.setTitle("Lensora Studio");
-            stage.setScene(scene);
+        configureStage(stage, scene);
 
-            MainController mainController = fxmlLoader.getController();
-            mainController.setStage(stage);
-            mainController.getDockingService().initialize(stage);
-            mainController.getDockingService().registerThemeListener();
-            
-            // Hide the window until layout is ready
-            stage.setOpacity(0.0);
+        MainController mainController = fxmlLoader.getController();
+        configureController(mainController, stage);
 
-            // Restore window geometry (size, position, maximised) BEFORE showing.
-            // Bind window - the callback will reveal it after dividers are set
-            LayoutPersistence.bindWindow(stage, () -> {
-                // Now the layout is stable, make the window visible
-                stage.setOpacity(1.0);
-            });
+        SplashScreen.update("Restoring workspace layout...", 0.90);
+        restoreLayout(stage);
 
-            // Apply saved theme and font size
-            ThemeManager.apply(scene);
+        ThemeManager.apply(scene);
 
-            stage.show();
-            
-            // centralized close request handler for all windows (e.g. to prompt "Save changes?" on exit)
-            stage.setOnCloseRequest(event -> {
-                mainController.getDockingService().saveLayout();
-                logger.info("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
-                
-                // 1. Check for unsaved work here if needed (uncomment below to test)
+        installShutdownHandler(stage, mainController);
+
+        stage.show();
+    }
+
+    private void applyTheme(Stage stage)
+    {
+        Application.setUserAgentStylesheet(new CupertinoDark().getUserAgentStylesheet());
+        stage.initStyle(StageStyle.EXTENDED);
+    }
+
+    private void configureStage(Stage stage, Scene scene)
+    {
+        stage.getIcons().clear();
+        stage.getIcons().addAll(
+            new Image(Resources.APP_ICON.getResourceAsStream())
+        );
+        stage.setTitle("Lensora Studio");
+        stage.setScene(scene);
+        
+        // Hide window until layout geometry calculations complete
+        stage.setOpacity(0.0);
+    }
+
+    private void configureController(MainController controller, Stage stage)
+    {
+        controller.setStage(stage);
+        controller.getDockingService().initialize(stage);
+        controller.getDockingService().registerThemeListener();
+    }
+
+    private void restoreLayout(Stage stage)
+    {
+        // Restore window geometry (size, position, maximised) BEFORE showing.
+        LayoutPersistence.bindWindow(stage, () -> {
+            stage.setOpacity(1.0);
+            SplashScreen.close();
+        });
+    }
+
+    /**
+    * centralized close request handler for all windows (e.g. to prompt "Save changes?" on exit) 
+    */
+    private void installShutdownHandler(Stage stage, MainController controller)
+    {
+        stage.setOnCloseRequest(event -> {
+            controller.getDockingService().saveLayout();
+            logger.info("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
+
+                // Check for unsaved work here if needed (uncomment below to test)
                 /*
                 if (hasUnsavedChanges) {
                     event.consume(); // Cancels the exit completely if the user clicks 'Cancel'
                     return;
                 }
                 */
-                
-                // 2. Shut down background processes safely
-                Platform.exit(); // Closes the JavaFX Toolkit cleanly
-                System.exit(0);  // Terminates the JVM instance completely
-            });
-        }
-        catch (Exception e)
-        {
-            logger.error("[Lensora] Failed to start application: " + e.getMessage());
-            // Show the error dialog before giving up — the stage may not be
-            // visible yet so we pass null as the owner.
-            ErrorHandler.show(null, "Lensora Studio failed to start.", e);
-            Platform.exit();
-        }
+            
+            // Shut down background processes safely
+            Platform.exit();            // Closes the JavaFX Toolkit cleanly
+            System.exit(0);      // Terminates the JVM instance completely
+        });
+    }
+
+    /**
+     * Centralized startup failure handler ensuring clean UI state before logging and exit.
+     */
+    private void handleStartupFailure(Throwable throwable)
+    {
+        SplashScreen.close();
+        logger.error("[Lensora] Application startup failed", throwable);
+
+        Exception errorDialogException = throwable instanceof Exception 
+                ? (Exception) throwable 
+                : new RuntimeException(throwable);
+
+        ErrorHandler.show(null, "Lensora Studio failed to start.", errorDialogException);
+        Platform.exit();
     }
 
     public static void main(String[] args)

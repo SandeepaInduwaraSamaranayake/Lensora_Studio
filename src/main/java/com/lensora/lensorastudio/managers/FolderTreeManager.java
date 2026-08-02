@@ -3,6 +3,7 @@ package com.lensora.lensorastudio.managers;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
 
+import javafx.application.Platform;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -22,6 +23,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
@@ -413,21 +415,28 @@ public class FolderTreeManager
     {
         File folder = getSelectedFolder();
         if (folder == null || !folder.isDirectory()) return;
-        try
-        {
-            if (Desktop.isDesktopSupported())
+        // Runs in the background
+        CompletableFuture.runAsync(() -> {
+            try
             {
-                Desktop.getDesktop().open(folder);
+                if (Desktop.isDesktopSupported())
+                {
+                    Desktop.getDesktop().open(folder);
+                }
+                else 
+                {
+                    Platform.runLater(() ->
+                        Dialogs.showInfo(null, "Not Supported", null, "Cannot open folder on this system.")
+                    );
+                }
             }
-            else 
+            catch (IOException e)
             {
-                Dialogs.showInfo(null, "Not Supported", null, "Cannot open folder on this system.");
+                Platform.runLater(() ->
+                    ErrorHandler.show(null, "Could not open folder", e)
+                );
             }
-        }
-        catch (IOException e)
-        {
-            ErrorHandler.show(null, "Could not open folder", e);
-        }
+        });
     }
 
     private void copySelectedFolderPath()

@@ -9,8 +9,9 @@ import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.ExternalAppLauncher;
 import com.lensora.lensorastudio.util.ExternalAppsDialog;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
+import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 import com.lensora.lensorastudio.util.MetadataPanel;
-
+import com.lensora.lensorastudio.viewer.ImageViewerWindowService;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
@@ -49,7 +50,7 @@ public class FileOperationsManager
 {
     private static final Logger logger = LoggerFactory.getLogger(FileOperationsManager.class);
 
-    private final MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties;
+    private final MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInAnotherWindow;
     private final HBox progressContainer;
     private final ProgressBar progressBar;
     private final Label progressLabel, progressSpeedLabel, progressEtaLabel;
@@ -67,7 +68,7 @@ public class FileOperationsManager
     private Consumer<File> showMetadataHandler;
 
     public FileOperationsManager(MenuItem ctxFileOpen, Menu ctxOpenWithMenu, MenuItem ctxFileRename, MenuItem ctxFileCopy, MenuItem ctxFileCut,
-                                MenuItem ctxFileMove, MenuItem ctxFileDelete, MenuItem ctxFileShowInExplorer, MenuItem ctxFileProperties,
+                                MenuItem ctxFileMove, MenuItem ctxFileDelete, MenuItem ctxFileShowInExplorer, MenuItem ctxFileProperties, MenuItem ctxOpenInAnotherWindow,
                                 HBox progressContainer, ProgressBar progressBar,
                                 Label progressLabel, Label progressSpeedLabel, Label progressEtaLabel,
                                 Supplier<File> selectedFileSupplier,  Supplier<List<File>> selectedFilesSupplier, Runnable refreshCallback, BooleanBinding multiSelectBinding)
@@ -81,6 +82,7 @@ public class FileOperationsManager
         this.ctxFileDelete = ctxFileDelete;
         this.ctxFileShowInExplorer = ctxFileShowInExplorer;
         this.ctxFileProperties = ctxFileProperties;
+        this.ctxOpenInAnotherWindow = ctxOpenInAnotherWindow;
         this.progressContainer = progressContainer;
         this.progressBar = progressBar;
         this.progressLabel = progressLabel;
@@ -117,6 +119,7 @@ public class FileOperationsManager
         ctxFileDelete.setOnAction(e -> deleteSelectedFiles());
         ctxFileShowInExplorer.setOnAction(e -> showInExplorer());
         ctxFileProperties.setOnAction(e -> showMetadata());
+        ctxOpenInAnotherWindow.setOnAction(e -> openInAnotherWindow());
         if (ctxOpenWithMenu != null) ctxOpenWithMenu.getParentPopup().setOnShowing(e -> rebuildOpenWithMenu());
 
     }
@@ -267,6 +270,25 @@ public class FileOperationsManager
                 error -> ErrorHandler.show(null, "Failed to read metadata", error)
             );
         }
+    }
+
+    private void openInAnotherWindow()
+    {
+        List<File> selected = selectedFilesSupplier.get();
+        if (selected == null || selected.isEmpty()) return;
+
+        List<File> images = selected.stream()
+                .filter(ImageMetadataExtractor::isSupportedImage)
+                .toList();
+
+        if (images.isEmpty())
+        {
+            Dialogs.showInfo(null, "Open in Another Window", null,
+                    "No supported image files in the current selection.");
+            return;
+        }
+
+        ImageViewerWindowService.getInstance().openImages(images);
     }
 
     // ─── Clipboard copy/paste ───────────────────────────────────────────────

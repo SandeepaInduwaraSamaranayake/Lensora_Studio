@@ -128,7 +128,7 @@
                         <!-- For running: mvn javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <mainClass>com.lensora.lensorastudio.Launcher</mainClass>
+                            <mainClass>com.lensora.lensorastudio/com.lensora.lensorastudio.Launcher</mainClass>
                             <options>
                                 <option>-Djavafx.enablePreview=true</option>
                                 <option>-Djavafx.suppressPreviewWarning=true</option>
