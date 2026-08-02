@@ -1,13 +1,15 @@
 package com.lensora.lensorastudio.viewer;
 
 import com.lensora.lensorastudio.util.ImageCache;
+import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ScrollPane;
@@ -17,11 +19,17 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * A single image viewer node with a toolbar for zoom, rotate, full-screen.
@@ -33,7 +41,13 @@ public class ImageViewerNode
     private final DoubleProperty rotate;
     private final ScrollPane scrollPane;
     private final BorderPane root;
-    private final Stage stage;
+
+    private final ObjectProperty<File> currentFile = new SimpleObjectProperty<>();
+    private List<File> siblings = List.of();
+    private int currentIndex = -1;
+
+    private Button prevBtn;
+    private Button nextBtn;
 
     public ImageViewerNode(File imageFile)
     {
@@ -41,9 +55,6 @@ public class ImageViewerNode
         imageView = new ImageView();
         imageView.setPreserveRatio(true);
         imageView.setSmooth(true);
-
-        Image image = ImageCache.getOrLoad(imageFile, 1600, 0);
-        imageView.setImage(image);
 
         // ─── Zoom & rotate properties ─────────────────────────
         zoom = new SimpleDoubleProperty(1.0);
@@ -95,8 +106,71 @@ public class ImageViewerNode
         root.setTop(toolbar);
         root.setCenter(scrollPane);
 
-        // Store stage reference for full‑screen toggle (will be set later)
-        this.stage = null; // we'll set it via setStage if needed, or we can find it from scene
+        loadImage(imageFile, true);
+    }
+
+
+
+    private void loadImage(File file, boolean resolveSiblings)
+    {
+        Image image = ImageCache.getOrLoad(file, 1600, 0);
+        imageView.setImage(image);
+        currentFile.set(file);
+
+        // Fresh view state for each newly displayed image.
+        zoom.set(1.0);
+        rotate.set(0.0);
+
+        if (resolveSiblings)
+        {
+            siblings = resolveSiblingImages(file);
+            currentIndex = siblings.indexOf(file);
+        }
+
+        updateNavigationButtons();
+    }
+
+    /** All supported images in the same folder, sorted the same way the file table sorts them. */
+    private List<File> resolveSiblingImages(File file)
+    {
+        File parent = file.getParentFile();
+        if (parent == null) return List.of(file);
+
+        File[] found = parent.listFiles(f -> f.isFile() && ImageMetadataExtractor.isSupportedImage(f));
+        if (found == null || found.length == 0) return List.of(file);
+
+        List<File> list = new ArrayList<>(Arrays.asList(found));
+        list.sort(Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+        return list;
+    }
+
+    private void goToPrevious()
+    {
+        if (currentIndex > 0)
+        {
+            currentIndex--;
+            loadImage(siblings.get(currentIndex), false);
+        }
+    }
+
+    private void goToNext()
+    {
+        if (currentIndex >= 0 && currentIndex < siblings.size() - 1)
+        {
+            currentIndex++;
+            loadImage(siblings.get(currentIndex), false);
+        }
+    }
+
+    private void updateNavigationButtons()
+    {
+        if (prevBtn != null) prevBtn.setDisable(currentIndex <= 0);
+        if (nextBtn != null) nextBtn.setDisable(currentIndex < 0 || currentIndex >= siblings.size() - 1);
+    }
+
+    public ObjectProperty<File> currentFileProperty()
+    {
+        return currentFile;
     }
 
     private HBox buildToolbar()
@@ -107,6 +181,12 @@ public class ImageViewerNode
         toolbar.setStyle("-fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-width: 0 0 1 0;");
 
         // ─── Buttons ──────────────────────────────────────────
+        prevBtn = createIconButton("fas-chevron-left", "Previous Image");
+        prevBtn.setOnAction(e -> goToPrevious());
+
+        nextBtn = createIconButton("fas-chevron-right", "Next Image");
+        nextBtn.setOnAction(e -> goToNext());
+
         Button zoomInBtn = createIconButton("fas-search-plus", "Zoom In (Ctrl+Scroll)");
         zoomInBtn.setOnAction(e -> zoom.set(Math.min(10.0, zoom.get() * 1.2)));
 
@@ -125,10 +205,16 @@ public class ImageViewerNode
         Button fullScreenBtn = createIconButton("fas-expand", "Toggle Full Screen");
         fullScreenBtn.setOnAction(e -> toggleFullScreen());
 
+
+        Region leftSpacer = new Region();
+        Region rightSpacer = new Region();
+        HBox.setHgrow(leftSpacer, Priority.ALWAYS);
+        HBox.setHgrow(rightSpacer, Priority.ALWAYS);
+
         toolbar.getChildren().addAll(
-                zoomOutBtn, zoomInBtn, zoomResetBtn,
+                prevBtn, leftSpacer, zoomOutBtn, zoomInBtn, zoomResetBtn,
                 rotateLeftBtn, rotateRightBtn,
-                fullScreenBtn
+                fullScreenBtn, rightSpacer, nextBtn
         );
 
         return toolbar;

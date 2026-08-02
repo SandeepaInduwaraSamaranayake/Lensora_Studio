@@ -2,11 +2,11 @@ package com.lensora.lensorastudio.viewer;
 
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
-import com.lensora.lensorastudio.util.ImageCache;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 import com.lensora.lensorastudio.util.Resources;
 
 import javafx.application.Platform;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.input.TransferMode;
@@ -44,6 +44,7 @@ public final class ImageViewerWindowService
     private SnapFX snapFX;
     private final Map<String, DockNode> openNodes = new LinkedHashMap<>();
     private DockNode lastDockedNode;
+    private Parent currentLayoutNode;
 
     private final int MAXOPENEDIMAGES = 10;
 
@@ -106,12 +107,20 @@ public final class ImageViewerWindowService
             return; // already open — nothing further to do
         }
 
+        ImageViewerNode viewerNode = new ImageViewerNode(file);
+
         DockNode node = new DockNode(
                 "imgviewer-" + key.hashCode(),
-                new ImageViewerNode(file).getNode(),
+                viewerNode.getNode(),
                 file.getName()
         );
         node.setCloseable(true);
+
+        // Keep the dock tab/header title in sync when the user navigates
+        // to a different image via the </> buttons inside this same node.
+        viewerNode.currentFileProperty().addListener((obs, old, newFile) -> {
+            if (newFile != null) node.setTitle(newFile.getName());
+        });
 
         if (lastDockedNode == null)
         {
@@ -130,14 +139,29 @@ public final class ImageViewerWindowService
 
         // --- Equalize the split pane dividers ---
         equalizeDividers();
-
         refreshLayout();
     }
 
     private void refreshLayout()
     {
         StackPane host = (StackPane) stage.getScene().getRoot();
-        host.getChildren().setAll(snapFX.buildLayout());
+        Parent newLayout = snapFX.buildLayout();
+
+        if (currentLayoutNode != null && host.getChildren().contains(currentLayoutNode))
+        {
+            int idx = host.getChildren().indexOf(currentLayoutNode);
+            host.getChildren().set(idx, newLayout);
+        }
+        else
+        {
+            // First build, or the previous node was already removed elsewhere -
+            // insert at index 0 so any overlay panes SnapFX manages
+            // independently (added during initialize()) stay on top/preserved
+            // as later siblings instead of being wiped by a setAll() call.
+            host.getChildren().add(0, newLayout);
+        }
+
+        currentLayoutNode = newLayout;
     }
 
     /**
@@ -154,7 +178,8 @@ public final class ImageViewerWindowService
         if (childCount < 2) return; // no dividers to set
 
         // We need to set divider i to (i+1)/childCount for i = 0 .. childCount-2
-        for (int i = 0; i < childCount - 1; i++) {
+        for (int i = 0; i < childCount - 1; i++) 
+        {
             double position = (double) (i + 1) / childCount;
             splitPane.setDividerPosition(i, position);
         }
@@ -187,9 +212,12 @@ public final class ImageViewerWindowService
         // ─── Close handler ──────────────────────────────────────────
         snapFX.setOnCloseHandled(result -> {
             // If the graph root is null, close the window
-            if (snapFX.getDockGraph().getRoot() == null) {
+            if (snapFX.getDockGraph().getRoot() == null) 
+            {
                 Platform.runLater(() -> stage.close());
-            } else {
+            } 
+            else
+            {
                 Platform.runLater(this::refreshLayout);
             }
         });
@@ -243,6 +271,7 @@ public final class ImageViewerWindowService
         ThemeManager.removeThemeChangeListener(themeListener);
         openNodes.clear();
         lastDockedNode = null;
+        currentLayoutNode = null;
         snapFX = null;
         stage = null;
     }
