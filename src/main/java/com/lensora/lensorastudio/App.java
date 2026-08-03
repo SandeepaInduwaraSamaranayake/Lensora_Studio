@@ -16,6 +16,7 @@ import com.lensora.lensorastudio.services.DatabaseManager;
 import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.IconUtils;
 import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.util.SplashScreen;
 
@@ -39,7 +40,7 @@ import javafx.stage.StageStyle;
  *   <li>Restore window geometry (size/position/maximised) via {@link LayoutPersistence}</li>
  * </ul>
  */
-public class App extends Application 
+public class App extends Application
 {
     static
     {
@@ -142,10 +143,7 @@ public class App extends Application
 
     private void configureStage(Stage stage, Scene scene)
     {
-        stage.getIcons().clear();
-        stage.getIcons().addAll(
-            new Image(Resources.APP_ICON.getResourceAsStream())
-        );
+        IconUtils.setAppIconReplace(stage);
         stage.setTitle("Lensora Studio");
         stage.setScene(scene);
         

@@ -43,7 +43,7 @@ public class AppSettings
     // ------------------------------- Defaults --------------------------------------
 
     public static final Theme       DEFAULT_THEME                                   = Theme.MODENA;
-    public static final double      DEFAULT_FONT_SIZE                               = 12.0;
+    public static final double      DEFAULT_FONT_SIZE                               = 11.0;
     public static final String      DEFAULT_PROJECT_ROOT                            = System.getProperty("user.home") + "/LensoraProjects";
     public static final String      DEFAULT_LOG_DIR                                 = System.getProperty("user.home") + "/.lensorastudio/logs";
     public static final boolean     DEFAULT_OPEN_ON_STARTUP                         = false;
