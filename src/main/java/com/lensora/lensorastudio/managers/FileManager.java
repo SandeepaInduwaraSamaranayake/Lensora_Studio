@@ -10,7 +10,6 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import org.snapfx.SnapFX;
@@ -58,6 +57,7 @@ public class FileManager
                         HBox breadcrumbContainer,
                         Button btnBack,
                         Button btnForward,
+                        Button btnRefreshFileList,
                         TextField fileSearchField,
                         ToggleGroup viewToggleGroupUnused, // kept for signature compatibility
                         ToggleButton btnDetails,
@@ -72,17 +72,46 @@ public class FileManager
         this.folderTreeManager = new FolderTreeManager(folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader);
 
         this.fileListingManager = new FileListingManager(
-                fileTable, colFileName, colFileType, colFileSize, colFileDimensions, colFileModified,
-                lblCurrentFolder, lblFileCount, fileSearchField,
-                btnDetails, btnList, btnIcons, btnThumbnails,
-                fileListView, iconScrollPane, iconFlowPane);
+                                                                    fileTable, 
+                                                                    colFileName, 
+                                                                    colFileType, 
+                                                                    colFileSize, 
+                                                                    colFileDimensions, 
+                                                                    colFileModified,
+                                                                    lblCurrentFolder, 
+                                                                    lblFileCount, 
+                                                                    fileSearchField,
+                                                                    btnDetails, 
+                                                                    btnList, 
+                                                                    btnIcons, 
+                                                                    btnThumbnails, 
+                                                                    btnRefreshFileList,
+                                                                    fileListView, 
+                                                                    iconScrollPane, 
+                                                                    iconFlowPane
+                                                        );
 
         this.fileOperationsManager = new FileOperationsManager(
-                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInAnotherWindow,
-                progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
-                fileListingManager::getSelectedFile,
-                fileListingManager::getSelectedFiles,
-                folderTreeManager::refreshSelected, multiSelectBinding);
+                                                                    ctxFileOpen, 
+                                                                    ctxOpenWithMenu, 
+                                                                    ctxFileRename, 
+                                                                    ctxFileCopy, 
+                                                                    ctxFileCut, 
+                                                                    ctxFileMove, 
+                                                                    ctxFileDelete, 
+                                                                    ctxFileShowInExplorer, 
+                                                                    ctxFileProperties, 
+                                                                    ctxOpenInAnotherWindow,
+                                                                    progressContainer, 
+                                                                    progressBar, 
+                                                                    progressLabel, 
+                                                                    progressSpeedLabel, 
+                                                                    progressEtaLabel,
+                                                                    fileListingManager::getSelectedFile,
+                                                                    fileListingManager::getSelectedFiles,
+                                                                    folderTreeManager::refreshSelected, 
+                                                                    multiSelectBinding
+                                                                );
 
         // Selecting a folder in the tree loads its files into the listing.
         folderTreeManager.setOnFolderSelected(fileListingManager::loadFolder);
@@ -98,6 +127,9 @@ public class FileManager
         // External OS drag-in → folder tree = copy.
         folderTreeManager.setOnFilesDropped((files, targetFolder, isMove) ->
                 fileOperationsManager.dropFilesInto(files, targetFolder, isMove));
+
+        // Refresh both folder tree & file list (refreshSelected triggers onRefreshRequested -> fileListingManager.refresh())
+        fileListingManager.setRefreshCallback(() -> folderTreeManager.refreshSelected());
 
         // External OS drag-in → file listing area = copy into currently open folder.
         fileListingManager.setOnFilesDroppedIntoCurrentFolder((files, isMove) ->

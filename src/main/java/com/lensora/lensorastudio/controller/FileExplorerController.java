@@ -27,7 +27,7 @@ public class FileExplorerController
     @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize, colFileDimensions, colFileModified;
     @FXML private Label lblCurrentFolder, lblFileCount, lblFolderHeader;
     @FXML private HBox breadcrumbContainer;
-    @FXML private Button btnFolderBack, btnFolderForward;
+    @FXML private Button btnFolderBack, btnFolderForward, btnRefreshFileList;
     @FXML private TextField fileSearchField;
     @FXML private ToggleButton btnDetails, btnList, btnIcons, btnThumbnails;
     @FXML private ListView<File> fileListView;
@@ -74,7 +74,7 @@ public class FileExplorerController
                 lblCurrentFolder, lblFileCount, lblFolderHeader,
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
                 ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer,
-                ctxFileProperties, ctxOpenInAnotherWindow, breadcrumbContainer, btnFolderBack, btnFolderForward, fileSearchField,
+                ctxFileProperties, ctxOpenInAnotherWindow, breadcrumbContainer, btnFolderBack, btnFolderForward, btnRefreshFileList, fileSearchField,
                 viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
                 fileListView, iconScrollPane, iconFlowPane,  multiSelectBinding
         );
@@ -99,6 +99,7 @@ public class FileExplorerController
         if (ctxFileCut != null)
             ctxFileCut.setAccelerator(fileCutAccel);
 
+        // file search 
         fileSearchField.sceneProperty().addListener((obs, oldScene, newScene) -> {
             if (newScene != null)
             {
@@ -110,6 +111,20 @@ public class FileExplorerController
                         e.consume();
                     }
                 });
+            }
+        });
+
+        // refresh file list & folder tree
+        btnRefreshFileList.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (oldScene != null)
+            {
+                oldScene.getAccelerators().remove(new KeyCodeCombination(KeyCode.F5));
+            }
+            if (newScene != null)
+            {
+                newScene.getAccelerators().put(
+                        new KeyCodeCombination(KeyCode.F5),
+                        () -> { if (btnRefreshFileList != null) btnRefreshFileList.fire(); });
             }
         });
     }

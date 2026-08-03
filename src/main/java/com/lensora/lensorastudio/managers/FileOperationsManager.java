@@ -67,11 +67,26 @@ public class FileOperationsManager
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
 
-    public FileOperationsManager(MenuItem ctxFileOpen, Menu ctxOpenWithMenu, MenuItem ctxFileRename, MenuItem ctxFileCopy, MenuItem ctxFileCut,
-                                MenuItem ctxFileMove, MenuItem ctxFileDelete, MenuItem ctxFileShowInExplorer, MenuItem ctxFileProperties, MenuItem ctxOpenInAnotherWindow,
-                                HBox progressContainer, ProgressBar progressBar,
-                                Label progressLabel, Label progressSpeedLabel, Label progressEtaLabel,
-                                Supplier<File> selectedFileSupplier,  Supplier<List<File>> selectedFilesSupplier, Runnable refreshCallback, BooleanBinding multiSelectBinding)
+    public FileOperationsManager(   MenuItem ctxFileOpen, 
+                                    Menu ctxOpenWithMenu, 
+                                    MenuItem ctxFileRename, 
+                                    MenuItem ctxFileCopy, 
+                                    MenuItem ctxFileCut,
+                                    MenuItem ctxFileMove, 
+                                    MenuItem ctxFileDelete, 
+                                    MenuItem ctxFileShowInExplorer, 
+                                    MenuItem ctxFileProperties, 
+                                    MenuItem ctxOpenInAnotherWindow,
+                                    HBox progressContainer, 
+                                    ProgressBar progressBar,
+                                    Label progressLabel, 
+                                    Label progressSpeedLabel, 
+                                    Label progressEtaLabel,
+                                    Supplier<File> selectedFileSupplier,  
+                                    Supplier<List<File>> selectedFilesSupplier, 
+                                    Runnable refreshCallback, 
+                                    BooleanBinding multiSelectBinding
+                                )
     {
         this.ctxFileOpen = ctxFileOpen;
         this.ctxOpenWithMenu = ctxOpenWithMenu;

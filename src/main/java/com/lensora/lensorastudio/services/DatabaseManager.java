@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.stream.Collectors;
@@ -107,29 +106,6 @@ public class DatabaseManager
         catch (Exception e)
         {
             logger.error("[DatabaseManager] Failed to execute batch schema: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Example method to insert a data row using a PreparedStatement (prevents SQL injection).
-     */
-    public static void insertProject(String name, String client)
-    {
-        String insertSQL = "INSERT INTO projects(name, client) VALUES(?, ?)";
-
-        try (Connection conn = connect();
-            PreparedStatement pstmt = conn.prepareStatement(insertSQL))
-        {
-
-            pstmt.setString(1, name);
-            pstmt.setString(2, client);
-            pstmt.executeUpdate();
-            logger.info("[DatabaseManager] Project inserted successfully!");
-
-        }
-        catch (SQLException e)
-        {
-            logger.error("[DatabaseManager] Insert failed: " + e.getMessage());
         }
     }
 }

@@ -376,19 +376,27 @@ public class FolderTreeManager
         MenuItem newFolderItem = new MenuItem("New Folder");
         MenuItem copyItem = new MenuItem("Copy");
         MenuItem pasteItem = new MenuItem("Paste");
+        MenuItem deleteFolderItem = new MenuItem("Delete Folder");
         MenuItem openItem = new MenuItem("Open in Explorer");
         MenuItem copyPathItem = new MenuItem("Copy Directory Path");
 
         newFolderItem.setOnAction(e -> createNewFolder());
         copyItem.setOnAction(e -> copySelectedFolder());
         pasteItem.setOnAction(e -> pasteRequested.run());
+        deleteFolderItem.setOnAction(e -> deleteSelectedFolder());
         openItem.setOnAction(e -> openSelectedFolderInExplorer());
         copyPathItem.setOnAction(e -> copySelectedFolderPath());
 
-        contextMenu.getItems().addAll(newFolderItem, copyItem, new SeparatorMenuItem(), pasteItem, openItem, copyPathItem);
+        contextMenu.getItems().addAll(  
+                                        newFolderItem, copyItem, 
+                                        new SeparatorMenuItem(), 
+                                        pasteItem, 
+                                        deleteFolderItem, 
+                                        openItem, 
+                                        copyPathItem
+                                    );
         folderTree.setContextMenu(contextMenu);
     }
-
 
     public File getSelectedFolder()
     {
@@ -496,6 +504,155 @@ public class FolderTreeManager
             }
         });
     }
+
+    // ============================== Delete Folder ==============================
+    private void deleteSelectedFolder() 
+    {
+        File folder = getSelectedFolder();
+        if (folder == null) 
+        {
+            Dialogs.showInfo(null, "Move to Trash", null, "Please select a folder to move to trash.");
+            return;
+        }
+        if (projectRoot != null && folder.equals(projectRoot)) 
+        {
+            Dialogs.showInfo(null, "Move to Trash", null, "Cannot move the project's root folder to trash.");
+            return;
+        }
+
+        long fileCount = countFilesRecursive(folder);
+        String message = fileCount > 0
+                ? "Move \"" + folder.getName() + "\" and all " + fileCount + " file(s) inside it to the Trash?"
+                : "Move \"" + folder.getName() + "\" to the Trash?";
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Move to Trash");
+        confirm.setHeaderText(null);
+        confirm.setContentText(message);
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+
+            boolean moved = false;
+            if (Desktop.isDesktopSupported()) 
+            {
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.MOVE_TO_TRASH)) 
+                {
+                    try
+                    {
+                        if(folder.exists())
+                        {
+                            moved = desktop.moveToTrash(folder);
+                        }
+                        else
+                        {
+                            Dialogs.showInfo(null, "Move to Trash", null, "Folder no longer exists.");
+                        }
+                    }
+                    catch(Exception ex)
+                    {
+                        logger.warn("Move to Trash failed", ex);
+                        Dialogs.showInfo(null, "Move to Trash", null, "Cannot move the folder to trash.");
+                    }
+                }
+            }
+            if (!moved)
+            {
+                // Fallback: ask user if they want to permanently delete instead
+                Alert fallbackConfirm = new Alert(Alert.AlertType.CONFIRMATION);
+                fallbackConfirm.setTitle("Move to Trash Failed");
+                fallbackConfirm.setHeaderText(null);
+                fallbackConfirm.setContentText(
+                    "Moving to Trash is not supported on this system.\n" +
+                    "The folder will be permanently deleted and cannot be recovered."+
+                    "Do you want to continue?"
+                );
+                fallbackConfirm.showAndWait().ifPresent(res -> {
+                    if (res == ButtonType.OK) 
+                    {
+                        try 
+                        {
+                            deleteRecursive(folder);
+                            refreshTreeAfterFolderDeletion(folder.getParentFile());
+                            if (folder.equals(currentFolder)) 
+                            {
+                                File fallback = (folder.getParentFile() != null && folder.getParentFile().exists())
+                                        ? folder.getParentFile() : projectRoot;
+                                if (fallback != null) navigateTo(fallback);
+                            }
+                        } 
+                        catch (IOException ex) 
+                        {
+                            ErrorHandler.show(null, "Failed to delete folder", ex);
+                        }
+                    }
+                });
+                return;
+            }
+
+            // Successfully moved to trash
+            refreshTreeAfterFolderDeletion(folder.getParentFile());
+            if (folder.equals(currentFolder)) 
+            {
+                File fallback = (folder.getParentFile() != null && folder.getParentFile().exists())
+                        ? folder.getParentFile() : projectRoot;
+                if (fallback != null) navigateTo(fallback);
+            }
+
+            Dialogs.showInfo(null, "Move to Trash", null, "Folder moved to Trash.");
+        }); 
+    }
+
+    private long countFilesRecursive(File folder)
+    {
+        File[] children = folder.listFiles();
+        if (children == null) return 0;
+
+        long count = 0;
+        for (File child : children)
+        {
+            count += child.isDirectory() ? countFilesRecursive(child) : 1;
+        }
+        return count;
+    }
+
+    private void deleteRecursive(File file) throws IOException
+    {
+        File[] children = file.listFiles();
+        if (children != null)
+        {
+            for (File child : children)
+            {
+                deleteRecursive(child);
+            }
+        }
+        Files.delete(file.toPath());
+    }
+
+    /** Rebuilds the parent's children in the tree after a folder beneath it was deleted. */
+    private void refreshTreeAfterFolderDeletion(File parentFolder)
+    {
+        if (parentFolder == null) return;
+
+        TreeItem<File> root = folderTree.getRoot();
+        if (root == null) return;
+
+        TreeItem<File> parentItem = findTreeItem(root, parentFolder);
+        if (parentItem != null)
+        {
+            parentItem.getChildren().clear();
+            addChildren(parentItem);
+            parentItem.setExpanded(true);
+            folderTree.getSelectionModel().select(parentItem);
+        }
+        else if (parentFolder.equals(projectRoot))
+        {
+            // Deleted a top-level folder directly under the project root -
+            // rebuild the whole tree root since there's no parent TreeItem.
+            loadProjectPath(projectRoot.getAbsolutePath());
+        }
+    }
+    // =========================================================================
 
     /** Strips characters that are invalid in folder names on Windows/macOS/Linux. */
     private String sanitizeFolderName(String name)

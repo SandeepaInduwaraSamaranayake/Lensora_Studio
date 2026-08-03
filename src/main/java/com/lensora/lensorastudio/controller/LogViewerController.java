@@ -3,7 +3,6 @@ package com.lensora.lensorastudio.controller;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.Dialogs;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;

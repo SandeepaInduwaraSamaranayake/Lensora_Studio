@@ -1,7 +1,6 @@
 package com.lensora.lensorastudio.managers;
 
 import com.lensora.lensorastudio.util.ClipboardFormats;
-import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.ExternalAppLauncher;
 import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
@@ -27,10 +26,8 @@ import javafx.scene.input.TransferMode;
 import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 
-import java.awt.Desktop;
 
 import java.io.File;
-import java.io.IOException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -64,6 +61,7 @@ public class FileListingManager
     private final Label lblCurrentFolder, lblFileCount;
     private final TextField fileSearchField;
     private final ToggleButton btnDetails, btnList, btnIcons, btnThumbnails;
+    private final Button btnRefreshFileList;
     private final ListView<File> fileListView;
     private final ScrollPane iconScrollPane;
     private final FlowPane iconFlowPane;
@@ -75,18 +73,30 @@ public class FileListingManager
     private final Map<File, Future<?>> dimensionFutures = new ConcurrentHashMap<>();
     private BiConsumer<List<File>, Boolean> onExternalFilesDropped; // (files, isMove — always false here)
     private final ObjectProperty<File> selectedFileProperty = new SimpleObjectProperty<>();
+    private Runnable refreshCallback;
 
     private File currentFolder;
     private Task<Void> searchTask;
     private SnapFX snapFX;
 
-    public FileListingManager(TableView<File> fileTable,
-                            TableColumn<File, String> colFileName, TableColumn<File, String> colFileType,
-                            TableColumn<File, String> colFileSize, TableColumn<File, String> colFileDimensions,
-                            TableColumn<File, String> colFileModified,
-                            Label lblCurrentFolder, Label lblFileCount, TextField fileSearchField,
-                            ToggleButton btnDetails, ToggleButton btnList, ToggleButton btnIcons, ToggleButton btnThumbnails,
-                            ListView<File> fileListView, ScrollPane iconScrollPane, FlowPane iconFlowPane)
+    public FileListingManager(  TableView<File> fileTable,
+                                TableColumn<File, String> colFileName, 
+                                TableColumn<File, String> colFileType,
+                                TableColumn<File, String> colFileSize, 
+                                TableColumn<File, String> colFileDimensions,
+                                TableColumn<File, String> colFileModified,
+                                Label lblCurrentFolder, 
+                                Label lblFileCount, 
+                                TextField fileSearchField,
+                                ToggleButton btnDetails, 
+                                ToggleButton btnList, 
+                                ToggleButton btnIcons, 
+                                ToggleButton btnThumbnails, 
+                                Button btnRefreshFileList,
+                                ListView<File> fileListView, 
+                                ScrollPane iconScrollPane, 
+                                FlowPane iconFlowPane
+                            )
     {
         this.fileTable = fileTable;
         this.colFileName = colFileName;
@@ -101,6 +111,7 @@ public class FileListingManager
         this.btnList = btnList;
         this.btnIcons = btnIcons;
         this.btnThumbnails = btnThumbnails;
+        this.btnRefreshFileList = btnRefreshFileList;
         this.fileListView = fileListView;
         this.iconScrollPane = iconScrollPane;
         this.iconFlowPane = iconFlowPane;
@@ -121,6 +132,7 @@ public class FileListingManager
     /** Called by FileManager to wire external drop-into-current-folder behaviour. */
     public void setOnFilesDroppedIntoCurrentFolder(BiConsumer<List<File>, Boolean> callback) { this.onExternalFilesDropped = callback; }
     public void setSnapFX(SnapFX snapFX) { this.snapFX = snapFX; }
+    public void setRefreshCallback(Runnable callback) { this.refreshCallback = callback; }
     
 
     // ─── Listeners ──────────────────────────────────────────────────────────
@@ -128,6 +140,10 @@ public class FileListingManager
     {
         fileTable.getSelectionModel().selectedItemProperty().addListener((obs, old, newVal) -> {
             selectedFileProperty.set(newVal);
+        });
+
+        btnRefreshFileList.setOnAction(e -> {
+            if (refreshCallback != null) refreshCallback.run();
         });
     }
 

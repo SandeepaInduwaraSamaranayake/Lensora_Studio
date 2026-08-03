@@ -25,7 +25,6 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
 import javafx.util.StringConverter;
-import javafx.scene.Node;
 
 public class SettingsController implements DialogController
 {

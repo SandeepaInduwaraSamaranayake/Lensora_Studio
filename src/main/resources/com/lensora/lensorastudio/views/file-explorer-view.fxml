@@ -10,8 +10,8 @@
 
     <VBox spacing="0">
         <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
-            <Button fx:id="btnFolderBack" text="⬅"/>
-            <Button fx:id="btnFolderForward" text="➡"/>
+            <Button fx:id="btnFolderBack" text="⬅" />
+            <Button fx:id="btnFolderForward" text="➡" />
             <FontIcon iconLiteral="fas-folder" iconSize="10"/>
             <Label fx:id="lblFolderHeader" text="Folders [" style="-fx-font-weight: bold;"/>
             <HBox fx:id="breadcrumbContainer" spacing="2" alignment="CENTER_LEFT" style="-fx-font-weight: bold;"/>
@@ -63,6 +63,15 @@
                     </tooltip>
                 </ToggleButton>
             </HBox>
+            <Separator orientation="VERTICAL"/>
+            <Button fx:id="btnRefreshFileList">
+                <graphic>
+                    <FontIcon iconLiteral="fas-redo-alt" iconSize="10"/>
+                </graphic>
+                <tooltip>
+                    <Tooltip text="Refresh (F5)"/>
+                </tooltip>
+            </Button>
         </HBox>
         <Separator/>
         <StackPane VBox.vgrow="ALWAYS">

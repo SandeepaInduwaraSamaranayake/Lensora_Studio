@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.List;
 
-
 public class ProjectManager 
 {
     private static final Logger logger = LoggerFactory.getLogger(ProjectManager.class);
