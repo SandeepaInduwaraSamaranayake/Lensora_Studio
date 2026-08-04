@@ -15,8 +15,8 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.DatabaseManager;
 import com.lensora.lensorastudio.services.LayoutPersistence;
 import com.lensora.lensorastudio.services.ThemeManager;
+import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ErrorHandler;
-import com.lensora.lensorastudio.util.IconUtils;
 import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.util.SplashScreen;
 
@@ -25,7 +25,6 @@ import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 
@@ -143,7 +142,7 @@ public class App extends Application
 
     private void configureStage(Stage stage, Scene scene)
     {
-        IconUtils.setAppIconReplace(stage);
+        AppIconUtil.setAppIconReplace(stage);
         stage.setTitle("Lensora Studio");
         stage.setScene(scene);
         

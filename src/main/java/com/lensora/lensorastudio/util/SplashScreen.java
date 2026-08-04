@@ -64,7 +64,7 @@ public final class SplashScreen
 
             splashStage = new Stage();
             splashStage.initStyle(StageStyle.UNDECORATED);
-            IconUtils.setAppIconReplace(splashStage);
+            AppIconUtil.setAppIconReplace(splashStage);
             splashStage.setScene(new Scene(root));
             splashStage.centerOnScreen();
             splashStage.show();

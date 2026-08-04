@@ -2,7 +2,7 @@ package com.lensora.lensorastudio.viewer;
 
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
-import com.lensora.lensorastudio.util.IconUtils;
+import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 import com.lensora.lensorastudio.util.Resources;
 
@@ -193,7 +193,7 @@ public final class ImageViewerWindowService
 
         try
         {
-            IconUtils.setAppIconReplace(stage);
+            AppIconUtil.setAppIconReplace(stage);
         }
         catch (Exception ignored) {}
 

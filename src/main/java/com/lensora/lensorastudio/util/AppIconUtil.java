@@ -9,9 +9,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class IconUtils 
+public final class AppIconUtil 
 {
-    private static final Logger logger = LoggerFactory.getLogger(IconUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(AppIconUtil.class);
     private static final List<Image> APP_ICONS = new ArrayList<>();
 
     static 
@@ -25,7 +25,7 @@ public final class IconUtils
 
     private static void loadIcon(Resources resource) 
     {
-        try 
+        try
         {
             APP_ICONS.add(new Image(resource.getResourceAsStream()));
         } 
