@@ -39,7 +39,8 @@ public class SettingsController implements DialogController
     private ComboBox<Integer>               metadataPreviewQualityCombo;
 
     @FXML 
-    private Spinner<Double>                 fontSizeSpinner;
+    private Spinner<Double>                 fontSizeSpinner,
+                                            zoomSensitivitySpinner;
 
     @FXML private Spinner<Integer>          searchDebounceSpinner, 
                                             folderSaveDebounceSpinner,
@@ -85,6 +86,7 @@ public class SettingsController implements DialogController
     private boolean             tempShowImagePreviewInMetadata;
     private int                 tempMetadataPreviewSize;
     private int                 tempCacheSize;
+    private double              tempZoomSensitivity;
 
     // ----------------------------- Initialization ----------------------------
     @FXML
@@ -99,6 +101,7 @@ public class SettingsController implements DialogController
         setupFolderSaveDebounceSpinner();
         setupMetadataPreviewQuality();
         setupCacheSizeSpinner();
+        setupZoomSensitivitySpinner();
         updateUIFromTemp();
         setupButtonActions();
     }
@@ -119,6 +122,7 @@ public class SettingsController implements DialogController
         tempShowImagePreviewInMetadata  = settings.getShowMetadataImagePreview();
         tempMetadataPreviewSize         = settings.getMetadataPreviewSize();
         tempCacheSize                   = settings.getImageCacheSize();
+        tempZoomSensitivity             = settings.getZoomSensitivity();
     }
 
     private void setupThemeCombo() 
@@ -160,7 +164,6 @@ public class SettingsController implements DialogController
         });
     }
 
-
     private void setupSearchDebounceSpinner() 
     {
         SpinnerValueFactory<Integer> debounceFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1000, tempSearchDebounce, 50);
@@ -179,6 +182,14 @@ public class SettingsController implements DialogController
         folderSaveDebounceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
             tempFolderSaveDebounce = newVal;
         });
+    }
+
+    private void setupZoomSensitivitySpinner()
+    {
+        SpinnerValueFactory<Double> factory =
+                new SpinnerValueFactory.DoubleSpinnerValueFactory(1.05, 2.0, tempZoomSensitivity, 0.05);
+        zoomSensitivitySpinner.setValueFactory(factory);
+        zoomSensitivitySpinner.valueProperty().addListener((obs, old, val) -> tempZoomSensitivity = val);
     }
 
     private void setupMetadataPreviewQuality()
@@ -266,6 +277,7 @@ public class SettingsController implements DialogController
         applyFolderSaveDebounce();
         applyMetadataPreviewSize();
         applyCacheSize();
+        applyZoomSensitivity();
         applyProjectRoot();
         applyLogDirectory();
         applyStartupBehaviour();
@@ -328,6 +340,14 @@ public class SettingsController implements DialogController
         {
             settings.setImageCacheSize(tempCacheSize);
             ImageCache.setMaxEntries(tempCacheSize);
+        }
+    }
+
+    private void applyZoomSensitivity()
+    {
+        if (tempZoomSensitivity != settings.getZoomSensitivity())
+        {
+            settings.setZoomSensitivity(tempZoomSensitivity);
         }
     }
 
@@ -437,6 +457,7 @@ public class SettingsController implements DialogController
         tempShowImagePreviewInMetadata   = AppSettings.DEFAULT_SHOW_METADATA_PREVIEW;
         tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;        
         tempCacheSize                    = AppSettings.DEFAULT_IMAGE_CACHE_SIZE;
+        tempZoomSensitivity              = AppSettings.DEFAULT_ZOOM_SENSITIVITY;
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -473,6 +494,9 @@ public class SettingsController implements DialogController
 
         // Reset search debounce
         searchDebounceSpinner.getValueFactory().setValue(tempSearchDebounce);
+
+        // Reset Zoom Sensitivity
+        zoomSensitivitySpinner.getValueFactory().setValue(tempZoomSensitivity);
 
         // Reset folder save debounce
         folderSaveDebounceSpinner.getValueFactory().setValue(tempFolderSaveDebounce);

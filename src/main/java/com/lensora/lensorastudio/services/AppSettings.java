@@ -39,6 +39,7 @@ public class AppSettings
     private static final String     KEY_EXTERNAL_APPS                               = "file.external_apps";
     private static final String     KEY_FOLDER_SAVE_DELAY_MS                        = "folder.save_delay_ms";
     private static final String     KEY_IMAGE_CACHE_SIZE                            = "image.cache.size";
+    private static final String     KEY_ZOOM_SENSITIVITY                            = "image.viewer.zoom_sensitivity";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -58,6 +59,7 @@ public class AppSettings
     public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
     public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
     public static final int         DEFAULT_IMAGE_CACHE_SIZE                        = 200;
+    public static final double      DEFAULT_ZOOM_SENSITIVITY                        = 1.40;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -308,7 +310,7 @@ public class AppSettings
     }
 
     // ------------------------ Cache size  --------------------------------
-    public int getImageCacheSize() 
+    public int getImageCacheSize()
     {
         return prefs.getInt(KEY_IMAGE_CACHE_SIZE, DEFAULT_IMAGE_CACHE_SIZE);
     }
@@ -316,5 +318,16 @@ public class AppSettings
     public void setImageCacheSize(int size) 
     {
         prefs.putInt(KEY_IMAGE_CACHE_SIZE, size);
+    }
+
+    // --------------------- Zoom Sensitivity  ----------------------------
+    public double getZoomSensitivity()
+    {
+        return prefs.getDouble(KEY_ZOOM_SENSITIVITY, DEFAULT_ZOOM_SENSITIVITY);
+    }
+
+    public void setZoomSensitivity(double factor)
+    {
+        prefs.putDouble(KEY_ZOOM_SENSITIVITY, factor);
     }
 }

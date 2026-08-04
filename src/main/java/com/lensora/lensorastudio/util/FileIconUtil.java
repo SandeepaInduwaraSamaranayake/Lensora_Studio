@@ -35,7 +35,6 @@ public class FileIconUtil
         if (file.isDirectory())
     {
             FontIcon icon = new FontIcon("fas-folder");
-            icon.getStyleClass().add("icon-size-60");
             return icon;
         }
 

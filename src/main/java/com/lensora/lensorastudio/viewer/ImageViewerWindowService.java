@@ -29,10 +29,7 @@ import java.util.function.Consumer;
 
 /**
  * Lazily-created secondary top-level window dedicated to viewing images
- * side by side. Does not exist until the first image is opened into it;
- * once created it stays open and accepts more images (context menu or
- * drag-and-drop) until the user closes the window, at which point it's
- * torn down — the next open request creates a fresh one.
+ * side by side using SnapFX docking layout.
  */
 public final class ImageViewerWindowService
 {
@@ -45,7 +42,7 @@ public final class ImageViewerWindowService
     private DockNode lastDockedNode;
     private Parent currentLayoutNode;
 
-    private final int MAXOPENEDIMAGES = 10;
+    private static final int MAX_OPENED_IMAGES = 10;
 
     private final Consumer<AppSettings.Theme> themeListener = this::syncTheme;
 
@@ -66,11 +63,11 @@ public final class ImageViewerWindowService
     public void openImages(List<File> files)
     {
         if (files == null || files.isEmpty()) return;
-        if (files.size() > MAXOPENEDIMAGES) 
+        if (files.size() > MAX_OPENED_IMAGES) 
         {
-            logger.warn("File open request detected for excessive number of files :" + files.size());
-            files = files.subList(0, MAXOPENEDIMAGES);
-            logger.warn("Request granted for first" + files.size() + " files");
+            logger.warn("[ImageViewerWindowService] File open request detected for excessive number of files: {}", files.size());
+            files = files.subList(0, MAX_OPENED_IMAGES);
+            logger.warn("[ImageViewerWindowService] Request granted for first {} files", files.size());
         }
 
         List<File> imagesOnly = files.stream()
@@ -93,19 +90,76 @@ public final class ImageViewerWindowService
             addImage(file);
         }
 
+        equalizeDividers();
+        refreshLayout();
+
         stage.toFront();
         stage.requestFocus();
+    }
+
+    /**
+     * Recursively verifies if a specific DockNode exists anywhere inside 
+     * the active SnapFX dock graph tree.
+     */
+    private boolean isNodeInGraph(DockNode target, DockElement current)
+    {
+        if (current == null || target == null) return false;
+        if (current == target) return true;
+        
+        if (current instanceof DockSplitPane splitPane)
+        {
+            for (DockElement child : splitPane.getChildren())
+            {
+                if (isNodeInGraph(target, child)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Recursively traverses the dock graph to locate the first active leaf DockNode.
+     */
+    private DockNode findFirstDockNode(DockElement element)
+    {
+        if (element == null) return null;
+        if (element instanceof DockNode node)
+        {
+            return node;
+        }
+        if (element instanceof DockSplitPane splitPane)
+        {
+            for (DockElement child : splitPane.getChildren())
+            {
+                DockNode found = findFirstDockNode(child);
+                if (found != null) return found;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Determines a guaranteed-valid docking target by inspecting the graph directly.
+     */
+    private DockNode findDockTarget()
+    {
+        if (snapFX == null || snapFX.getDockGraph() == null) return null;
+        DockElement root = snapFX.getDockGraph().getRoot();
+        if (root == null) return null;
+
+        // Prefer lastDockedNode if it is still present in the dock graph
+        if (lastDockedNode != null && isNodeInGraph(lastDockedNode, root))
+        {
+            return lastDockedNode;
+        }
+
+        // Otherwise, locate any active node directly from the dock tree structure
+        return findFirstDockNode(root);
     }
 
     private void addImage(File file)
     {
         String key = file.getAbsolutePath();
-
-        if (openNodes.containsKey(key))
-        {
-            return; // already open — nothing further to do
-        }
-
+        
         ImageViewerNode viewerNode = new ImageViewerNode(file);
 
         DockNode node = new DockNode(
@@ -115,34 +169,29 @@ public final class ImageViewerWindowService
         );
         node.setCloseable(true);
 
-        // Keep the dock tab/header title in sync when the user navigates
-        // to a different image via the </> buttons inside this same node.
-        viewerNode.currentFileProperty().addListener((obs, old, newFile) -> {
-            if (newFile != null) node.setTitle(newFile.getName());
+        // Let the Service handle state synchronization when the viewer node changes its image
+        viewerNode.currentFileProperty().addListener((obs, oldFile, newFile) -> {
+            onViewerImageChanged(node, oldFile, newFile);
         });
 
-        if (lastDockedNode == null)
+        DockNode target = findDockTarget();
+        if (target == null)
         {
             snapFX.getDockGraph().setRoot(node);
         }
         else
         {
-            // Side-by-side: each new image docks to the right of the
-            // previously docked one, building a horizontal split chain
-            // so images compare side by side instead of stacking as tabs.
-            snapFX.dock(node, lastDockedNode, DockPosition.RIGHT);
+            snapFX.dock(node, target, DockPosition.RIGHT);
         }
 
         openNodes.put(key, node);
         lastDockedNode = node;
-
-        // --- Equalize the split pane dividers ---
-        equalizeDividers();
-        refreshLayout();
     }
 
     private void refreshLayout()
     {
+        if (stage == null || stage.getScene() == null) return;
+        
         StackPane host = (StackPane) stage.getScene().getRoot();
         Parent newLayout = snapFX.buildLayout();
 
@@ -209,18 +258,27 @@ public final class ImageViewerWindowService
 
         snapFX.initialize(stage);
 
-        // ─── Close handler ──────────────────────────────────────────
-        snapFX.setOnCloseHandled(result -> {
-            // If the graph root is null, close the window
-            if (snapFX.getDockGraph().getRoot() == null) 
+        // Run cleanup on Platform.runLater to ensure SnapFX graph mutations complete first
+        snapFX.setOnCloseHandled(result -> Platform.runLater(() -> {
+            if (snapFX == null || snapFX.getDockGraph() == null) return;
+            
+            DockElement root = snapFX.getDockGraph().getRoot();
+
+            // Purge nodes no longer present in the physical graph
+            openNodes.entrySet().removeIf(entry -> !isNodeInGraph(entry.getValue(), root));
+
+            lastDockedNode = findDockTarget();
+
+            if (root == null || openNodes.isEmpty()) 
             {
-                Platform.runLater(() -> stage.close());
+                stage.close();
             } 
             else
             {
-                Platform.runLater(this::refreshLayout);
+                equalizeDividers();
+                refreshLayout();
             }
-        });
+        }));
 
         ThemeManager.addThemeChangeListener(themeListener);
         syncTheme(AppSettings.getInstance().getTheme());
@@ -251,9 +309,6 @@ public final class ImageViewerWindowService
             var db = event.getDragboard();
             boolean success = db.hasFiles();
 
-            // Complete the native DnD loop first, exactly as established
-            // for the main file explorer's drop targets — never do
-            // follow-up work synchronously inside a drop handler.
             event.setDropCompleted(success);
             event.consume();
 
@@ -263,6 +318,36 @@ public final class ImageViewerWindowService
                 Platform.runLater(() -> openImages(files));
             }
         });
+    }
+
+    /**
+     * Safely updates window-level node tracking and tab titles when an image
+     * is replaced inside an existing viewer node.
+     */
+    private void onViewerImageChanged(DockNode node, File oldFile, File newFile)
+    {
+        if (node == null) return;
+
+        if (newFile != null)
+        {
+            node.setTitle(newFile.getName());
+        }
+
+        // Only remove the old mapping if it specifically references THIS node instance
+        if (oldFile != null)
+        {
+            String oldKey = oldFile.getAbsolutePath();
+            if (openNodes.get(oldKey) == node)
+            {
+                openNodes.remove(oldKey);
+            }
+        }
+
+        // Map the new file to this node
+        if (newFile != null)
+        {
+            openNodes.put(newFile.getAbsolutePath(), node);
+        }
     }
 
     private void teardown()

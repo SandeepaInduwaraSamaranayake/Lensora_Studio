@@ -20,15 +20,15 @@
                             </VBox>
                             <HBox spacing="4" alignment="CENTER">
                                 <Button fx:id="btnDetailEdit">
-                                    <graphic><FontIcon iconLiteral="fas-edit" styleClass="icon-size-10"/></graphic>
+                                    <graphic><FontIcon iconLiteral="fas-edit" styleClass="icon-size-12"/></graphic>
                                     <tooltip><Tooltip text="Edit Project"/></tooltip>
                                 </Button>
                                 <Button fx:id="btnDetailOpenFolder">
-                                    <graphic><FontIcon iconLiteral="fas-folder-open" styleClass="icon-size-10"/></graphic>
+                                    <graphic><FontIcon iconLiteral="fas-folder-open" styleClass="icon-size-12"/></graphic>
                                     <tooltip><Tooltip text="Open Project Folder"/></tooltip>
                                 </Button>
                                 <Button fx:id="btnDetailArchive">
-                                    <graphic><FontIcon iconLiteral="fas-archive" styleClass="icon-size-10"/></graphic>
+                                    <graphic><FontIcon iconLiteral="fas-archive" styleClass="icon-size-12"/></graphic>
                                     <tooltip><Tooltip text="Archive Project"/></tooltip>
                                 </Button>
                             </HBox>

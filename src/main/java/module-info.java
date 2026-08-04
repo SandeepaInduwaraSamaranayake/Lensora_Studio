@@ -29,6 +29,7 @@ module com.lensora.lensorastudio
 
     requires transitive org.snapfx;
     requires com.google.gson;
+    requires ch.qos.logback.core;
 
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;

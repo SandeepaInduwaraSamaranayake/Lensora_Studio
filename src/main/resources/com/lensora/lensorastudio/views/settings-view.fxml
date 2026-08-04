@@ -199,6 +199,9 @@
                            <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="3" />
                            <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
 
+                           <Label text="Image Viewer Zoom Sensitivity" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                           <Spinner fx:id="zoomSensitivitySpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+
                            <rowConstraints>
                               <RowConstraints />
                               <RowConstraints />
