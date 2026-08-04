@@ -20,7 +20,7 @@ public class FileIconUtil
      */
     public static Node getFileIcon(File file) 
     {
-        return getFileIcon(file, 16);
+        return getFileIcon(file, 500);
     }
 
     /**
@@ -35,7 +35,7 @@ public class FileIconUtil
         if (file.isDirectory())
     {
             FontIcon icon = new FontIcon("fas-folder");
-            icon.setIconSize(size);
+            icon.getStyleClass().add("icon-size-60");
             return icon;
         }
 

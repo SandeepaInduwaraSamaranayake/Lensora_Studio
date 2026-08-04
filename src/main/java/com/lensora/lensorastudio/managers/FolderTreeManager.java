@@ -314,7 +314,7 @@ public class FolderTreeManager
                     {
                         setText(item.getName());
                         FontIcon folderIcon = new FontIcon("fas-folder");
-                        folderIcon.setIconSize(16);
+                        folderIcon.getStyleClass().add("icon-size-14");
                         setGraphic(folderIcon);
                     }
                 }

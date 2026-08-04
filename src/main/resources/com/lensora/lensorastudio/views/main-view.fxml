@@ -50,7 +50,7 @@
             <ToolBar>
                 <Button fx:id="btnNewProject">
                     <graphic>
-                        <FontIcon iconLiteral="fas-folder-plus" iconSize="16"/>
+                        <FontIcon iconLiteral="fas-folder-plus" styleClass="icon-size-16"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="Create a New Project (CTRL + N)"/>
@@ -58,7 +58,7 @@
                 </Button>
                 <Button fx:id="btnNewTemplate">
                     <graphic>
-                        <FontIcon iconLiteral="fas-sitemap" iconSize="16"/>
+                        <FontIcon iconLiteral="fas-sitemap" styleClass="icon-size-16"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="Manage Folder Templates (CTRL + T)"/>
@@ -67,7 +67,7 @@
                 <Separator/>
                 <ToggleButton fx:id="btnLockLayout">
                     <graphic>
-                        <FontIcon fx:id="lockLayoutIcon" iconLiteral="fas-lock-open" iconSize="16"/>
+                        <FontIcon fx:id="lockLayoutIcon" iconLiteral="fas-lock-open" styleClass="icon-size-16"/>
                     </graphic>
                     <tooltip>
                         <Tooltip fx:id="lockLayoutTooltip" text="Lock Layout (SHIFT + L)"/>

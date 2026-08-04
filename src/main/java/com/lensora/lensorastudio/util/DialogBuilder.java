@@ -130,6 +130,7 @@ public class DialogBuilder
 
             Scene scene = new Scene(root);
             stage.setScene(scene);
+            ThemeManager.initializeSceneStyling(scene);
             stage.setMinWidth(minWidth);
             stage.setMinHeight(minHeight);
 

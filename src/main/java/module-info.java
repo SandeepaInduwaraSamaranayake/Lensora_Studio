@@ -33,6 +33,7 @@ module com.lensora.lensorastudio
     exports com.lensora.lensorastudio;
     exports com.lensora.lensorastudio.controller;
 
+    exports com.lensora.lensorastudio.model;
     exports com.lensora.lensorastudio.viewmodel;
     exports com.lensora.lensorastudio.docking;
 

@@ -224,7 +224,7 @@ public class ImageViewerNode
     {
         Button btn = new Button();
         FontIcon icon = new FontIcon(iconLiteral);
-        icon.setIconSize(8);
+        icon.getStyleClass().add("icon-size-10");
         btn.setGraphic(icon);
         btn.setTooltip(new Tooltip(tooltipText));
         btn.setStyle("-fx-background-color: transparent; -fx-padding: 1 2;");

@@ -134,6 +134,7 @@ public class App extends Application
         stage.show();
     }
 
+    @SuppressWarnings("deprecation")
     private void applyTheme(Stage stage)
     {
         Application.setUserAgentStylesheet(new CupertinoDark().getUserAgentStylesheet());

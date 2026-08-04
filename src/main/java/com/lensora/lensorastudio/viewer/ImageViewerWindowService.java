@@ -4,12 +4,10 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
-import com.lensora.lensorastudio.util.Resources;
 
 import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.image.Image;
 import javafx.scene.input.TransferMode;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -205,6 +203,7 @@ public final class ImageViewerWindowService
         Scene scene = new Scene(host);
         setupDropTarget(host);
         stage.setScene(scene);
+        ThemeManager.initializeSceneStyling(scene);
 
         stage.setOnHidden(e -> teardown());
 

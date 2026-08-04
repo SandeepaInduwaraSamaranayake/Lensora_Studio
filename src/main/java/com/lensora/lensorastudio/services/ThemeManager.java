@@ -8,6 +8,8 @@ import javafx.stage.Window;
 
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.util.Resources;
+
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -38,6 +40,7 @@ public class ThemeManager
         AppSettings settings = AppSettings.getInstance();
         applyTheme(settings.getTheme());
         applyFontSizeToScene(scene, settings.getFontSize()); // direct application
+        initializeSceneStyling(scene);
         applyFontSizeToAllWindows(settings.getFontSize());   // in case windows already exist
     }
 
@@ -60,10 +63,69 @@ public class ThemeManager
             case CASPIAN         -> Application.setUserAgentStylesheet(Application.STYLESHEET_CASPIAN);
         }
 
+        applyDarkThemeMarker(theme);
+
         for (Consumer<AppSettings.Theme> listener : themeChangeListeners)
         {
             listener.accept(theme);
         }
+    }
+
+    /** One-stop setup for any newly created Scene: font size, icon-size, and dark/light icon marker. */
+    public static void initializeSceneStyling(Scene scene)
+    {
+        if (scene == null || scene.getRoot() == null) return;
+
+        applyCurrentFontSizeToScene(scene);
+
+        String iconCss = Resources.ICON_SIZE_LOCK_STYLE.url().toExternalForm();
+        if (!scene.getStylesheets().contains(iconCss))
+        {
+            scene.getStylesheets().add(iconCss);
+        }
+
+        applyIconThemeClass(scene);
+    }
+
+    /**
+     * Toggles a "dark-theme" style class on every open window's scene root,
+     * so app-overrides.css can flip icon (and any other) colors with a plain
+     * scoped selector instead of relying on -fx-icon-color variable-lookup
+     * fallback syntax, which does not reliably resolve for this
+     * Ikonli-specific property under Modena/Caspian.
+     */
+    private static void applyDarkThemeMarker(AppSettings.Theme theme)
+    {
+        boolean isDark = isDarkTheme(theme);
+        for (Window window : Window.getWindows())
+        {
+            if (window instanceof Stage stage && stage.getScene() != null && stage.getScene().getRoot() != null)
+            {
+                setDarkThemeClass(stage.getScene(), isDark);
+            }
+        }
+    }
+
+    public static void applyIconThemeClass(Scene scene)
+    {
+        if (scene == null || scene.getRoot() == null) return;
+        setDarkThemeClass(scene, isDarkTheme(AppSettings.getInstance().getTheme()));
+    }
+
+    private static void setDarkThemeClass(Scene scene, boolean isDark)
+    {
+        var styleClasses = scene.getRoot().getStyleClass();
+        styleClasses.remove("dark-theme");
+        if (isDark) styleClasses.add("dark-theme");
+    }
+
+    private static boolean isDarkTheme(AppSettings.Theme theme)
+    {
+        return switch (theme)
+        {
+            case CUPERTINO_DARK, NORD_DARK, PRIMER_DARK -> true;
+            case CUPERTINO_LIGHT, PRIMER_LIGHT, MODENA, CASPIAN -> false;
+        };
     }
 
     /**
@@ -86,7 +148,7 @@ public class ThemeManager
                 }
             }
         }
-        if (count == 0) 
+        if (count == 0)
         {
             logger.info("[ThemeManager] No open windows found - font size will be applied when windows appear (ensure you call applyFontSizeToScene for the initial scene)");
         }
@@ -96,7 +158,7 @@ public class ThemeManager
      * Applies the font size by directly setting the style on the root node.
      * This is much more reliable than using a data‑URI stylesheet.
      */
-    public static void applyFontSizeToScene(Scene scene, double size) 
+    public static void applyFontSizeToScene(Scene scene, double size)
     {
         if (scene == null || scene.getRoot() == null) 
         {
@@ -116,7 +178,7 @@ public class ThemeManager
         applyFontSizeToScene(scene, AppSettings.getInstance().getFontSize());
     }
 
-/**
+    /**
      * Back-compat single-listener setter. Replaces any previously
      * registered listeners with just this one — kept so existing call
      * sites (e.g. MainController) don't need to change.

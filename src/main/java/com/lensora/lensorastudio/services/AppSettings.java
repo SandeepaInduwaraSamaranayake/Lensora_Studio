@@ -73,7 +73,7 @@ public class AppSettings
 
         public final String displayName;
         public final boolean atlantaFxBased;
-        Theme(String displayName, boolean atlantaFxBased) 
+        Theme(String displayName, boolean atlantaFxBased)
         {
             this.displayName = displayName;
             this.atlantaFxBased = atlantaFxBased;

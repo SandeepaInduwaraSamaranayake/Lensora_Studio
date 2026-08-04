@@ -1,0 +1,40 @@
+/* Default (dark-icon) case — used under light/Modena/Caspian themes */
+.ikonli-font-icon 
+{
+    -fx-icon-size: 16px;
+    -fx-icon-color: #2d3436;
+}
+
+/* Overridden when the scene root carries the "dark-theme" marker class,
+ * applied/removed by ThemeManager whenever an AtlantaFX dark theme
+ * (Cupertino Dark, Nord Dark, Primer Dark) is active. */
+.root.dark-theme .ikonli-font-icon 
+{
+    -fx-icon-color: #dcdcdc;
+}
+
+.icon-size-6  { -fx-icon-size: 6px; }
+.icon-size-10 { -fx-icon-size: 10px; }
+.icon-size-12 { -fx-icon-size: 12px; }
+.icon-size-12 { -fx-icon-size: 14px; }
+.icon-size-16 { -fx-icon-size: 16px; }
+.icon-size-25 { -fx-icon-size: 25px; }
+.icon-size-60 { -fx-icon-size: 60px; }
+
+
+/* MenuBar/Menu text color — Caspian's default menu text can render
+ * invisible against a transparent MenuBar background (our custom title
+ * bar has no theme-provided background of its own), since only its
+ * hover/showing pseudo-classes carry an explicit contrasting fill. Pin
+ * both states explicitly so text is always visible regardless of theme. */
+.menu-bar,
+.menu-bar .menu,
+.menu-bar .menu .label {
+    -fx-text-fill: #2d3436;
+}
+
+.root.dark-theme .menu-bar,
+.root.dark-theme .menu-bar .menu,
+.root.dark-theme .menu-bar .menu .label {
+    -fx-text-fill: #dcdcdc;
+}

@@ -10,9 +10,18 @@
 
     <VBox spacing="0">
         <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
-            <Button fx:id="btnFolderBack" text="⬅" />
-            <Button fx:id="btnFolderForward" text="➡" />
-            <FontIcon iconLiteral="fas-folder" iconSize="10"/>
+            <Button fx:id="btnFolderBack">
+                <graphic>
+                    <FontIcon iconLiteral="fas-chevron-left" styleClass="icon-size-10"/>
+                </graphic>
+            </Button>
+            <Button fx:id="btnFolderForward">
+                <graphic>
+                    <FontIcon iconLiteral="fas-chevron-right" styleClass="icon-size-10"/>
+                </graphic>
+            </Button>
+
+            <FontIcon iconLiteral="fas-folder" styleClass="icon-size-10"/>
             <Label fx:id="lblFolderHeader" text="Folders [" style="-fx-font-weight: bold;"/>
             <HBox fx:id="breadcrumbContainer" spacing="2" alignment="CENTER_LEFT" style="-fx-font-weight: bold;"/>
             <Label text="]" style="-fx-font-weight: bold;"/>
@@ -23,7 +32,7 @@
 
     <VBox spacing="0">
         <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
-            <FontIcon iconLiteral="fas-images" iconSize="10"/>
+            <FontIcon iconLiteral="fas-images" styleClass="icon-size-10"/>
             <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;"/>
             <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
             <Pane HBox.hgrow="ALWAYS"/>
@@ -32,7 +41,7 @@
             <HBox spacing="2">
                 <ToggleButton fx:id="btnDetails" selected="true">
                     <graphic>
-                        <FontIcon iconLiteral="fas-table" iconSize="10"/>
+                        <FontIcon iconLiteral="fas-table" styleClass="icon-size-10"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="Details View"/>
@@ -40,7 +49,7 @@
                 </ToggleButton>
                 <ToggleButton fx:id="btnList">
                     <graphic>
-                        <FontIcon iconLiteral="fas-list" iconSize="10"/>
+                        <FontIcon iconLiteral="fas-list" styleClass="icon-size-10"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="List View"/>
@@ -48,7 +57,7 @@
                 </ToggleButton>
                 <ToggleButton fx:id="btnIcons">
                     <graphic>
-                        <FontIcon iconLiteral="fas-th-large" iconSize="10"/>
+                        <FontIcon iconLiteral="fas-th-large" styleClass="icon-size-10"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="Icons View"/>
@@ -56,7 +65,7 @@
                 </ToggleButton>
                 <ToggleButton fx:id="btnThumbnails">
                     <graphic>
-                        <FontIcon iconLiteral="fas-images" iconSize="10"/>
+                        <FontIcon iconLiteral="fas-images" styleClass="icon-size-10"/>
                     </graphic>
                     <tooltip>
                         <Tooltip text="Thumbnails View"/>
@@ -66,7 +75,7 @@
             <Separator orientation="VERTICAL"/>
             <Button fx:id="btnRefreshFileList">
                 <graphic>
-                    <FontIcon iconLiteral="fas-redo-alt" iconSize="10"/>
+                    <FontIcon iconLiteral="fas-redo-alt" styleClass="icon-size-10"/>
                 </graphic>
                 <tooltip>
                     <Tooltip text="Refresh (F5)"/>
