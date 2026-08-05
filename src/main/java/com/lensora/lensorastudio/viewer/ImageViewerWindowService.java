@@ -6,6 +6,7 @@ import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 
 import javafx.application.Platform;
+import javafx.geometry.Orientation;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.TransferMode;
@@ -22,9 +23,9 @@ import org.snapfx.model.DockPosition;
 import org.snapfx.model.DockSplitPane;
 
 import java.io.File;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -38,7 +39,10 @@ public final class ImageViewerWindowService
 
     private Stage stage;
     private SnapFX snapFX;
-    private final Map<String, DockNode> openNodes = new LinkedHashMap<>();
+
+    private record ViewerInstance(DockNode dockNode, ImageViewerNode viewerNode) {}
+    private final List<ViewerInstance> viewers = new ArrayList<>();
+
     private DockNode lastDockedNode;
     private Parent currentLayoutNode;
 
@@ -152,40 +156,38 @@ public final class ImageViewerWindowService
             return lastDockedNode;
         }
 
-        // Otherwise, locate any active node directly from the dock tree structure
+         // Otherwise, locate any active node directly from the dock tree structure
         return findFirstDockNode(root);
     }
 
     private void addImage(File file)
     {
-        String key = file.getAbsolutePath();
-        
         ImageViewerNode viewerNode = new ImageViewerNode(file);
 
-        DockNode node = new DockNode(
-                "imgviewer-" + key.hashCode(),
+        DockNode dockNode = new DockNode(
+                "imgviewer-" + UUID.randomUUID(),
                 viewerNode.getNode(),
                 file.getName()
         );
-        node.setCloseable(true);
+        dockNode.setCloseable(true);
 
         // Let the Service handle state synchronization when the viewer node changes its image
         viewerNode.currentFileProperty().addListener((obs, oldFile, newFile) -> {
-            onViewerImageChanged(node, oldFile, newFile);
+            if (newFile != null) dockNode.setTitle(newFile.getName());
         });
 
         DockNode target = findDockTarget();
         if (target == null)
         {
-            snapFX.getDockGraph().setRoot(node);
+            snapFX.getDockGraph().setRoot(dockNode);
         }
         else
         {
-            snapFX.dock(node, target, DockPosition.RIGHT);
+            snapFX.dock(dockNode, target, DockPosition.RIGHT);
         }
 
-        openNodes.put(key, node);
-        lastDockedNode = node;
+        viewers.add(new ViewerInstance(dockNode, viewerNode));
+        lastDockedNode = dockNode;
     }
 
     private void refreshLayout()
@@ -220,7 +222,7 @@ public final class ImageViewerWindowService
     {
         DockElement root = snapFX.getDockGraph().getRoot();
         if (!(root instanceof DockSplitPane splitPane)) return;
-        if (splitPane.getOrientation() != javafx.geometry.Orientation.HORIZONTAL) return;
+        if (splitPane.getOrientation() != Orientation.HORIZONTAL) return;
 
         int childCount = splitPane.getChildren().size();
         if (childCount < 2) return; // no dividers to set
@@ -258,18 +260,16 @@ public final class ImageViewerWindowService
 
         snapFX.initialize(stage);
 
-        // Run cleanup on Platform.runLater to ensure SnapFX graph mutations complete first
+        // Run cleanup
         snapFX.setOnCloseHandled(result -> Platform.runLater(() -> {
             if (snapFX == null || snapFX.getDockGraph() == null) return;
             
             DockElement root = snapFX.getDockGraph().getRoot();
 
-            // Purge nodes no longer present in the physical graph
-            openNodes.entrySet().removeIf(entry -> !isNodeInGraph(entry.getValue(), root));
+            viewers.removeIf(instance -> !isNodeInGraph(instance.dockNode(), root));
+            lastDockedNode = viewers.isEmpty() ? null : viewers.get(viewers.size() - 1).dockNode();
 
-            lastDockedNode = findDockTarget();
-
-            if (root == null || openNodes.isEmpty()) 
+            if (root == null || viewers.isEmpty()) 
             {
                 stage.close();
             } 
@@ -320,41 +320,11 @@ public final class ImageViewerWindowService
         });
     }
 
-    /**
-     * Safely updates window-level node tracking and tab titles when an image
-     * is replaced inside an existing viewer node.
-     */
-    private void onViewerImageChanged(DockNode node, File oldFile, File newFile)
-    {
-        if (node == null) return;
-
-        if (newFile != null)
-        {
-            node.setTitle(newFile.getName());
-        }
-
-        // Only remove the old mapping if it specifically references THIS node instance
-        if (oldFile != null)
-        {
-            String oldKey = oldFile.getAbsolutePath();
-            if (openNodes.get(oldKey) == node)
-            {
-                openNodes.remove(oldKey);
-            }
-        }
-
-        // Map the new file to this node
-        if (newFile != null)
-        {
-            openNodes.put(newFile.getAbsolutePath(), node);
-        }
-    }
-
     private void teardown()
     {
         logger.info("[ImageViewerWindowService] Viewer window closed — resetting state.");
         ThemeManager.removeThemeChangeListener(themeListener);
-        openNodes.clear();
+        viewers.clear();
         lastDockedNode = null;
         currentLayoutNode = null;
         snapFX = null;
