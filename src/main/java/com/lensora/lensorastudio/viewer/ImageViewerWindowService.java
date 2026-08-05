@@ -4,6 +4,7 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
+import com.lensora.lensorastudio.util.Resources;
 
 import javafx.application.Platform;
 import javafx.geometry.Orientation;
@@ -255,6 +256,13 @@ public final class ImageViewerWindowService
         setupDropTarget(host);
         stage.setScene(scene);
         ThemeManager.initializeSceneStyling(scene);
+
+        // Load image-viewer.css on the scene
+        String imageViewerCss = Resources.IMAGE_VIEWER_STYLE.url().toExternalForm();
+        if (!scene.getStylesheets().contains(imageViewerCss))
+        {
+            scene.getStylesheets().add(imageViewerCss);
+        }
 
         stage.setOnHidden(e -> teardown());
 

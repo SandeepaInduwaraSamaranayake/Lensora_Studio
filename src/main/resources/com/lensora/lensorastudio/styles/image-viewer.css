@@ -1,0 +1,10 @@
+.viewer-toolbar {
+    -fx-background-color: -color-bg-subtle;
+    -fx-border-color: -color-border-default;
+    -fx-border-width: 0 0 1 0;
+}
+
+.viewer-toolbar.toolbar-drop-hover {
+    -fx-background-color: rgba(2, 132, 199, 0.15);
+    -fx-border-color: #0284c7;
+}

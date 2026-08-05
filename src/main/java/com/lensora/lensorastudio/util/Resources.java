@@ -27,7 +27,8 @@ public enum Resources
     APP_ICON_512("/com/lensora/lensorastudio/images/lensora_512x512.png"),
     SPLASH_SCREEN("/com/lensora/lensorastudio/images/lensora_splash.png"),
 
-    ICON_SIZE_LOCK_STYLE("/com/lensora/lensorastudio/styles/theme-overrides.css");
+    ICON_SIZE_LOCK_STYLE("/com/lensora/lensorastudio/styles/theme-overrides.css"),
+    IMAGE_VIEWER_STYLE("/com/lensora/lensorastudio/styles/image-viewer.css");
 
     private final String path;
     Resources(String path) { this.path = path; }

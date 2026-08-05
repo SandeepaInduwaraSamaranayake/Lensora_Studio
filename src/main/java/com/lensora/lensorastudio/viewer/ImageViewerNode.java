@@ -336,7 +336,7 @@ public class ImageViewerNode
         HBox toolbar = new HBox(10);
         toolbar.setPadding(new Insets(4, 6, 4, 6));
         toolbar.setAlignment(Pos.CENTER);
-        toolbar.setStyle("-fx-background-color: -color-bg-subtle; -fx-border-color: -color-border-default; -fx-border-width: 0 0 1 0;");
+        toolbar.getStyleClass().add("viewer-toolbar");
 
         // Enable drag and drop specifically on the toolbar
         setupToolbarDropTarget(toolbar);

@@ -38,10 +38,3 @@
 .root.dark-theme .menu-bar .menu .label {
     -fx-text-fill: #dcdcdc;
 }
-
-
-.toolbar-drop-hover {
-    -fx-background-color: -color-accent-subtle;
-    -fx-border-color: -color-accent-emphasis;
-    -fx-border-width: 0 0 1 0;
-}
