@@ -2,6 +2,7 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.managers.FileManager;
 
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
@@ -33,8 +34,8 @@ public class FileExplorerController
     @FXML private ListView<File> fileListView;
     @FXML private ScrollPane iconScrollPane;
     @FXML private FlowPane iconFlowPane;
-    @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInAnotherWindow;
-    @FXML private Menu ctxOpenWithMenu;
+    @FXML private MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInImageViewer;
+    @FXML private Menu ctxOpenWithMenu, ctxSendToMenu;
 
     // NOTE: FileManager still owns a progress bar/status area for copy-paste.
     // Those live in the status bar module now, so we pass in references
@@ -69,14 +70,46 @@ public class FileExplorerController
         BooleanBinding multiSelectBinding = Bindings.size(fileTable.getSelectionModel().getSelectedItems()).isNotEqualTo(1);
         fileManager = new FileManager
         (
-                folderTree, fileTable,
-                colFileName, colFileType, colFileSize, colFileDimensions, colFileModified,
-                lblCurrentFolder, lblFileCount, lblFolderHeader,
-                progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
-                ctxFileOpen, ctxOpenWithMenu, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer,
-                ctxFileProperties, ctxOpenInAnotherWindow, breadcrumbContainer, btnFolderBack, btnFolderForward, btnRefreshFileList, fileSearchField,
-                viewToggleGroup, btnDetails, btnList, btnIcons, btnThumbnails,
-                fileListView, iconScrollPane, iconFlowPane,  multiSelectBinding
+                folderTree, 
+                fileTable,
+                colFileName, 
+                colFileType, 
+                colFileSize, 
+                colFileDimensions, 
+                colFileModified,
+                lblCurrentFolder, 
+                lblFileCount,
+                lblFolderHeader,
+                progressContainer, 
+                progressBar, 
+                progressLabel, 
+                progressSpeedLabel, 
+                progressEtaLabel,
+                ctxFileOpen, 
+                ctxOpenWithMenu, 
+                ctxFileRename, 
+                ctxFileCopy, 
+                ctxFileCut, 
+                ctxFileMove, 
+                ctxSendToMenu,
+                ctxFileDelete,
+                ctxFileShowInExplorer,
+                ctxFileProperties, 
+                ctxOpenInImageViewer, 
+                breadcrumbContainer, 
+                btnFolderBack, 
+                btnFolderForward, 
+                btnRefreshFileList, 
+                fileSearchField,
+                viewToggleGroup, 
+                btnDetails, 
+                btnList, 
+                btnIcons, 
+                btnThumbnails,
+                fileListView, 
+                iconScrollPane,
+                iconFlowPane,  
+                multiSelectBinding
         );
 
         // Listen for selection changes
@@ -111,6 +144,20 @@ public class FileExplorerController
                         e.consume();
                     }
                 });
+            }
+        });
+
+        /**
+         * Select all text when the search field gains focus
+         * 
+         * The Platform.runLater() is important because when the focus comes from a mouse click, 
+         * JavaFX will position the caret after the click. Running selectAll() later ensures 
+         * the entire text remains selected.
+         */
+        fileSearchField.focusedProperty().addListener((obs, wasFocused, isFocused) -> {
+            if (isFocused)
+            {
+                Platform.runLater(fileSearchField::selectAll);
             }
         });
 

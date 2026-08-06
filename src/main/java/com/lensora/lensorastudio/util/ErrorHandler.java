@@ -6,6 +6,8 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.Modality;
@@ -199,9 +201,9 @@ public final class ErrorHandler
             Button copyBtn = new Button("Copy to Clipboard");
             String fullText = message + "\n\n" + getStackTrace(cause);
             copyBtn.setOnAction(e -> {
-                javafx.scene.input.ClipboardContent content = new javafx.scene.input.ClipboardContent();
+                ClipboardContent content = new ClipboardContent();
                 content.putString(fullText);
-                javafx.scene.input.Clipboard.getSystemClipboard().setContent(content);
+                Clipboard.getSystemClipboard().setContent(content);
                 copyBtn.setText("Copied ✓");
                 copyBtn.setDisable(true);
             });

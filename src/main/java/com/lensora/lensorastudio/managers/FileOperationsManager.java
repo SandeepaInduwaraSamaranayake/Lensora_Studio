@@ -4,6 +4,7 @@ import com.lensora.lensorastudio.model.ExternalApp;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.ClipboardFormats;
+import com.lensora.lensorastudio.util.EmailSendUtil;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.ExternalAppLauncher;
 import com.lensora.lensorastudio.util.ExternalAppsDialog;
@@ -11,6 +12,7 @@ import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 import com.lensora.lensorastudio.util.MetadataPanel;
 import com.lensora.lensorastudio.util.NotificationUtil;
+import com.lensora.lensorastudio.util.RemovableDriveUtil;
 import com.lensora.lensorastudio.viewer.ImageViewerWindowService;
 
 import javafx.beans.binding.Bindings;
@@ -22,6 +24,7 @@ import javafx.scene.input.DataFormat;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -50,12 +53,12 @@ public class FileOperationsManager
 {
     private static final Logger logger = LoggerFactory.getLogger(FileOperationsManager.class);
 
-    private final MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInAnotherWindow;
+    private final MenuItem ctxFileOpen, ctxFileRename, ctxFileCopy, ctxFileCut, ctxFileMove, ctxFileDelete, ctxFileShowInExplorer, ctxFileProperties, ctxOpenInImageViewer;
     private final HBox progressContainer;
     private final ProgressBar progressBar;
     private final Label progressLabel, progressSpeedLabel, progressEtaLabel;
 
-    private final Menu ctxOpenWithMenu;
+    private final Menu ctxOpenWithMenu, ctxSendToMenu;
 
     private final Supplier<File> selectedFileSupplier;
     private final Supplier<List<File>> selectedFilesSupplier;
@@ -72,11 +75,12 @@ public class FileOperationsManager
                                     MenuItem ctxFileRename, 
                                     MenuItem ctxFileCopy, 
                                     MenuItem ctxFileCut,
-                                    MenuItem ctxFileMove, 
+                                    MenuItem ctxFileMove,
+                                    Menu ctxSendToMenu,
                                     MenuItem ctxFileDelete, 
                                     MenuItem ctxFileShowInExplorer, 
                                     MenuItem ctxFileProperties, 
-                                    MenuItem ctxOpenInAnotherWindow,
+                                    MenuItem ctxOpenInImageViewer,
                                     HBox progressContainer, 
                                     ProgressBar progressBar,
                                     Label progressLabel, 
@@ -94,10 +98,11 @@ public class FileOperationsManager
         this.ctxFileCopy = ctxFileCopy;
         this.ctxFileCut = ctxFileCut;
         this.ctxFileMove = ctxFileMove;
+        this.ctxSendToMenu = ctxSendToMenu;
         this.ctxFileDelete = ctxFileDelete;
         this.ctxFileShowInExplorer = ctxFileShowInExplorer;
         this.ctxFileProperties = ctxFileProperties;
-        this.ctxOpenInAnotherWindow = ctxOpenInAnotherWindow;
+        this.ctxOpenInImageViewer = ctxOpenInImageViewer;
         this.progressContainer = progressContainer;
         this.progressBar = progressBar;
         this.progressLabel = progressLabel;
@@ -113,7 +118,7 @@ public class FileOperationsManager
 
     public void setStage(Stage stage)                               { this.ownerStage = stage; }
     public void setSnapFX(SnapFX snapFX)                            { this.snapFX = snapFX; }
-    public void setShowMetadataHandler(Consumer<File> handler)      { this.showMetadataHandler = handler;}
+    public void setShowMetadataHandler(Consumer<File> handler)      { this.showMetadataHandler = handler; }
 
 
     // ─── Context menu ───────────────────────────────────────────────────────
@@ -134,8 +139,13 @@ public class FileOperationsManager
         ctxFileDelete.setOnAction(e -> deleteSelectedFiles());
         ctxFileShowInExplorer.setOnAction(e -> showInExplorer());
         ctxFileProperties.setOnAction(e -> showMetadata());
-        ctxOpenInAnotherWindow.setOnAction(e -> openInAnotherWindow());
-        if (ctxOpenWithMenu != null) ctxOpenWithMenu.getParentPopup().setOnShowing(e -> rebuildOpenWithMenu());
+        ctxOpenInImageViewer.setOnAction(e -> openInImageViewer());
+
+        ContextMenu popup = ctxOpenWithMenu.getParentPopup();
+        popup.addEventHandler(WindowEvent.WINDOW_SHOWING, e -> {
+            rebuildOpenWithMenu();
+            rebuildSendToMenu();
+        });
 
     }
 
@@ -308,7 +318,7 @@ public class FileOperationsManager
         }
     }
 
-    private void openInAnotherWindow()
+    private void openInImageViewer()
     {
         List<File> selected = selectedFilesSupplier.get();
         if (selected == null || selected.isEmpty()) return;
@@ -613,4 +623,78 @@ public class FileOperationsManager
         manageAppsItem.setOnAction(e -> ExternalAppsDialog.show(ownerStage));
         ctxOpenWithMenu.getItems().add(manageAppsItem);
     }
+
+    /** Rebuilds Send To fresh each time it's shown, so newly attached drives appear without a restart. */
+    private void rebuildSendToMenu()
+    {
+        ctxSendToMenu.getItems().clear();
+
+        List<File> selected = selectedFilesSupplier.get();
+        boolean hasSelection = selected != null && !selected.isEmpty();
+
+        List<RemovableDriveUtil.DriveInfo> drives = RemovableDriveUtil.listRemovableDrives();
+
+        if (drives.isEmpty())
+        {
+            MenuItem noneItem = new MenuItem("(No external drives detected)");
+            noneItem.setDisable(true);
+            ctxSendToMenu.getItems().add(noneItem);
+        }
+        else
+        {
+            for (var drive : drives)
+            {
+                String freeSpace = FileSizeFormatter.formatFileSize(drive.usableBytes());
+                MenuItem driveItem = new MenuItem(drive.label() + " (" + freeSpace + " free)");
+                driveItem.setDisable(!hasSelection);
+                driveItem.setOnAction(e -> sendFilesToDrive(selected, drive.rootPath().toFile()));
+                ctxSendToMenu.getItems().add(driveItem);
+            }
+        }
+
+        ctxSendToMenu.getItems().add(new SeparatorMenuItem());
+
+        MenuItem emailItem = new MenuItem("Email");
+        emailItem.setDisable(!hasSelection);
+        emailItem.setOnAction(e -> EmailSendUtil.sendFiles(selected, progressContainer));
+        ctxSendToMenu.getItems().add(emailItem);
+    }
+
+    /** Copies the selected files to a drive's root, reusing the same progress-bound copy pipeline as paste/drag-drop. */
+    private void sendFilesToDrive(List<File> files, File targetRoot)
+    {
+        if (files == null || files.isEmpty() || targetRoot == null || !targetRoot.exists())
+        {
+            NotificationUtil.showToast(ownerStage, "Selected drive is not online. Aborting...", "fas-exclamation-circle");
+            return;
+        }
+
+        for (File src : files)
+        {
+            if (isRecursivePaste(src, targetRoot))
+            {
+                NotificationUtil.showToast(ownerStage, "Cannot send a folder into itself or its subfolder", "fas-exclamation-circle");
+                return;
+            }
+        }
+
+        currentCopyTask = new FileCopyTask(files, targetRoot);
+        bindProgress(currentCopyTask);
+
+        currentCopyTask.setOnSucceeded(e -> {
+            hideProgress();
+            NotificationUtil.showToast(ownerStage, files.size() + " file(s) sent to " + targetRoot.getPath());
+        });
+        currentCopyTask.setOnFailed(e -> {
+            hideProgress();
+            ErrorHandler.show(null, "Send To operation failed", currentCopyTask.getException());
+        });
+        currentCopyTask.setOnCancelled(e -> hideProgress());
+
+        showProgress();
+        Thread thread = new Thread(currentCopyTask, "send-to-drive-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
 }

@@ -10,6 +10,7 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ImageCache;
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.util.StartupManager;
 
 import javafx.fxml.FXML;
@@ -23,6 +24,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 import javafx.util.StringConverter;
 
@@ -283,6 +285,7 @@ public class SettingsController implements DialogController
         applyStartupBehaviour();
         applyUiBehaviour();
         if (onSettingsApplied != null)  onSettingsApplied.run();
+        NotificationUtil.showToast(getOwnerWindow(), "All Settings Applied");
         logger.info("[SettingsController] Settings applied.");
     }
 
@@ -533,8 +536,15 @@ public class SettingsController implements DialogController
     @FXML
     private void closeWindow() 
     {
-        Stage stage = (Stage) btnCancel.getScene().getWindow();
+        Stage stage = (Stage) getOwnerWindow();
         stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
+    }
+
+    private Window getOwnerWindow()
+    {
+        return btnCancel.getScene() != null
+                ? btnCancel.getScene().getWindow()
+                : null;
     }
 
     // ----------------------------- Callback for MainController ----------------

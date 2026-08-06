@@ -36,7 +36,7 @@
             <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;"/>
             <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
             <Pane HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="fileSearchField" promptText="Search (ALT + F)" style="-fx-padding: 2 6;"/>
+            <TextField fx:id="fileSearchField" promptText="Search (ALT + F)" />
             <Separator orientation="VERTICAL"/>
             <HBox spacing="2">
                 <ToggleButton fx:id="btnDetails" selected="true">
@@ -103,12 +103,13 @@
                         <items>
                             <MenuItem fx:id="ctxFileOpen" text="Open"/>
                             <Menu     fx:id="ctxOpenWithMenu" text="Open With"/>
-                            <MenuItem fx:id="ctxOpenInAnotherWindow" text="Open in Another Window"/>
+                            <MenuItem fx:id="ctxOpenInImageViewer" text="Open in Lensora Image Viewer"/>
                             <SeparatorMenuItem/>
                             <MenuItem fx:id="ctxFileRename" text="Rename…"/>
                             <MenuItem fx:id="ctxFileCopy" text="Copy"/>
                             <MenuItem fx:id="ctxFileCut" text="Cut"/>
                             <MenuItem fx:id="ctxFileMove" text="Move to…"/>
+                            <Menu     fx:id="ctxSendToMenu" text="Send To"/>
                             <SeparatorMenuItem/>
                             <MenuItem fx:id="ctxFileDelete" text="Delete"/>
                             <SeparatorMenuItem/>
