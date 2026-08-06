@@ -6,6 +6,7 @@ import com.lensora.lensorastudio.util.FileIconUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.ImageCache;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
+import com.lensora.lensorastudio.viewer.ImageViewerWindowService;
 
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -119,6 +120,7 @@ public class FileListingManager
         setupSelectionMode();
         setupToggleGroup();
         setupTableColumns();
+        setupDoubleClickToOpen();
         setupViewSwitching();
         setupDragAndDrop();
         setupSearch();
@@ -232,6 +234,17 @@ public class FileListingManager
                     Instant.ofEpochMilli(c.getValue().lastModified()), 
                     ZoneId.systemDefault()
                 ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))));
+    }
+
+    private void setupDoubleClickToOpen()
+    {
+        fileTable.setOnMouseClicked(event -> {
+            if (event.getClickCount() == 2)
+            {
+                File selected = fileTable.getSelectionModel().getSelectedItem();
+                handleDoubleClickOpen(selected);
+            }
+        });
     }
 
     public void shutdownDimensionExecutor()
@@ -396,14 +409,40 @@ public class FileListingManager
     private void populateListView(ObservableList<File> files)
     {
         fileListView.setItems(files);
-        fileListView.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(File file, boolean empty)
-            {
-                super.updateItem(file, empty);
-                if (empty || file == null) { setText(null); setGraphic(null); }
-                else { setText(file.getName()); setGraphic(FileIconUtil.getFileIcon(file, 20)); }
-            }
+        fileListView.setCellFactory(lv -> {
+            ListCell<File> cell = new ListCell<>() {
+                @Override
+                protected void updateItem(File file, boolean empty)
+                {
+                    super.updateItem(file, empty);
+                    if (empty || file == null) { setText(null); setGraphic(null); }
+                    else { setText(file.getName()); setGraphic(FileIconUtil.getFileIcon(file, 20)); }
+                }
+            };
+
+            cell.setOnDragDetected(event -> {
+                if (cell.getItem() == null) return;
+                List<File> filesToDrag = fileListView.getSelectionModel().getSelectedItems().isEmpty()
+                        ? List.of(cell.getItem())
+                        : List.copyOf(fileListView.getSelectionModel().getSelectedItems());
+
+                Dragboard db = cell.startDragAndDrop(TransferMode.MOVE);
+                ClipboardContent content = new ClipboardContent();
+                content.putFiles(filesToDrag);
+                content.put(ClipboardFormats.INTERNAL_DRAG, true);
+                db.setContent(content);
+                event.consume();
+            });
+
+            // double-click opens images in the viewer
+            cell.setOnMouseClicked(event -> {
+                if (event.getClickCount() == 2)
+                {
+                    handleDoubleClickOpen(cell.getItem());
+                }
+            });
+
+            return cell;
         });
     }
 
@@ -451,7 +490,10 @@ public class FileListingManager
 
             // click handler
             card.setOnMouseClicked(e -> {
-                if (e.getClickCount() == 2) openFile(file);
+                if (e.getClickCount() == 2)
+                {
+                    handleDoubleClickOpen(file);
+                }
             });
             iconFlowPane.getChildren().add(card);
         }
@@ -609,5 +651,25 @@ public class FileListingManager
             event.setDropCompleted(success);
             event.consume();
         });
+    }
+
+    /**
+     * Double-click behavior: supported images open in the dedicated image
+     * viewer window (with side-by-side comparison and prev/next navigation
+     * within the folder); everything else falls back to opening with the
+     * system default application, same as before.
+     */
+    private void handleDoubleClickOpen(File file)
+    {
+        if (file == null || file.isDirectory()) return;
+
+        if (ImageMetadataExtractor.isSupportedImage(file))
+        {
+            ImageViewerWindowService.getInstance().openImages(List.of(file));
+        }
+        else
+        {
+            openFile(file);
+        }
     }
 }
