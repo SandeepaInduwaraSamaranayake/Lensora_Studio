@@ -2,6 +2,8 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.Dialogs;
+import com.lensora.lensorastudio.util.NotificationUtil;
+
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -110,13 +112,15 @@ public class LogViewerController implements DialogController
         String content = logTextArea.getText();
         if (content == null || content.isEmpty()) 
         {
-            Dialogs.showInfo(stage, "Copy", "Nothing to copy", "The log is empty.");
+            // Show toast if there is nothing to copy
+            NotificationUtil.showToast(copyButton, "Log is empty", "fas-exclamation-circle");
             return;
         }
         ClipboardContent clipboardContent = new ClipboardContent();
         clipboardContent.putString(content);
         Clipboard.getSystemClipboard().setContent(clipboardContent);
-        Dialogs.showInfo(stage, "Copy", "Copied!", "Log content copied to clipboard.");
+        // Show floating toast notification
+        NotificationUtil.showToast(copyButton, "Copied to clipboard");
     }
 
     @FXML

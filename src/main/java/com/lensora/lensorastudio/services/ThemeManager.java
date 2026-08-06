@@ -89,7 +89,7 @@ public class ThemeManager
 
     /**
      * Toggles a "dark-theme" style class on every open window's scene root,
-     * so app-overrides.css can flip icon (and any other) colors with a plain
+     * so theme-overrides.css can flip icon (and any other) colors with a plain
      * scoped selector instead of relying on -fx-icon-color variable-lookup
      * fallback syntax, which does not reliably resolve for this
      * Ikonli-specific property under Modena/Caspian.

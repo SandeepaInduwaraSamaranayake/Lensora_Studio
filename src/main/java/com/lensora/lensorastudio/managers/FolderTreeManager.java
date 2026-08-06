@@ -1,7 +1,7 @@
 package com.lensora.lensorastudio.managers;
 
-import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.NotificationUtil;
 
 import javafx.application.Platform;
 import javafx.scene.control.*;
@@ -409,14 +409,14 @@ public class FolderTreeManager
         File folder = getSelectedFolder();
         if (folder == null || !folder.isDirectory())
         {
-            Dialogs.showInfo(null, "Copy", null, "Please select a folder.");
+            NotificationUtil.showToast(folderTree, "Please select a folder", "fas-exclamation-circle");
             return;
         }
         List<File> folderList = List.of(folder);
         ClipboardContent content = new ClipboardContent();
         content.put(DataFormat.FILES, folderList);
         Clipboard.getSystemClipboard().setContent(content);
-        Dialogs.showInfo(null, "Copy", null, "Folder '" + folder.getName() + "' copied.");
+        NotificationUtil.showToast(folderTree, "Folder '" + folder.getName() + "' copied");
     }
 
     private void openSelectedFolderInExplorer()
@@ -434,7 +434,7 @@ public class FolderTreeManager
                 else 
                 {
                     Platform.runLater(() ->
-                        Dialogs.showInfo(null, "Not Supported", null, "Cannot open folder on this system.")
+                        NotificationUtil.showToast(folderTree, "Cannot open folder on this system", "fas-exclamation-circle")
                     );
                 }
             }
@@ -454,7 +454,7 @@ public class FolderTreeManager
         ClipboardContent content = new ClipboardContent();
         content.putString(folder.getAbsolutePath());
         Clipboard.getSystemClipboard().setContent(content);
-        Dialogs.showInfo(null, "Copy Path", null, "Path copied to clipboard.");
+        NotificationUtil.showToast(folderTree, "Path copied to clipboard");
     }
 
     private void createNewFolder()
@@ -466,7 +466,7 @@ public class FolderTreeManager
         }
         if (parentFolder == null || !parentFolder.isDirectory())
         {
-            Dialogs.showInfo(null, "New Folder", null, "Please select a valid location.");
+            NotificationUtil.showToast(folderTree, "Please select a valid location", "fas-exclamation-circle");
             return;
         }
 
@@ -482,14 +482,14 @@ public class FolderTreeManager
             String sanitized = sanitizeFolderName(name.trim());
             if (sanitized.isEmpty())
             {
-                Dialogs.showInfo(null, "New Folder", null, "Invalid folder name.");
+                NotificationUtil.showToast(folderTree, "Invalid folder name", "fas-exclamation-circle");
                 return;
             }
 
             File newFolder = new File(finalParent, sanitized);
             if (newFolder.exists())
             {
-                Dialogs.showInfo(null, "New Folder", null, "A folder with that name already exists.");
+                NotificationUtil.showToast(folderTree, "A folder with that name already exists", "fas-exclamation-circle");
                 return;
             }
 
@@ -497,6 +497,7 @@ public class FolderTreeManager
             {
                 Files.createDirectory(newFolder.toPath());
                 refreshTreeAfterFolderCreation(finalParent, newFolder);
+                NotificationUtil.showToast(folderTree, "Folder created");
             }
             catch (java.io.IOException ex)
             {
@@ -511,12 +512,12 @@ public class FolderTreeManager
         File folder = getSelectedFolder();
         if (folder == null) 
         {
-            Dialogs.showInfo(null, "Move to Trash", null, "Please select a folder to move to trash.");
+            NotificationUtil.showToast(folderTree, "Please select a folder move to trash", "fas-exclamation-circle");
             return;
         }
         if (projectRoot != null && folder.equals(projectRoot)) 
         {
-            Dialogs.showInfo(null, "Move to Trash", null, "Cannot move the project's root folder to trash.");
+            NotificationUtil.showToast(folderTree, "Cannot move the project root folder to trash", "fas-exclamation-circle");
             return;
         }
 
@@ -546,13 +547,13 @@ public class FolderTreeManager
                         }
                         else
                         {
-                            Dialogs.showInfo(null, "Move to Trash", null, "Folder no longer exists.");
+                            NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
                         }
                     }
                     catch(Exception ex)
                     {
                         logger.warn("Move to Trash failed", ex);
-                        Dialogs.showInfo(null, "Move to Trash", null, "Cannot move the folder to trash.");
+                        NotificationUtil.showToast(folderTree, "Cannot move folder to trash", "fas-exclamation-circle");
                     }
                 }
             }
@@ -580,7 +581,8 @@ public class FolderTreeManager
                                         ? folder.getParentFile() : projectRoot;
                                 if (fallback != null) navigateTo(fallback);
                             }
-                        } 
+                            NotificationUtil.showToast(folderTree, "Folder permanently deleted");
+                        }
                         catch (IOException ex) 
                         {
                             ErrorHandler.show(null, "Failed to delete folder", ex);
@@ -599,7 +601,7 @@ public class FolderTreeManager
                 if (fallback != null) navigateTo(fallback);
             }
 
-            Dialogs.showInfo(null, "Move to Trash", null, "Folder moved to Trash.");
+            NotificationUtil.showToast(folderTree, "Folder moved to Trash");
         }); 
     }
 

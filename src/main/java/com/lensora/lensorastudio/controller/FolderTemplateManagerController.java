@@ -2,8 +2,8 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.repository.FolderTemplateRepository;
 import com.lensora.lensorastudio.repository.FolderTemplateRepository.FolderTemplate;
-import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.NotificationUtil;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -183,12 +183,12 @@ public class FolderTemplateManagerController implements DialogController
         String sanitized = sanitizeFolderName(name.trim());
         if (sanitized.isEmpty())
         {
-            Dialogs.showInfo(getOwnerWindow(), "New Folder", null, "Invalid folder name.");
+            NotificationUtil.showToast(getOwnerWindow(), "Invalid folder name", "fas-exclamation-circle");
             return;
         }
         if (folderNames.contains(sanitized))
         {
-            Dialogs.showInfo(getOwnerWindow(), "New Folder", null, "That folder is already in the list.");
+            NotificationUtil.showToast(getOwnerWindow(), "That folder is already in the list", "fas-exclamation-circle");
             return;
         }
 
@@ -233,7 +233,7 @@ public class FolderTemplateManagerController implements DialogController
             {
                 if (FolderTemplateRepository.nameExists(name.trim(), null))
                 {
-                    Dialogs.showInfo(getOwnerWindow(), "New Template", null, "A template with that name already exists.");
+                    NotificationUtil.showToast(getOwnerWindow(), "A template with that name already exists", "fas-exclamation-circle");
                     return;
                 }
 
@@ -263,7 +263,7 @@ public class FolderTemplateManagerController implements DialogController
         String name = nameField.getText();
         if (name == null || name.isBlank())
         {
-            Dialogs.showInfo(getOwnerWindow(), "Save Template", null, "Template name is required.");
+            NotificationUtil.showToast(getOwnerWindow(), "Template name is required", "fas-exclamation-circle");
             return;
         }
 
@@ -271,7 +271,7 @@ public class FolderTemplateManagerController implements DialogController
         {
             if (FolderTemplateRepository.nameExists(name.trim(), selected.id()))
             {
-                Dialogs.showInfo(getOwnerWindow(), "Save Template", null, "Another template already uses that name.");
+                NotificationUtil.showToast(getOwnerWindow(), "Another template already uses the specified name", "fas-exclamation-circle");
                 return;
             }
 
@@ -280,7 +280,7 @@ public class FolderTemplateManagerController implements DialogController
 
             reloadTemplates();
             notifyTemplatesChanged();
-            Dialogs.showInfo(getOwnerWindow(), "Save Template", null, "Template saved.");
+            NotificationUtil.showToast(getOwnerWindow(), "Template saved");
         }
         catch (SQLException e)
         {

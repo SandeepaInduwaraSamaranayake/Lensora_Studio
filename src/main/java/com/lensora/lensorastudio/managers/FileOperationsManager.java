@@ -4,13 +4,13 @@ import com.lensora.lensorastudio.model.ExternalApp;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.ClipboardFormats;
-import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.ExternalAppLauncher;
 import com.lensora.lensorastudio.util.ExternalAppsDialog;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
 import com.lensora.lensorastudio.util.MetadataPanel;
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.viewer.ImageViewerWindowService;
 
 import javafx.beans.binding.Bindings;
@@ -169,9 +169,9 @@ public class FileOperationsManager
         dialog.showAndWait().ifPresent(newName -> {
             if (newName == null || newName.trim().isEmpty()) return;
             File newFile = new File(file.getParentFile(), newName);
-            if (newFile.exists()) { Dialogs.showInfo(null, "Rename", null, "File already exists."); return; }
+            if (newFile.exists()) { NotificationUtil.showToast(ownerStage, "File already exists", "fas-exclamation-circle"); return; }
             if (file.renameTo(newFile)) refreshCallback.run();
-            else Dialogs.showInfo(null, "Rename", null, "Failed to rename file.");
+            else NotificationUtil.showToast(ownerStage, "Failed to rename file", "fas-exclamation-circle");
         });
     }
 
@@ -181,20 +181,41 @@ public class FileOperationsManager
         if (files.isEmpty()) return;
 
         DirectoryChooser chooser = new DirectoryChooser();
-        File initialDir = files.get(0).getParentFile();
-        chooser.setInitialDirectory(initialDir);
         chooser.setTitle("Select Destination Folder");
+        File initialDir = files.get(0).getParentFile();
+        if (initialDir != null && initialDir.isDirectory()) chooser.setInitialDirectory(initialDir);
         File destDir = chooser.showDialog(ownerStage);
         if (destDir == null) return;
+
+        int movedCount = 0;
+
         for (File file : files) 
         {
             try
             {
-                Files.move(file.toPath(), new File(destDir, file.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                if (file.getParentFile().equals(destDir)) continue;
+                Files.move(
+                    file.toPath(), 
+                    destDir.toPath().resolve(file.getName()),
+                    StandardCopyOption.REPLACE_EXISTING
+                );
+                movedCount++;
             }
-            catch (IOException ex) { ErrorHandler.show(null, "Move failed for " + file.getName(), ex); }
+            catch (IOException ex) 
+            { 
+                ErrorHandler.show(null, "Move failed for " + file.getName(), ex); 
+                return;
+            }
         }
-        refreshCallback.run();
+        if(movedCount > 0)
+        {
+            refreshCallback.run();
+            // Success Notification
+            String message = movedCount == 1 
+                    ? "File moved successfully" 
+                    : movedCount + " files moved successfully";
+            NotificationUtil.showToast(ownerStage, message);
+        }
     }
 
     private void deleteSelectedFiles()
@@ -215,7 +236,7 @@ public class FileOperationsManager
             {
                 if (!file.delete())
                 {
-                    Dialogs.showInfo(null, "Delete", null, "Failed to delete " + file.getName());
+                    NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
                 }
             }
             refreshCallback.run();
@@ -232,7 +253,7 @@ public class FileOperationsManager
             if (!Desktop.isDesktopSupported())
             {
                 Platform.runLater(() -> 
-                    Dialogs.showInfo(null, "Not Supported", null, "Desktop API is not supported.")
+                    NotificationUtil.showToast(ownerStage, "Desktop API is not supported", "fas-exclamation-circle")
                 );
                 return;
             }
@@ -255,7 +276,7 @@ public class FileOperationsManager
                 }
 
                 Platform.runLater(() -> 
-                    Dialogs.showInfo(null, "Not Supported", null, "Cannot open file browser.")
+                    NotificationUtil.showToast(progressContainer, "Not supported. Cannot open file browser", "fas-exclamation-circle")
                 );
             }
             catch (Exception e) 
@@ -298,8 +319,7 @@ public class FileOperationsManager
 
         if (images.isEmpty())
         {
-            Dialogs.showInfo(null, "Open in Another Window", null,
-                    "No supported image files in the current selection.");
+            NotificationUtil.showToast(ownerStage, "No supported image files in selection", "fas-exclamation-circle");
             return;
         }
 
@@ -330,13 +350,17 @@ public class FileOperationsManager
 
     private void putFilesOnClipboard(List<File> files, String actionLabel, boolean cut)
     {
-        if (files == null || files.isEmpty()) { Dialogs.showInfo(null, actionLabel, null, "No files selected."); return;}
+        if (files == null || files.isEmpty()) 
+        { 
+            NotificationUtil.showToast(ownerStage, "No files selected", "fas-exclamation-circle");
+            return;
+        }
         ClipboardContent content = new ClipboardContent();
         content.put(DataFormat.FILES, files);
         content.put(ClipboardFormats.CUT, cut);
         Clipboard.getSystemClipboard().setContent(content);
 
-        Dialogs.showInfo(null, actionLabel, null, files.size() + " file(s) " + actionLabel.toLowerCase() + ".");
+        NotificationUtil.showToast(ownerStage, files.size() + " file(s) " + actionLabel.toLowerCase() + "d");
     }
 
     /** Reads whichever file-list format is present on the clipboard, or an empty list if none. */
@@ -369,14 +393,14 @@ public class FileOperationsManager
     {
         if (targetFolder == null || !targetFolder.isDirectory())
         {
-            Dialogs.showInfo(null, "Paste", null, "Please select a valid folder.");
+            NotificationUtil.showToast(ownerStage, "Please select a valid folder", "fas-exclamation-circle");
             return;
         }
 
         final List<File> sourceFiles = readFilesFromClipboard();
         if (sourceFiles.isEmpty())
         {
-            Dialogs.showInfo(null, "Paste", null, "Clipboard does not contain any files/folders.");
+            NotificationUtil.showToast(ownerStage, "Clipboard does not contain any files/folders", "fas-exclamation-circle");
             return;
         }
 
@@ -384,7 +408,7 @@ public class FileOperationsManager
         {
             if (isRecursivePaste(src, targetFolder))
             {
-                Dialogs.showInfo(null, "Paste", null, "Cannot paste a folder into itself or its subfolder.");
+                NotificationUtil.showToast(ownerStage, "Cannot paste a folder into itself or its subfolder", "fas-exclamation-circle");
                 return;
             }
         }
@@ -418,7 +442,7 @@ public class FileOperationsManager
 
         if (targetFolder == null || !targetFolder.isDirectory())
         {
-            Dialogs.showInfo(null, "Drop", null, "Please drop onto a valid folder.");
+            NotificationUtil.showToast(ownerStage, "Please drop onto a valid folder", "fas-exclamation-circle");
             return;
         }
 
@@ -426,7 +450,7 @@ public class FileOperationsManager
         {
             if (isRecursivePaste(src, targetFolder))
             {
-                Dialogs.showInfo(null, "Drop", null, "Cannot move/copy a folder into itself or its subfolder.");
+                NotificationUtil.showToast(ownerStage, "Cannot move/copy a folder into itself or its subfolder", "fas-exclamation-circle");
                 return;
             }
             if (src.getParentFile() != null && src.getParentFile().equals(targetFolder))

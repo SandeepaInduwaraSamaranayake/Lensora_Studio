@@ -16,7 +16,7 @@
 .icon-size-6  { -fx-icon-size: 6px; }
 .icon-size-10 { -fx-icon-size: 10px; }
 .icon-size-12 { -fx-icon-size: 12px; }
-.icon-size-12 { -fx-icon-size: 14px; }
+.icon-size-14 { -fx-icon-size: 14px; }
 .icon-size-16 { -fx-icon-size: 16px; }
 .icon-size-25 { -fx-icon-size: 25px; }
 .icon-size-60 { -fx-icon-size: 60px; }
@@ -37,4 +37,10 @@
 .root.dark-theme .menu-bar .menu,
 .root.dark-theme .menu-bar .menu .label {
     -fx-text-fill: #dcdcdc;
+}
+
+/* Toast notification icon — accent-colored, same literal-color pattern as
+ * everything else (no -color-* variable lookups). */
+.toast-icon {
+    -fx-icon-color: #3574f0;
 }

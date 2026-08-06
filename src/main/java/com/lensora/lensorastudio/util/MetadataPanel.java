@@ -5,14 +5,18 @@ import com.lensora.lensorastudio.services.AppSettings;
 
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TitledPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
@@ -143,6 +147,11 @@ public final class MetadataPanel
                 property.setStyle("-fx-font-weight: bold;");
 
                 Label value =  new Label(entry.getValue());
+
+                // Format entry text as "Key: Value" for clipboard copying
+                String copyText = entry.getKey() + ": " + entry.getValue();
+                makeCopyable(property, copyText);
+                makeCopyable(value, copyText);
                 
                 grid.add(property, 0, row);
                 grid.add(value, 1, row);
@@ -198,5 +207,22 @@ public final class MetadataPanel
         ));
 
         return pane;
+    }
+
+    private static void makeCopyable(Label label, String textToCopy)
+    {
+        label.setCursor(Cursor.HAND);
+        Tooltip tooltip = new Tooltip("Click to copy");
+        label.setTooltip(tooltip);
+
+        label.setOnMouseClicked(event -> {
+            Clipboard clipboard = Clipboard.getSystemClipboard();
+            ClipboardContent content = new ClipboardContent();
+            content.putString(textToCopy);
+            clipboard.setContent(content);
+
+            // Show floating toast notification
+            NotificationUtil.showToast(label, "Copied to clipboard");
+        });
     }
 }
