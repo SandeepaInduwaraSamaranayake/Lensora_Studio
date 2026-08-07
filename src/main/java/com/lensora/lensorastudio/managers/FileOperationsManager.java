@@ -371,7 +371,7 @@ public class FileOperationsManager
         content.put(ClipboardFormats.CUT, cut);
         Clipboard.getSystemClipboard().setContent(content);
 
-        NotificationUtil.showToast(ownerStage, files.size() + " file(s) " + actionLabel.toLowerCase() + "d");
+        NotificationUtil.showToast(ownerStage, files.size() + " file(s) " + actionLabel.toLowerCase() + " to the clipboard");
     }
 
     /** Reads whichever file-list format is present on the clipboard, or an empty list if none. */

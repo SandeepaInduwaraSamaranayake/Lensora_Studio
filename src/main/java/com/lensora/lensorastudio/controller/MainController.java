@@ -600,6 +600,4 @@ public class MainController
         int ms = AppSettings.getInstance().getFolderSaveDelayMs();
         folderSaveDelay.setDuration(Duration.millis(ms));
     }
-
-
 }
