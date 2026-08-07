@@ -10,7 +10,9 @@ import com.lensora.lensorastudio.repository.ProjectLastFolderRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.MetadataExtractionService;
 import com.lensora.lensorastudio.util.DialogBuilder;
+import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.MetadataPanel;
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
@@ -21,6 +23,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
@@ -58,9 +61,9 @@ public class MainController
     @FXML private StackPane dockHost, statusBarHost;
 
     @FXML private Menu mnu_view;
-    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project,
+    @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_backup_center,
                         mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout, mnu_btn_new_template;
-    @FXML private Button btnNewProject, btnNewTemplate;
+    @FXML private Button btnNewProject, btnNewTemplate, btnBackupCenter;
     @FXML private ToggleButton btnLockLayout;
     @FXML private FontIcon lockLayoutIcon;
     @FXML private Tooltip lockLayoutTooltip;
@@ -150,6 +153,10 @@ public class MainController
             detailsController.setOnProjectPathChanged(path -> {fileExplorerController.loadProjectPath(path); statusBarViewModel.currentPathProperty().set(path);});
             // restore last-visited folder once the new project's folder tree is loaded
             detailsController.setOnRestoreLastFolder(fileExplorerController::restoreLastFolder);
+
+            // project list controller callbacks for backup and archive actions
+            projectListController.setOnBackupRequested(project -> showBackupRestoreCenter(project));
+            projectListController.setOnArchiveRequested(this::archiveProject);
 
             // setup last folder save to db
             setupLastFoldersave(fileExplorerController);
@@ -241,6 +248,8 @@ public class MainController
         if (mnu_btn_new_template != null) mnu_btn_new_template.setOnAction(e -> showTemplateManager());
         if (btnNewProject != null) btnNewProject.setOnAction(e -> showNewProjectDialog());
         if (btnNewTemplate != null) btnNewTemplate.setOnAction(e -> showTemplateManager());
+        if (mnu_btn_backup_center != null) mnu_btn_backup_center.setOnAction(e -> showBackupRestoreCenter());
+        if (btnBackupCenter != null) btnBackupCenter.setOnAction(e -> showBackupRestoreCenter());
         if (mnu_btn_view_logs != null) mnu_btn_view_logs.setOnAction(e -> showLogViewer());
         if (mnu_btn_reset_layout != null)
         {
@@ -409,7 +418,7 @@ public class MainController
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.FOLDER_TEMPLATE_MANAGER_VIEW.url(), "Manage Folder Templates", mainStage)
-                .icon("📁")
+                .icon("📐")
                 .resizable(true)
                 .minSize(640, 460)
                 .withControllerConsumer(controller -> {
@@ -417,6 +426,32 @@ public class MainController
                     {
                         ftmc.setOnTemplatesChanged(() ->
                                 logger.info("[MainController] Folder templates updated."));
+                    }
+                })
+                .build();
+    }
+
+    private void showBackupRestoreCenter()
+    {
+        showBackupRestoreCenter(null);
+    }
+
+    /** Opens the center, optionally preselecting a project on the Backup tab (used by the Projects context menu). */
+    private void showBackupRestoreCenter(Project preselectedProject)
+    {
+        Stage mainStage = (Stage) headerBar.getScene().getWindow();
+        DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
+                .icon("💾")
+                .resizable(true)
+                .minSize(720, 480)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof BackupRestoreCenterController brcc)
+                    {
+                        brcc.initContext(projectsViewModel, () -> logger.info("[MainController] Backup/restore completed."));
+                        if (preselectedProject != null)
+                        {
+                            brcc.preselectProjectForBackup(preselectedProject);
+                        }
                     }
                 })
                 .build();
@@ -535,9 +570,36 @@ public class MainController
             });
     }
 
+    /** Archives a project: sets status to Closed (reusing existing Project.STATUS_CLOSED constant). */
+    private void archiveProject(Project project)
+    {
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Archive Project");
+        confirm.setHeaderText(null);
+        confirm.setContentText("Archive \"" + project.getProjectNumber() + "\"? "
+                + "This sets its status to Closed. The project and its files are not deleted.");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != javafx.scene.control.ButtonType.OK) return;
+            try
+            {
+                com.lensora.lensorastudio.repository.ProjectRepository.setStatus(
+                        project.getProjectId(), Project.STATUS_CLOSED);
+                projectsViewModel.refresh();
+                NotificationUtil.showToast((Stage) headerBar.getScene().getWindow(),
+                        "Project archived: " + project.getProjectNumber());
+            }
+            catch (java.sql.SQLException e)
+            {
+                ErrorHandler.show((Stage) headerBar.getScene().getWindow(), "Failed to archive project", e);
+            }
+        });
+    }
+
     private void updateFolderSaveDebounce()
     {
         int ms = AppSettings.getInstance().getFolderSaveDelayMs();
         folderSaveDelay.setDuration(Duration.millis(ms));
     }
+
+
 }

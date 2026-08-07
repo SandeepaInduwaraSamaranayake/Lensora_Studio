@@ -1,5 +1,7 @@
 package com.lensora.lensorastudio.controller;
 
+import java.util.function.Consumer;
+
 import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
@@ -14,6 +16,7 @@ public class ProjectListController
     @FXML private TableColumn<Project, String> colProjectNumber, colClientName, colStatus;
     @FXML private Label lblProjectCount;
     @FXML private ComboBox<String> cmbStatusFilter;
+    @FXML private MenuItem ctxProjectBackup, ctxProjectArchive;
 
     // Reminders tab — wired to a real RemindersViewModel later; placeholders for now
     // so the FXML loads and the tab isn't blank/broken.
@@ -25,6 +28,8 @@ public class ProjectListController
     private ProjectsViewModel viewModel;
     private boolean syncingSelection = false;
     private Runnable onRowClicked;
+    private Consumer<Project> onBackupRequested;
+    private Consumer<Project> onArchiveRequested;
 
     public void bind(ProjectsViewModel viewModel)
     {
@@ -67,6 +72,16 @@ public class ProjectListController
             }
         });
 
+        ctxProjectBackup.setOnAction(e -> {
+            Project selected = projectTable.getSelectionModel().getSelectedItem();
+            if (selected != null && onBackupRequested != null) onBackupRequested.accept(selected);
+        });
+
+        ctxProjectArchive.setOnAction(e -> {
+            Project selected = projectTable.getSelectionModel().getSelectedItem();
+            if (selected != null && onArchiveRequested != null) onArchiveRequested.accept(selected);
+        });
+
         // Reminders tab: no data source yet, just keep the UI honest.
         lblReminderCount.setText("0 reminders");
         reminderTable.setPlaceholder(new Label("No upcoming reminders."));
@@ -77,5 +92,15 @@ public class ProjectListController
     private void updateCountLabel()
     {
         lblProjectCount.setText(viewModel.getFilteredCount() + " projects");
+    }
+
+    public void setOnBackupRequested(Consumer<Project> callback)
+    {
+        this.onBackupRequested = callback;
+    }
+
+    public void setOnArchiveRequested(Consumer<Project> callback)
+    {
+        this.onArchiveRequested = callback;
     }
 }

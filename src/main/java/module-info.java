@@ -43,4 +43,5 @@ module com.lensora.lensorastudio
     opens com.lensora.lensorastudio to javafx.fxml;
     opens com.lensora.lensorastudio.controller to javafx.fxml;
     opens com.lensora.lensorastudio.model to com.google.gson;
+    opens com.lensora.lensorastudio.backup.model to com.google.gson;
 }

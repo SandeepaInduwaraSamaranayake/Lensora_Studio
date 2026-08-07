@@ -29,6 +29,14 @@
                             <columnResizePolicy>
                                 <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
                             </columnResizePolicy>
+                            <contextMenu>
+                                <ContextMenu>
+                                    <items>
+                                        <MenuItem fx:id="ctxProjectBackup" text="Backup…"/>
+                                        <MenuItem fx:id="ctxProjectArchive" text="Archive"/>
+                                    </items>
+                                </ContextMenu>
+                            </contextMenu>
                         </TableView>
                     </VBox>
                 </content>

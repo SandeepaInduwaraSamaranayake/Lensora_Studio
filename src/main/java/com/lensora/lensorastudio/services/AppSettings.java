@@ -40,6 +40,7 @@ public class AppSettings
     private static final String     KEY_FOLDER_SAVE_DELAY_MS                        = "folder.save_delay_ms";
     private static final String     KEY_IMAGE_CACHE_SIZE                            = "image.cache.size";
     private static final String     KEY_ZOOM_SENSITIVITY                            = "image.viewer.zoom_sensitivity";
+    private static final String     KEY_BACKUP_HISTORY                              = "backup.history.paths";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -329,5 +330,36 @@ public class AppSettings
     public void setZoomSensitivity(double factor)
     {
         prefs.putDouble(KEY_ZOOM_SENSITIVITY, factor);
+    }
+
+    // --------------------- Backup History  ----------------------------
+    public List<String> getBackupHistoryPaths()
+    {
+        String json = prefs.get(KEY_BACKUP_HISTORY, "[]");
+        try
+        {
+            String[] paths = new Gson().fromJson(json, String[].class);
+            return paths != null ? new ArrayList<>(Arrays.asList(paths)) : new ArrayList<>();
+        }
+        catch (Exception e)
+        {
+            return new ArrayList<>();
+        }
+    }
+
+    public void addBackupHistoryPath(String path)
+    {
+        List<String> paths = getBackupHistoryPaths();
+        paths.remove(path); // move to top if already present
+        paths.add(0, path);
+        if (paths.size() > 50) paths = paths.subList(0, 50); // cap history size
+        prefs.put(KEY_BACKUP_HISTORY, new Gson().toJson(paths));
+    }
+
+    public void removeBackupHistoryPath(String path)
+    {
+        List<String> paths = getBackupHistoryPaths();
+        paths.remove(path);
+        prefs.put(KEY_BACKUP_HISTORY, new Gson().toJson(paths));
     }
 }

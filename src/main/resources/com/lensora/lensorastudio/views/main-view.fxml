@@ -27,6 +27,8 @@
                                     <MenuItem fx:id="mnu_btn_new_project" text="New Project"/>
                                     <MenuItem fx:id="mnu_btn_new_template" text="New Template"/>
                                     <SeparatorMenuItem/>
+                                    <MenuItem fx:id="mnu_btn_backup_center" text="Backup &amp; Restore Center…"/>
+                                    <SeparatorMenuItem/>
                                     <MenuItem fx:id="mnu_btn_preferences" text="Preferences"/>
                                     <SeparatorMenuItem/>
                                     <MenuItem fx:id="mnu_btn_exit" text="Exit"/>
@@ -62,6 +64,14 @@
                     </graphic>
                     <tooltip>
                         <Tooltip text="Manage Folder Templates (CTRL + T)"/>
+                    </tooltip>
+                </Button>
+                <Button fx:id="btnBackupCenter">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-shield-alt" iconSize="16"/>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Backup &amp; Restore Center"/>
                     </tooltip>
                 </Button>
                 <Separator/>

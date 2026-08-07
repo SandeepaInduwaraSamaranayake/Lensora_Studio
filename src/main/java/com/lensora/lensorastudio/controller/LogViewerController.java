@@ -157,6 +157,7 @@ public class LogViewerController implements DialogController
                 try (FileWriter writer = new FileWriter(logFile, false)) 
                 {
                     writer.write(""); // overwrite with empty content
+                    NotificationUtil.showToast(copyButton, "Logs Cleared");
                 }
             } 
             else 

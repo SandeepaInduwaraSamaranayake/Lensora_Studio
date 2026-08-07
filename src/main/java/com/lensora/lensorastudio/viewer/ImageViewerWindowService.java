@@ -4,6 +4,7 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.AppIconUtil;
 import com.lensora.lensorastudio.util.ImageMetadataExtractor;
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.util.Resources;
 
 import javafx.application.Platform;
@@ -70,9 +71,9 @@ public final class ImageViewerWindowService
         if (files == null || files.isEmpty()) return;
         if (files.size() > MAX_OPENED_IMAGES) 
         {
-            logger.warn("[ImageViewerWindowService] File open request detected for excessive number of files: {}", files.size());
+            logger.warn("[ImageViewerWindowService] File open request detected for excessive number of files. Granting open request for maximum number of :" + MAX_OPENED_IMAGES);
             files = files.subList(0, MAX_OPENED_IMAGES);
-            logger.warn("[ImageViewerWindowService] Request granted for first {} files", files.size());
+            logger.info("[ImageViewerWindowService] File open request granted for only first " + files.size() +  " files");
         }
 
         List<File> imagesOnly = files.stream()
@@ -81,7 +82,7 @@ public final class ImageViewerWindowService
 
         if (imagesOnly.isEmpty())
         {
-            logger.info("[ImageViewerWindowService] No supported image files in selection — nothing to open.");
+            logger.info("[ImageViewerWindowService] No supported image files in selection - nothing to open.");
             return;
         }
 

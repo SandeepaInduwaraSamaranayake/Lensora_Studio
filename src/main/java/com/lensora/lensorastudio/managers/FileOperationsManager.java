@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
 import javafx.application.Platform;
 import java.util.concurrent.CompletableFuture;
 
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snapfx.SnapFX;
@@ -645,10 +646,11 @@ public class FileOperationsManager
             for (var drive : drives)
             {
                 String freeSpace = FileSizeFormatter.formatFileSize(drive.usableBytes());
-                MenuItem driveItem = new MenuItem(drive.label() + " (" + freeSpace + " free)");
-                driveItem.setDisable(!hasSelection);
-                driveItem.setOnAction(e -> sendFilesToDrive(selected, drive.rootPath().toFile()));
-                ctxSendToMenu.getItems().add(driveItem);
+                String title = drive.label() + " (" + freeSpace + " free)";
+                
+                // Create cascading menu for each drive
+                Menu driveMenu = createDirectoryMenu(drive.rootPath().toFile(), title, hasSelection);
+                ctxSendToMenu.getItems().add(driveMenu);
             }
         }
 
@@ -658,6 +660,44 @@ public class FileOperationsManager
         emailItem.setDisable(!hasSelection);
         emailItem.setOnAction(e -> EmailSendUtil.sendFiles(selected, progressContainer));
         ctxSendToMenu.getItems().add(emailItem);
+    }
+
+    /**
+     * Lazily creates a folder Menu with cascading subdirectories loaded on hover.
+     */
+    private Menu createDirectoryMenu(File directory, String menuTitle, boolean hasSelection)
+    {
+        Menu folderMenu = new Menu(menuTitle);
+        folderMenu.setDisable(!hasSelection);
+
+        // Dummy item to render the expand arrow (>) in JavaFX
+        MenuItem dummyItem = new MenuItem("Loading…");
+        dummyItem.setDisable(true);
+        folderMenu.getItems().add(dummyItem);
+
+        // Lazy-load contents when hovering over the menu item
+        folderMenu.setOnShowing(e -> {
+            folderMenu.getItems().clear();
+
+            // Option 1: Direct copy action to THIS current directory
+            MenuItem copyHereItem = new MenuItem("Copy directly to this folder");
+            copyHereItem.setGraphic(new FontIcon("fas-copy"));
+            copyHereItem.setOnAction(ev -> sendFilesToDrive(selectedFilesSupplier.get(), directory));
+            folderMenu.getItems().add(copyHereItem);
+
+            // Option 2: List subdirectories as further submenus
+            List<File> subdirs = RemovableDriveUtil.listSubdirectories(directory);
+            if (!subdirs.isEmpty())
+            {
+                folderMenu.getItems().add(new SeparatorMenuItem());
+                for (File subdir : subdirs)
+                {
+                    folderMenu.getItems().add(createDirectoryMenu(subdir, subdir.getName(), hasSelection));
+                }
+            }
+        });
+
+        return folderMenu;
     }
 
     /** Copies the selected files to a drive's root, reusing the same progress-bound copy pipeline as paste/drag-drop. */
@@ -696,5 +736,4 @@ public class FileOperationsManager
         thread.setDaemon(true);
         thread.start();
     }
-
 }

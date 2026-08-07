@@ -12,8 +12,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Enumerates removable/external drives attached to the system, excluding
- * the OS/system drive. Cross-platform via java.nio.file.FileStore, which
- * works consistently on Windows, macOS, and Linux without any native code.
+ * the OS/system drive, and provides subfolder scanning for cascading menus.
  */
 public final class RemovableDriveUtil
 {
@@ -40,7 +39,6 @@ public final class RemovableDriveUtil
                 {
                     continue;
                 }
-
                 // Skip drives that aren't actually accessible/mounted right
                 // now (e.g. a stale CD-ROM drive letter with no disc).
                 if (!root.exists() || root.getTotalSpace() <= 0)
@@ -52,7 +50,7 @@ public final class RemovableDriveUtil
                 try { store = Files.getFileStore(rootPath); } catch (Exception ignored) {}
 
                 String label = (store != null && store.name() != null && !store.name().isBlank())
-                        ? store.name()
+                        ? store.name() + " (" + root.getPath() + ")"
                         : root.getPath();
 
                 drives.add(new DriveInfo(label, rootPath, root.getUsableSpace(), root.getTotalSpace()));
@@ -64,6 +62,24 @@ public final class RemovableDriveUtil
         }
 
         return drives;
+    }
+
+    /**
+     * Lists accessible, non-hidden subdirectories for a given folder sorted alphabetically.
+     */
+    public static List<File> listSubdirectories(File parentDir)
+    {
+        if (parentDir == null || !parentDir.exists() || !parentDir.isDirectory())
+        {
+            return List.of();
+        }
+
+        File[] dirs = parentDir.listFiles(f -> f.isDirectory() && !f.isHidden());
+        if (dirs == null) return List.of();
+
+        List<File> dirList = new ArrayList<>(List.of(dirs));
+        dirList.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        return dirList;
     }
 
     /** Best-effort resolution of the system drive root (e.g. "C:\" on Windows, "/" on Unix-like systems). */
