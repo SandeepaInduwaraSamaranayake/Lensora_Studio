@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 public class MainController
@@ -155,7 +156,7 @@ public class MainController
             detailsController.setOnRestoreLastFolder(fileExplorerController::restoreLastFolder);
 
             // project list controller callbacks for backup and archive actions
-            projectListController.setOnBackupRequested(project -> showBackupRestoreCenter(project));
+            projectListController.setOnBackupRequested(this::showBackupRestoreCenterForProjects);
             projectListController.setOnArchiveRequested(this::archiveProject);
 
             // setup last folder save to db
@@ -433,25 +434,22 @@ public class MainController
 
     private void showBackupRestoreCenter()
     {
-        showBackupRestoreCenter(null);
+        showBackupRestoreCenterForProjects(null);
     }
 
     /** Opens the center, optionally preselecting a project on the Backup tab (used by the Projects context menu). */
-    private void showBackupRestoreCenter(Project preselectedProject)
+    private void showBackupRestoreCenterForProjects(List<Project> projects)
     {
         Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
-                .icon("💾")
+                .icon("🛡")
                 .resizable(true)
                 .minSize(720, 480)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof BackupRestoreCenterController brcc)
                     {
                         brcc.initContext(projectsViewModel, () -> logger.info("[MainController] Backup/restore completed."));
-                        if (preselectedProject != null)
-                        {
-                            brcc.preselectProjectForBackup(preselectedProject);
-                        }
+                        brcc.preselectProjectsForBackup(projects);
                     }
                 })
                 .build();

@@ -10,6 +10,7 @@ import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -26,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.awt.Desktop;
 import java.io.File;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class BackupRestoreCenterController implements DialogController
 {
@@ -35,7 +38,7 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private TabPane tabPane;
 
     // Backup tab
-    @FXML private ComboBox<Project> backupProjectCombo;
+    @FXML private ListView<Project> backupProjectListView;
     @FXML private TextField backupDestinationField;
     @FXML private Button btnBrowseBackupDestination, btnStartBackup;
     @FXML private VBox backupProgressBox;
@@ -55,7 +58,7 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private Button btnRefreshHistory, btnOpenHistoryFolder, btnVerifyHistoryItem, btnRestoreHistoryItem;
 
     private final ObservableList<String> historyItems = FXCollections.observableArrayList();
-    private File selectedBackupDestination;
+    private File selectedBackupDestinationFolder;
     private File selectedRestoreSource;
     private File selectedRestoreDestination;
 
@@ -67,16 +70,24 @@ public class BackupRestoreCenterController implements DialogController
     {
         this.projectsViewModel = projectsViewModel;
         this.onProjectsChanged = onProjectsChanged;
-        loadProjectsIntoCombo();
+        loadProjectsIntoList();
     }
 
     /** Preselects a project and jumps to the Backup tab — used by the Projects context menu. */
-    public void preselectProjectForBackup(Project project)
+    public void preselectProjectsForBackup(List<Project> projects)
     {
-        loadProjectsIntoCombo();
-        backupProjectCombo.setValue(project);
+        if (projects != null && !projects.isEmpty())
+        {
+            loadProjectsIntoList();
+            backupProjectListView.getSelectionModel().clearSelection();
+            for (Project p : projects)
+            {
+                backupProjectListView.getSelectionModel().select(p);
+            }
+        }
         tabPane.getSelectionModel().select(0);
-        suggestBackupDestination(project);
+        selectedBackupDestinationFolder = new File(System.getProperty("user.home"));
+        backupDestinationField.setText(selectedBackupDestinationFolder.getAbsolutePath());
     }
 
     @FXML
@@ -90,27 +101,27 @@ public class BackupRestoreCenterController implements DialogController
     // ─── Backup tab ─────────────────────────────────────────────────────────
 
     private void setupBackupTab()
-    {
-        backupProjectCombo.setConverter(new javafx.util.StringConverter<>()
+{
+    backupProjectListView.setCellFactory(lv -> new ListCell<>() {
+        @Override
+        protected void updateItem(Project p, boolean empty)
         {
-            @Override public String toString(Project p) { return p == null ? "" : p.getProjectNumber() + " - " + p.getClientName(); }
-            @Override public Project fromString(String s) { return null; }
-        });
+            super.updateItem(p, empty);
+            setText(empty || p == null ? null : p.getProjectNumber() + " — " + p.getClientName());
+        }
+    });
+    backupProjectListView.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
 
-        backupProjectCombo.valueProperty().addListener((obs, old, project) -> {
-            if (project != null) suggestBackupDestination(project);
-        });
+    btnBrowseBackupDestination.setOnAction(e -> browseBackupDestinationFolder());
+    btnStartBackup.setOnAction(e -> startBackup());
+}
 
-        btnBrowseBackupDestination.setOnAction(e -> browseBackupDestination());
-        btnStartBackup.setOnAction(e -> startBackup());
-    }
-
-    private void loadProjectsIntoCombo()
+    private void loadProjectsIntoList()
     {
         try
         {
             List<Project> projects = ProjectRepository.findAll();
-            backupProjectCombo.setItems(FXCollections.observableArrayList(projects));
+            backupProjectListView.setItems(FXCollections.observableArrayList(projects));
         }
         catch (SQLException e)
         {
@@ -118,69 +129,76 @@ public class BackupRestoreCenterController implements DialogController
         }
     }
 
-    private void suggestBackupDestination(Project project)
+    private void browseBackupDestinationFolder()
     {
-        String defaultDir = System.getProperty("user.home");
-        String suggestedName = BackupService.suggestFileName(project);
-        selectedBackupDestination = new File(defaultDir, suggestedName);
-        backupDestinationField.setText(selectedBackupDestination.getAbsolutePath());
-    }
-
-    private void browseBackupDestination()
-    {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Save Backup As");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Lensora Backup", "*.lsbak"));
-        if (selectedBackupDestination != null)
-        {
-            chooser.setInitialFileName(selectedBackupDestination.getName());
-        }
-        File result = chooser.showSaveDialog(getStage());
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Backup Destination Folder");
+        File result = chooser.showDialog(getStage());
         if (result != null)
         {
-            selectedBackupDestination = result;
+            selectedBackupDestinationFolder = result;
             backupDestinationField.setText(result.getAbsolutePath());
         }
     }
 
     private void startBackup()
     {
-        Project project = backupProjectCombo.getValue();
-        if (project == null)
+        List<Project> selected = new ArrayList<>(backupProjectListView.getSelectionModel().getSelectedItems());
+        if (selected.isEmpty())
         {
-            Dialogs.showInfo(getStage(), "Backup", null, "Please select a project.");
+            Dialogs.showInfo(getStage(), "Backup", null, "Please select at least one project.");
             return;
         }
-        if (selectedBackupDestination == null)
+        if (selectedBackupDestinationFolder == null)
         {
-            Dialogs.showInfo(getStage(), "Backup", null, "Please choose a destination.");
+            Dialogs.showInfo(getStage(), "Backup", null, "Please choose a destination folder.");
             return;
         }
 
-        BackupJob job = BackupService.createBackupJob(project, selectedBackupDestination);
+        List<BatchBackupJob.BatchItem> items = new ArrayList<>();
+        for (Project project : selected)
+        {
+            String fileName = BackupService.suggestFileName(project);
+            items.add(new BatchBackupJob.BatchItem(project, new File(selectedBackupDestinationFolder, fileName)));
+        }
+
+        BatchBackupJob job = BackupService.createBatchBackupJob(items);
         bindProgress(job, backupProgressBox, backupStatusLabel, backupProgressBar);
         setBackupControlsDisabled(true);
 
         job.setOnSucceeded(e -> {
             setBackupControlsDisabled(false);
-            File result = job.getValue();
+            List<File> completed = job.getValue();
 
-            var verification = BackupVerifier.verify(result);
-            AppSettings.getInstance().addBackupHistoryPath(result.getAbsolutePath());
+            int verifiedCount = 0;
+            for (File file : completed)
+            {
+                var verification = BackupVerifier.verify(file);
+                AppSettings.getInstance().addBackupHistoryPath(file.getAbsolutePath());
+                if (verification.success()) verifiedCount++;
+            }
             refreshHistoryList();
 
-            if (verification.success())
+            long failedCount = job.getResults().stream().filter(r -> !r.succeeded()).count();
+            String summary = String.format("%d/%d backup(s) succeeded and verified.",
+                    verifiedCount, items.size());
+            if (failedCount > 0)
             {
-                NotificationUtil.showToast(getStage(), "Backup created and verified: " + result.getName());
+                summary += " " + failedCount + " failed - see log for details.";
+                for (var result : job.getResults())
+                {
+                    if (!result.succeeded())
+                    {
+                        logger.error("Backup failed for {}: {}", result.project().getProjectNumber(), result.errorMessage());
+                    }
+                }
             }
-            else
-            {
-                Dialogs.showInfo(getStage(), "Backup Verification Failed", null, verification.message());
-            }
+
+            NotificationUtil.showToast(getStage(), summary);
         });
         job.setOnFailed(e -> {
             setBackupControlsDisabled(false);
-            ErrorHandler.show(getStage(), "Backup failed", job.getException());
+            ErrorHandler.show(getStage(), "Batch backup failed", job.getException());
         });
         job.setOnCancelled(e -> setBackupControlsDisabled(false));
 
@@ -189,11 +207,10 @@ public class BackupRestoreCenterController implements DialogController
 
     private void setBackupControlsDisabled(boolean disabled)
     {
-        backupProjectCombo.setDisable(disabled);
+        backupProjectListView.setDisable(disabled);
         btnBrowseBackupDestination.setDisable(disabled);
         btnStartBackup.setDisable(disabled);
     }
-
     // ─── Restore tab ────────────────────────────────────────────────────────
 
     private void setupRestoreTab()
@@ -324,17 +341,31 @@ public class BackupRestoreCenterController implements DialogController
     {
         File file = getSelectedHistoryFile();
         if (file == null || !file.exists()) return;
-        try
-        {
-            if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE_FILE_DIR))
+
+        // Offload native OS calls to a background thread to prevent UI freezing on Linux
+        CompletableFuture.runAsync(() -> {
+            if (!Desktop.isDesktopSupported())
             {
-                Desktop.getDesktop().browseFileDirectory(file);
+                Platform.runLater(() -> 
+                    NotificationUtil.showToast(getStage(), "Desktop API is not supported", "fas-exclamation-circle")
+                );
+                return;
             }
-        }
-        catch (Exception e)
-        {
-            ErrorHandler.show(getStage(), "Could not open folder", e);
-        }
+
+            try
+            {
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.BROWSE_FILE_DIR))
+                {
+                    desktop.browseFileDirectory(file);
+                    return;
+                }
+            }
+            catch (Exception e)
+            {
+                ErrorHandler.show(getStage(), "Could not open folder", e);
+            }
+        });
     }
 
     private void verifySelectedHistoryItem()

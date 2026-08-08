@@ -1,5 +1,7 @@
 package com.lensora.lensorastudio.controller;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import com.lensora.lensorastudio.model.Project;
@@ -28,11 +30,14 @@ public class ProjectListController
     private ProjectsViewModel viewModel;
     private boolean syncingSelection = false;
     private Runnable onRowClicked;
-    private Consumer<Project> onBackupRequested;
+    private java.util.function.Consumer<List<Project>> onBackupRequested;
     private Consumer<Project> onArchiveRequested;
 
     public void bind(ProjectsViewModel viewModel)
     {
+        // set selection mode to multiple so that the user can select multiple projects for backup or archive
+        projectTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
         this.viewModel = viewModel;
 
         colProjectNumber.setCellValueFactory(c -> c.getValue().projectNumberProperty());
@@ -73,8 +78,8 @@ public class ProjectListController
         });
 
         ctxProjectBackup.setOnAction(e -> {
-            Project selected = projectTable.getSelectionModel().getSelectedItem();
-            if (selected != null && onBackupRequested != null) onBackupRequested.accept(selected);
+            List<Project> selected = new ArrayList<>(projectTable.getSelectionModel().getSelectedItems());
+            if (!selected.isEmpty() && onBackupRequested != null) onBackupRequested.accept(selected);
         });
 
         ctxProjectArchive.setOnAction(e -> {
@@ -94,7 +99,7 @@ public class ProjectListController
         lblProjectCount.setText(viewModel.getFilteredCount() + " projects");
     }
 
-    public void setOnBackupRequested(Consumer<Project> callback)
+    public void setOnBackupRequested(Consumer<List<Project>> callback)
     {
         this.onBackupRequested = callback;
     }

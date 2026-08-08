@@ -9,7 +9,7 @@
     <center>
         <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" prefWidth="720" prefHeight="480">
 
-            <!-- ═══════════════════════ Backup tab ═══════════════════════ -->
+            <!-- ====================== Backup tab ====================== -->
             <Tab text="Backup">
                 <content>
                     <VBox spacing="14">
@@ -26,12 +26,12 @@
                                 <ColumnConstraints hgrow="ALWAYS"/>
                             </columnConstraints>
 
-                            <Label text="Project" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                            <ComboBox fx:id="backupProjectCombo" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+                            <Label text="Projects" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                            <ListView fx:id="backupProjectListView" prefHeight="160" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                             <Label text="Destination" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
                             <HBox spacing="6" GridPane.columnIndex="1" GridPane.rowIndex="1">
-                                <TextField fx:id="backupDestinationField" editable="false" promptText="Select a file location…" HBox.hgrow="ALWAYS"/>
+                                <TextField fx:id="backupDestinationField" editable="false" promptText="Select a folder to save backup(s) into…" HBox.hgrow="ALWAYS"/>
                                 <Button fx:id="btnBrowseBackupDestination" text="Browse…"/>
                             </HBox>
 
@@ -57,7 +57,7 @@
                 </content>
             </Tab>
 
-            <!-- ═══════════════════════ Restore tab ═══════════════════════ -->
+            <!-- ====================== Restore tab ====================== -->
             <Tab text="Restore">
                 <content>
                     <VBox spacing="14">
@@ -111,7 +111,7 @@
                 </content>
             </Tab>
 
-            <!-- ═══════════════════════ History tab ═══════════════════════ -->
+            <!-- ====================== History tab ====================== -->
             <Tab text="History">
                 <content>
                     <VBox spacing="10">

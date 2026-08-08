@@ -257,7 +257,7 @@ public class FileOperationsManager
     private void showInExplorer()
     {
         File file = selectedFileSupplier.get();
-        if (file == null) return;
+        if (file == null || !file.exists()) return;
 
         // Offload native OS calls to a background thread to prevent UI freezing on Linux
         CompletableFuture.runAsync(() -> {
@@ -287,7 +287,7 @@ public class FileOperationsManager
                 }
 
                 Platform.runLater(() -> 
-                    NotificationUtil.showToast(progressContainer, "Not supported. Cannot open file browser", "fas-exclamation-circle")
+                    NotificationUtil.showToast(ownerStage, "Not supported. Cannot open file browser", "fas-exclamation-circle")
                 );
             }
             catch (Exception e) 

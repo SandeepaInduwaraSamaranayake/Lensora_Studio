@@ -1,28 +1,27 @@
 package com.lensora.lensorastudio.backup.verify;
 
 import com.lensora.lensorastudio.backup.model.BackupManifest;
-import com.lensora.lensorastudio.backup.util.HashService;
-
 import com.google.gson.Gson;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public final class BackupVerifier
 {
     private static final Gson GSON = new Gson();
+    private static final int BUFFER_SIZE = 64 * 1024;
 
     private BackupVerifier() {}
 
     public record VerificationResult(boolean success, String message) {}
 
-    /** Verifies a .lsbak archive: readable as ZIP, manifest present, file count and hashes match. */
     public static VerificationResult verify(File lsbakFile)
     {
         try (ZipFile zip = new ZipFile(lsbakFile))
@@ -41,7 +40,7 @@ public final class BackupVerifier
 
             if (manifest == null || manifest.files == null)
             {
-                return new VerificationResult(false, "manifest.json is corrupt or unreadable.");
+                return new VerificationResult(false, "manifest.json is corrupt.");
             }
 
             if (zip.getEntry("project-data.json") == null)
@@ -49,7 +48,9 @@ public final class BackupVerifier
                 return new VerificationResult(false, "project-data.json missing - backup is incomplete.");
             }
 
+            byte[] buffer = new byte[BUFFER_SIZE];
             int verified = 0;
+
             for (BackupManifest.ManifestFileEntry entry : manifest.files)
             {
                 ZipEntry fileEntry = zip.getEntry("files/" + entry.relativePath);
@@ -58,21 +59,25 @@ public final class BackupVerifier
                     return new VerificationResult(false, "Missing file in archive: " + entry.relativePath);
                 }
 
-                File temp = File.createTempFile("lensora-verify-", ".tmp");
-                try
+                // Hashes the entry by streaming through it directly — no
+                // temp file is ever written to disk, so verifying a
+                // multi-hundred-GB backup can't exhaust the system drive.
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                try (InputStream is = zip.getInputStream(fileEntry);
+                    DigestInputStream dis = new DigestInputStream(is, digest))
                 {
-                    Files.copy(zip.getInputStream(fileEntry), temp.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    String actualHash = HashService.sha256(temp.toPath());
-                    if (!actualHash.equalsIgnoreCase(entry.sha256))
+                    while (dis.read(buffer) != -1)
                     {
-                        return new VerificationResult(false, "Hash mismatch for: " + entry.relativePath);
+                        // reading drives the digest; bytes are discarded
                     }
-                    verified++;
                 }
-                finally
+
+                String actualHash = HexFormat.of().formatHex(digest.digest());
+                if (!actualHash.equalsIgnoreCase(entry.sha256))
                 {
-                    temp.delete();
+                    return new VerificationResult(false, "Hash mismatch for: " + entry.relativePath);
                 }
+                verified++;
             }
 
             if (verified != manifest.totalFiles)
@@ -82,11 +87,11 @@ public final class BackupVerifier
             }
 
             return new VerificationResult(true,
-                    "Backup verified successfully - " + verified + " file(s), all hashes match.");
+                    String.format("Backup verified successfully — %d file(s), all hashes match.", verified));
         }
-        catch (IOException e)
+        catch (Exception e)
         {
-            return new VerificationResult(false, "Could not read archive: " + e.getMessage());
+            return new VerificationResult(false, "Verification failed: " + e.getMessage());
         }
     }
 }
