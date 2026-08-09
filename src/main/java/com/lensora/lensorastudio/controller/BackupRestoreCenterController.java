@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.backup.engine.*;
+import com.lensora.lensorastudio.backup.ui.ProjectCheckBoxListCell;
 import com.lensora.lensorastudio.backup.verify.BackupVerifier;
 import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.repository.ProjectRepository;
@@ -13,6 +14,7 @@ import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.ObservableSet;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -29,7 +31,9 @@ import java.io.File;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 public class BackupRestoreCenterController implements DialogController
 {
@@ -39,6 +43,8 @@ public class BackupRestoreCenterController implements DialogController
 
     // Backup tab
     @FXML private ListView<Project> backupProjectListView;
+    @FXML private ListView<File> restoreFileListView;
+    @FXML private CheckBox selectAllProjectsCheckBox;
     @FXML private TextField backupDestinationField;
     @FXML private Button btnBrowseBackupDestination, btnStartBackup;
     @FXML private VBox backupProgressBox;
@@ -47,7 +53,7 @@ public class BackupRestoreCenterController implements DialogController
 
     // Restore tab
     @FXML private TextField restoreSourceField, restoreDestinationField;
-    @FXML private Button btnBrowseRestoreSource, btnBrowseRestoreDestination, btnVerifyBackup, btnStartRestore;
+    @FXML private Button btnBrowseRestoreDestination, btnVerifyBackup, btnStartRestore, btnAddRestoreFiles, btnRemoveRestoreFile, btnClearRestoreFiles;
     @FXML private Label restoreVerificationLabel;
     @FXML private VBox restoreProgressBox;
     @FXML private Label restoreStatusLabel;
@@ -58,9 +64,11 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private Button btnRefreshHistory, btnOpenHistoryFolder, btnVerifyHistoryItem, btnRestoreHistoryItem;
 
     private final ObservableList<String> historyItems = FXCollections.observableArrayList();
+    private final ObservableSet<Project> checkedProjects = FXCollections.observableSet(new java.util.LinkedHashSet<>());
+    private final ObservableList<File> restoreFiles = FXCollections.observableArrayList();
     private File selectedBackupDestinationFolder;
-    private File selectedRestoreSource;
     private File selectedRestoreDestination;
+    private boolean suppressSelectAllEvents = false;
 
     private ProjectsViewModel projectsViewModel;
     private Runnable onProjectsChanged;
@@ -73,18 +81,36 @@ public class BackupRestoreCenterController implements DialogController
         loadProjectsIntoList();
     }
 
+    public void preselectProjectForBackup(Project project)
+    {
+        preselectProjectsForBackup(List.of(project));
+    }
+
     /** Preselects a project and jumps to the Backup tab — used by the Projects context menu. */
     public void preselectProjectsForBackup(List<Project> projects)
     {
         if (projects != null && !projects.isEmpty())
         {
             loadProjectsIntoList();
-            backupProjectListView.getSelectionModel().clearSelection();
-            for (Project p : projects)
+            checkedProjects.clear();
+            
+            // select the projects that match the given list of project IDs
+            Set<Integer> targetIds = projects.stream()
+            .map(Project::getProjectId)
+            .collect(Collectors.toSet());
+
+            for (Project item : backupProjectListView.getItems())
             {
-                backupProjectListView.getSelectionModel().select(p);
+                if (targetIds.contains(item.getProjectId()))
+                {
+                    checkedProjects.add(item);
+                }
             }
+
+            backupProjectListView.refresh();
+            updateSelectAllCheckboxState();
         }
+        // focus to Backup tab
         tabPane.getSelectionModel().select(0);
         selectedBackupDestinationFolder = new File(System.getProperty("user.home"));
         backupDestinationField.setText(selectedBackupDestinationFolder.getAbsolutePath());
@@ -101,20 +127,30 @@ public class BackupRestoreCenterController implements DialogController
     // ─── Backup tab ─────────────────────────────────────────────────────────
 
     private void setupBackupTab()
-{
-    backupProjectListView.setCellFactory(lv -> new ListCell<>() {
-        @Override
-        protected void updateItem(Project p, boolean empty)
-        {
-            super.updateItem(p, empty);
-            setText(empty || p == null ? null : p.getProjectNumber() + " — " + p.getClientName());
-        }
-    });
-    backupProjectListView.getSelectionModel().setSelectionMode(javafx.scene.control.SelectionMode.MULTIPLE);
+    {
+        backupProjectListView.setCellFactory(lv -> new ProjectCheckBoxListCell(checkedProjects));
 
-    btnBrowseBackupDestination.setOnAction(e -> browseBackupDestinationFolder());
-    btnStartBackup.setOnAction(e -> startBackup());
-}
+        // Keep "Select All" in sync when individual rows are checked/unchecked.
+        checkedProjects.addListener((javafx.collections.SetChangeListener<Project>) change -> {
+            updateSelectAllCheckboxState();
+        });
+
+        selectAllProjectsCheckBox.setOnAction(e -> {
+            if (suppressSelectAllEvents) return;
+            if (selectAllProjectsCheckBox.isSelected())
+            {
+                checkedProjects.addAll(backupProjectListView.getItems());
+            }
+            else
+            {
+                checkedProjects.clear();
+            }
+            backupProjectListView.refresh();
+        });
+
+        btnBrowseBackupDestination.setOnAction(e -> browseBackupDestinationFolder());
+        btnStartBackup.setOnAction(e -> startBackup());
+    }
 
     private void loadProjectsIntoList()
     {
@@ -122,6 +158,8 @@ public class BackupRestoreCenterController implements DialogController
         {
             List<Project> projects = ProjectRepository.findAll();
             backupProjectListView.setItems(FXCollections.observableArrayList(projects));
+            backupProjectListView.refresh();
+            updateSelectAllCheckboxState();
         }
         catch (SQLException e)
         {
@@ -143,7 +181,7 @@ public class BackupRestoreCenterController implements DialogController
 
     private void startBackup()
     {
-        List<Project> selected = new ArrayList<>(backupProjectListView.getSelectionModel().getSelectedItems());
+        List<Project> selected = new ArrayList<>(checkedProjects);
         if (selected.isEmpty())
         {
             Dialogs.showInfo(getStage(), "Backup", null, "Please select at least one project.");
@@ -208,37 +246,71 @@ public class BackupRestoreCenterController implements DialogController
     private void setBackupControlsDisabled(boolean disabled)
     {
         backupProjectListView.setDisable(disabled);
+        selectAllProjectsCheckBox.setDisable(disabled);
         btnBrowseBackupDestination.setDisable(disabled);
         btnStartBackup.setDisable(disabled);
+    }
+
+    private void updateSelectAllCheckboxState()
+    {
+        suppressSelectAllEvents = true;
+        List<Project> allItems = backupProjectListView.getItems();
+        boolean allChecked = !allItems.isEmpty() && checkedProjects.containsAll(allItems);
+        boolean noneChecked = checkedProjects.isEmpty();
+
+        selectAllProjectsCheckBox.setSelected(allChecked);
+        selectAllProjectsCheckBox.setIndeterminate(!allChecked && !noneChecked);
+        suppressSelectAllEvents = false;
     }
     // ─── Restore tab ────────────────────────────────────────────────────────
 
     private void setupRestoreTab()
     {
-        btnBrowseRestoreSource.setOnAction(e -> browseRestoreSource());
+        restoreFileListView.setItems(restoreFiles);
+        restoreFileListView.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(File file, boolean empty)
+            {
+                super.updateItem(file, empty);
+                setText(empty || file == null ? null : file.getName());
+            }
+        });
+
+        btnAddRestoreFiles.setOnAction(e -> addRestoreFiles());
+        btnRemoveRestoreFile.setOnAction(e -> removeSelectedRestoreFile());
+        btnClearRestoreFiles.setOnAction(e -> { restoreFiles.clear(); restoreVerificationLabel.setText(""); });
         btnBrowseRestoreDestination.setOnAction(e -> browseRestoreDestination());
-        btnVerifyBackup.setOnAction(e -> verifySelectedBackup());
+        btnVerifyBackup.setOnAction(e -> verifySelectedBackups());
         btnStartRestore.setOnAction(e -> startRestore());
     }
 
-    private void browseRestoreSource()
+    private void addRestoreFiles()
     {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Select Backup File");
+        chooser.setTitle("Select Backup File(s)");
         chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Lensora Backup", "*.lsbak"));
-        File result = chooser.showOpenDialog(getStage());
-        if (result != null)
+
+        List<File> selected = chooser.showOpenMultipleDialog(getStage());
+        if (selected != null)
         {
-            selectedRestoreSource = result;
-            restoreSourceField.setText(result.getAbsolutePath());
+            for (File f : selected)
+            {
+                if (!restoreFiles.contains(f)) restoreFiles.add(f);
+            }
             restoreVerificationLabel.setText("");
         }
+    }
+
+    private void removeSelectedRestoreFile()
+    {
+        File selected = restoreFileListView.getSelectionModel().getSelectedItem();
+        if (selected != null) restoreFiles.remove(selected);
     }
 
     private void browseRestoreDestination()
     {
         DirectoryChooser chooser = new DirectoryChooser();
-        chooser.setTitle("Select Restore Location");
+        chooser.setTitle("Select Restore Destination Folder");
         File result = chooser.showDialog(getStage());
         if (result != null)
         {
@@ -247,29 +319,37 @@ public class BackupRestoreCenterController implements DialogController
         }
     }
 
-    private void verifySelectedBackup()
+    private void verifySelectedBackups()
     {
-        loadBackupForVerification(selectedRestoreSource);
-    }
-
-    private void loadBackupForVerification(File file)
-    {
-        if (file == null)
+        if (restoreFiles.isEmpty())
         {
-            Dialogs.showInfo(getStage(), "Verify", null, "Please select a .lsbak file first.");
+            Dialogs.showInfo(getStage(), "Verify", null, "Please add at least one .lsbak file.");
             return;
         }
-        var result = BackupVerifier.verify(file);
-        restoreVerificationLabel.setText((result.success() ? "✓ " : "✗ ") + result.message());
-        restoreVerificationLabel.setStyle(result.success()
+
+        StringBuilder summary = new StringBuilder();
+        int passed = 0;
+
+        for (File file : restoreFiles)
+        {
+            var result = BackupVerifier.verify(file);
+            summary.append(result.success() ? "✓ " : "✗ ")
+                .append(file.getName())
+                .append(result.success() ? "" : " — " + result.message())
+                .append("\n");
+            if (result.success()) passed++;
+        }
+
+        restoreVerificationLabel.setText(passed + "/" + restoreFiles.size() + " verified.\n" + summary);
+        restoreVerificationLabel.setStyle(passed == restoreFiles.size()
                 ? "-fx-text-fill: #2e7d32;" : "-fx-text-fill: #c62828;");
     }
 
     private void startRestore()
     {
-        if (selectedRestoreSource == null)
+        if (restoreFiles.isEmpty())
         {
-            Dialogs.showInfo(getStage(), "Restore", null, "Please select a .lsbak file.");
+            Dialogs.showInfo(getStage(), "Restore", null, "Please add at least one .lsbak file.");
             return;
         }
         if (selectedRestoreDestination == null)
@@ -278,33 +358,80 @@ public class BackupRestoreCenterController implements DialogController
             return;
         }
 
-        RestoreJob job = RestoreService.createRestoreJob(selectedRestoreSource, selectedRestoreDestination);
+        // Each archive restores into its own subfolder, named after the
+        // .lsbak file (without extension), under the chosen parent
+        // destination — avoids collisions when restoring multiple projects
+        // at once into the same location.
+        List<BatchRestoreJob.BatchItem> items = new ArrayList<>();
+        for (File lsbak : restoreFiles)
+        {
+            String baseName = lsbak.getName().replaceFirst("\\.lsbak$", "");
+            File subFolder = uniqueSubfolder(selectedRestoreDestination, baseName);
+            items.add(new BatchRestoreJob.BatchItem(lsbak, subFolder));
+        }
+
+        BatchRestoreJob job = RestoreService.createBatchRestoreJob(items);
         bindProgress(job, restoreProgressBox, restoreStatusLabel, restoreProgressBar);
         setRestoreControlsDisabled(true);
 
         job.setOnSucceeded(e -> {
             setRestoreControlsDisabled(false);
-            int newProjectId = job.getValue();
+
+            long failedCount = job.getResults().stream().filter(r -> !r.succeeded()).count();
+            int succeededCount = job.getResults().size() - (int) failedCount;
+
             if (projectsViewModel != null)
             {
                 projectsViewModel.refresh();
-                projectsViewModel.selectById(newProjectId);
+                job.getResults().stream()
+                        .filter(BatchRestoreJob.BatchItemResult::succeeded)
+                        .findFirst()
+                        .ifPresent(r -> projectsViewModel.selectById(r.newProjectId()));
             }
             if (onProjectsChanged != null) onProjectsChanged.run();
-            NotificationUtil.showToast(getStage(), "Project restored successfully.");
+
+            String summary = succeededCount + "/" + items.size() + " project(s) restored successfully.";
+            if (failedCount > 0)
+            {
+                summary += " " + failedCount + " failed.";
+                for (var result : job.getResults())
+                {
+                    if (!result.succeeded())
+                    {
+                        logger.error("Restore failed for {}: {}", result.lsbakFile().getName(), result.errorMessage());
+                    }
+                }
+            }
+            NotificationUtil.showToast(getStage(), summary);
         });
         job.setOnFailed(e -> {
             setRestoreControlsDisabled(false);
-            ErrorHandler.show(getStage(), "Restore failed", job.getException());
+            ErrorHandler.show(getStage(), "Batch restore failed", job.getException());
         });
         job.setOnCancelled(e -> setRestoreControlsDisabled(false));
 
         runTask(job);
     }
 
+    /** Avoids collisions if multiple .lsbak files share a base name, or the folder already exists. */
+    private File uniqueSubfolder(File parent, String baseName)
+    {
+        File candidate = new File(parent, baseName);
+        int suffix = 2;
+        while (candidate.exists())
+        {
+            candidate = new File(parent, baseName + " (" + suffix + ")");
+            suffix++;
+        }
+        return candidate;
+    }
+
     private void setRestoreControlsDisabled(boolean disabled)
     {
-        btnBrowseRestoreSource.setDisable(disabled);
+        restoreFileListView.setDisable(disabled);
+        btnAddRestoreFiles.setDisable(disabled);
+        btnRemoveRestoreFile.setDisable(disabled);
+        btnClearRestoreFiles.setDisable(disabled);
         btnBrowseRestoreDestination.setDisable(disabled);
         btnVerifyBackup.setDisable(disabled);
         btnStartRestore.setDisable(disabled);
@@ -381,9 +508,11 @@ public class BackupRestoreCenterController implements DialogController
         File file = getSelectedHistoryFile();
         if (file == null) return;
 
-        selectedRestoreSource = file;
-        restoreSourceField.setText(file.getAbsolutePath());
-        loadBackupForVerification(file);
+        if (!restoreFiles.contains(file))
+        {
+            restoreFiles.add(file);
+        }
+        verifySelectedBackups();
         tabPane.getSelectionModel().select(1); // jump to Restore tab
     }
 

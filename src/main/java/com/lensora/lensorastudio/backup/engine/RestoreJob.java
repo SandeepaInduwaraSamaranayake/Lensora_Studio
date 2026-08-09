@@ -177,4 +177,9 @@ public class RestoreJob extends Task<Integer>
             return GSON.fromJson(reader, type);
         }
     }
+
+    public Integer runSynchronously() throws Exception
+    {
+        return call();
+    }
 }
