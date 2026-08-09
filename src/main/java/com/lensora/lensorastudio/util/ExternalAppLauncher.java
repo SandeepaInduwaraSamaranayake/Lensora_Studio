@@ -27,7 +27,7 @@ public final class ExternalAppLauncher
     /**
      * Opens each file with the given app in a single process invocation
      * where the OS/app supports multiple file arguments (most photo/video
-     * editors do — Photoshop, Lightroom, etc. accept a file list and load
+     * editors do - Photoshop, Lightroom, etc. accept a file list and load
      * them all into one session).
      */
     public static void openWith(ExternalApp app, List<File> files)
@@ -61,7 +61,7 @@ public final class ExternalAppLauncher
 
     /**
      * Shows the operating system's native "Open With" dialog for a single
-     * file. No cross-platform Java API exists for this — it's invoked via
+     * file. No cross-platform Java API exists for this - it's invoked via
      * a platform-specific shell command. Falls back to Desktop.open()
      * (opens with the OS default app) if the platform isn't supported.
      */

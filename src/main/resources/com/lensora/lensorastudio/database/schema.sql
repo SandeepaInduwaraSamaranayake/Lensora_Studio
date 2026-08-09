@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════════════════════
--- Lensora Studio — schema.sql
+-- Lensora Studio - schema.sql
 -- Executed once at startup via DatabaseManager.initializeDatabase().
 -- All statements use IF NOT EXISTS / IF NOT EXISTS so re-runs are safe.
 -- ═══════════════════════════════════════════════════════════════════════════

@@ -111,7 +111,7 @@ public class ImageViewerNode
 
         // Whenever the content's ACTUAL laid-out size changes (which
         // happens continuously as zoom animates), re-apply the anchor
-        // using fresh, real layout data — this is what makes the anchor
+        // using fresh, real layout data - this is what makes the anchor
         // correction reliable instead of racing stale frame data.
         imageHolder.widthProperty().addListener((obs, o, n) -> { if (anchorArmed) restoreZoomAnchor(); });
         imageHolder.heightProperty().addListener((obs, o, n) -> { if (anchorArmed) restoreZoomAnchor(); });
@@ -163,7 +163,7 @@ public class ImageViewerNode
      * fractions: where it sits within the image content (0..1 of
      * imageHolder's current size) and where it sits within the visible
      * viewport (0..1 of viewport size). Uses scene coordinates converted
-     * via sceneToLocal(...) on each node directly — this sidesteps any
+     * via sceneToLocal(...) on each node directly - this sidesteps any
      * ambiguity in ScrollEvent's own getX()/getY() semantics, which was
      * the root cause of the anchor always resolving to the top-left
      * corner regardless of actual cursor position.
@@ -238,7 +238,7 @@ public class ImageViewerNode
         return Math.max(0, Math.min(1, value));
     }
 
-    // ─── Toolbar zoom actions — anchor to viewport center ──────────────────
+    // ─── Toolbar zoom actions - anchor to viewport center ──────────────────
 
     private void zoomTowardCenter(double factor)
     {

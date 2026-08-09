@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Simple bounded LRU cache for JavaFX Images, keyed by absolute file path +
  * last-modified timestamp (so a re-saved/edited file doesn't serve a stale
- * cached preview). Not intended for full-resolution originals — used for
+ * cached preview). Not intended for full-resolution originals - used for
  * preview-sized thumbnails only, to keep memory bounded.
  */
 public final class ImageCache

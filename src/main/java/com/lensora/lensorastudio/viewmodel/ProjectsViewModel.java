@@ -24,7 +24,7 @@ import java.util.function.Predicate;
  * UI-agnostic holder for project list state: the master list, the current
  * filter/search predicate, and the selected project.
  *
- * No JavaFX Control classes are referenced here (no TableView, no Label) —
+ * No JavaFX Control classes are referenced here (no TableView, no Label) -
  * that's what makes this safe to bind from more than one dockable panel
  * (ProjectListController and ProjectDetailsController) at once.
  */

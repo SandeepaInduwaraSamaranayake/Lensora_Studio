@@ -97,7 +97,7 @@ public class AppSettings
 
     private AppSettings()
     {
-        // Scoped to this application — stored separately from any other Java app
+        // Scoped to this application - stored separately from any other Java app
         prefs = Preferences.userNodeForPackage(AppSettings.class);
     }
 

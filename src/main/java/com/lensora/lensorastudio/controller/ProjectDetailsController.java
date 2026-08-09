@@ -71,7 +71,7 @@ public class ProjectDetailsController
 
         btnDetailOpenFolder.setOnAction(e -> openProjectFolder());
 
-        // Not implemented yet — wired so the buttons don't silently do nothing.
+        // Not implemented yet - wired so the buttons don't silently do nothing.
         btnDetailEdit.setOnAction(e -> { });
         btnDetailArchive.setOnAction(e -> { /* TODO: archive project */ });
         btnAddNote.setOnAction(e -> {  addNote(); });

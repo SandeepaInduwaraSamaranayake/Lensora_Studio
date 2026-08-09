@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * All database operations for the {@code project} table.
- * Every method opens its own connection and closes it — no connection leaking.
+ * Every method opens its own connection and closes it - no connection leaking.
  */
 public class ProjectRepository
 {

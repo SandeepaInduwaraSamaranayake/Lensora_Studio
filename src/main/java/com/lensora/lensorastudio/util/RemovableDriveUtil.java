@@ -33,7 +33,7 @@ public final class RemovableDriveUtil
             {
                 Path rootPath = root.toPath();
 
-                // Skip the system/boot drive — "Send To" should only list
+                // Skip the system/boot drive - "Send To" should only list
                 // genuinely external/secondary locations.
                 if (rootPath.toString().equalsIgnoreCase(systemDriveRoot))
                 {

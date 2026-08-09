@@ -20,7 +20,7 @@ public class ProjectListController
     @FXML private ComboBox<String> cmbStatusFilter;
     @FXML private MenuItem ctxProjectBackup, ctxProjectArchive;
 
-    // Reminders tab — wired to a real RemindersViewModel later; placeholders for now
+    // Reminders tab - wired to a real RemindersViewModel later; placeholders for now
     // so the FXML loads and the tab isn't blank/broken.
     @FXML private Label lblReminderCount;
     @FXML private CheckBox chkShowCompleted;

@@ -22,7 +22,7 @@ import java.io.IOException;
 
 /**
  * Wraps drewnoakes/metadata-extractor. Reads EXIF/IPTC/XMP/GPS metadata
- * from image files. Runs synchronously — callers should invoke this off
+ * from image files. Runs synchronously - callers should invoke this off
  * the FX thread (see MetadataExtractionService).
  */
 public final class ImageMetadataExtractor
@@ -56,7 +56,7 @@ public final class ImageMetadataExtractor
                 {
                     for (String error : directory.getErrors())
                     {
-                        logger.warn("[ImageMetadataExtractor] {} — {}: {}", imageFile.getName(), groupName, error);
+                        logger.warn("[ImageMetadataExtractor] {} - {}: {}", imageFile.getName(), groupName, error);
                     }
                 }
             }

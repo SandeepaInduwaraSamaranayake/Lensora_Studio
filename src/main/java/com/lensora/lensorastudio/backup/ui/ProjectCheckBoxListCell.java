@@ -54,7 +54,7 @@ public class ProjectCheckBoxListCell extends ListCell<Project>
         else
         {
             setText(null);
-            label.setText(project.getProjectNumber() + " — " + project.getClientName());
+            label.setText(project.getProjectNumber() + " - " + project.getClientName());
             checkBox.setSelected(checkedSet.contains(project));
             setGraphic(container);
         }

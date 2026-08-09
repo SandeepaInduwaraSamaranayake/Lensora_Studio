@@ -121,7 +121,7 @@ public class LayoutPersistence
         if (Double.isNaN(savedX) || Double.isNaN(savedY) || Double.isNaN(savedW) || Double.isNaN(savedH))
         {
             logger.info("[Layout] restoreWindow() - no saved geometry, skipping.");
-            return; // No saved state — leave JavaFX defaults
+            return; // No saved state - leave JavaFX defaults
         }
 
         // Guard: ensure the window is still visible on the current screen setup.
@@ -161,7 +161,7 @@ public class LayoutPersistence
     //------------------------- Save window listeners ---------------------------------
     private static void attachWindowSaveListeners(Stage stage)
     {
-        // Save size — only when not maximised to avoid storing 1920x1080
+        // Save size - only when not maximised to avoid storing 1920x1080
         ChangeListener<Number> sizeListener = (obs, old, val) -> {
             if (!stage.isMaximized())
             {
@@ -172,7 +172,7 @@ public class LayoutPersistence
         stage.widthProperty().addListener(sizeListener);
         stage.heightProperty().addListener(sizeListener);
 
-        // Save position — only when not maximised
+        // Save position - only when not maximised
         ChangeListener<Number> posListener = (obs, old, val) -> {
             if (!stage.isMaximized())
             {

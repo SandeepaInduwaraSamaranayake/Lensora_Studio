@@ -32,7 +32,7 @@ import org.slf4j.Logger;
  * {@code WindowDragManager} is instantiated inside a
  * {@code sceneProperty} listener, the scene has just been attached to the
  * node tree but {@code scene.getWindow()} is still {@code null} because
- * {@code stage.setScene(scene)} hasn't returned yet — the window property
+ * {@code stage.setScene(scene)} hasn't returned yet - the window property
  * is set in a subsequent step. The fix defers stage resolution to a nested
  * {@code windowProperty} listener, which fires only after the stage has
  * been assigned.
@@ -72,7 +72,7 @@ public class WindowDragManager
 
     private final Node  titleBarNode;
 
-    /** Resolved lazily via windowProperty listener — never accessed before that. */
+    /** Resolved lazily via windowProperty listener - never accessed before that. */
     private Stage  stage;
 
     /** Fraction of the primary screen used for the restored window size. */
@@ -109,7 +109,7 @@ public class WindowDragManager
     }
 
     /**
-     * Convenience factory — same as {@code new WindowDragManager(node)}.
+     * Convenience factory - same as {@code new WindowDragManager(node)}.
      *
      * @param titleBarNode The node to use as the draggable title bar.
      * @return A new {@link WindowDragManager} already wired to the node.

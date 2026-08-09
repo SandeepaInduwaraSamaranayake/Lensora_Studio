@@ -44,7 +44,7 @@ public class RestoreJob extends Task<Integer>
 
         // Extract into a staging directory first. Only if extraction AND
         // database import both succeed do we move it into the real
-        // destination — a failed or cancelled restore never leaves the
+        // destination - a failed or cancelled restore never leaves the
         // destination folder in a half-extracted state.
         Path stagingFolder = Files.createTempDirectory(parentDir, ".restore_staging_");
 

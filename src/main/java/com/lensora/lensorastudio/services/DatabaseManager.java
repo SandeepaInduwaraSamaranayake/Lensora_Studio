@@ -21,10 +21,10 @@ public class DatabaseManager
     // Initialize the logger instance for this specific class
     private static final Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
 
-//    logger.debug("User typed: 'text'") — Use this for temporary developer checks. (Hidden in production with our INFO configuration).
-//    logger.info("Application started successfully") — Use this for major milestones or successful background milestones.
-//    logger.warn("Database connection took longer than expected") — Use this when something unexpected occurs but the application doesn't break.
-//    logger.error("Failed to load FXML layout file", exception) — Use this inside catch blocks to track bugs and crashes.
+//    logger.debug("User typed: 'text'") - Use this for temporary developer checks. (Hidden in production with our INFO configuration).
+//    logger.info("Application started successfully") - Use this for major milestones or successful background milestones.
+//    logger.warn("Database connection took longer than expected") - Use this when something unexpected occurs but the application doesn't break.
+//    logger.error("Failed to load FXML layout file", exception) - Use this inside catch blocks to track bugs and crashes.
 
     static
     {

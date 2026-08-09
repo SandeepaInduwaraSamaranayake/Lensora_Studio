@@ -331,7 +331,7 @@ public final class ImageViewerWindowService
 
     private void teardown()
     {
-        logger.info("[ImageViewerWindowService] Viewer window closed — resetting state.");
+        logger.info("[ImageViewerWindowService] Viewer window closed - resetting state.");
         ThemeManager.removeThemeChangeListener(themeListener);
         viewers.clear();
         lastDockedNode = null;

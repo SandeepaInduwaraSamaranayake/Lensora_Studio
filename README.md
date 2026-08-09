@@ -2,7 +2,7 @@
 
 **Lensora Studio** is a modern desktop application designed for **photography studios and freelance photographers** to efficiently manage, organize, and navigate large collections of photos and projects.
 
-Built with **Java 25** and **JavaFX**, Lensora Studio provides a fast and intuitive workspace for managing complete photography workflows—from organizing client folders to handling thousands of images with ease.
+Built with **Java 25** and **JavaFX**, Lensora Studio provides a fast and intuitive workspace for managing complete photography workflows-from organizing client folders to handling thousands of images with ease.
 
 ---
 

@@ -32,7 +32,7 @@ public class ThemeManager
 
     /**
      * Reads current settings and applies the theme + font size to the scene.
-     * Safe to call multiple times — each call fully replaces the previous state.
+     * Safe to call multiple times - each call fully replaces the previous state.
      */
     public static void apply(Scene scene)
     {
@@ -180,7 +180,7 @@ public class ThemeManager
 
     /**
      * Back-compat single-listener setter. Replaces any previously
-     * registered listeners with just this one — kept so existing call
+     * registered listeners with just this one - kept so existing call
      * sites (e.g. MainController) don't need to change.
      */
     public static void setThemeChangeListener(Consumer<AppSettings.Theme> listener) 
@@ -206,7 +206,7 @@ public class ThemeManager
         }
     }
 
-    /** Removes a previously added listener — call when the owning window closes. */
+    /** Removes a previously added listener - call when the owning window closes. */
     public static void removeThemeChangeListener(Consumer<AppSettings.Theme> listener)
     {
         themeChangeListeners.remove(listener);

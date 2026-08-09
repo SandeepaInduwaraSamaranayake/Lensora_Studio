@@ -50,7 +50,7 @@ import org.snapfx.SnapFX;
 
 /**
  * Owns the file listing: the details TableView, ListView, and icon/thumbnail
- * FlowPane — including which one is currently visible — plus recursive
+ * FlowPane - including which one is currently visible - plus recursive
  * search within the current folder.
  */
 public class FileListingManager
@@ -72,7 +72,7 @@ public class FileListingManager
     private final Map<File, String> dimensionCache = new ConcurrentHashMap<>();
     private final ExecutorService dimensionExecutor = Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors() / 2));
     private final Map<File, Future<?>> dimensionFutures = new ConcurrentHashMap<>();
-    private BiConsumer<List<File>, Boolean> onExternalFilesDropped; // (files, isMove — always false here)
+    private BiConsumer<List<File>, Boolean> onExternalFilesDropped; // (files, isMove - always false here)
     private final ObjectProperty<File> selectedFileProperty = new SimpleObjectProperty<>();
     private Runnable refreshCallback;
 

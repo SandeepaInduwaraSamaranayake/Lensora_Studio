@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Runs a RestoreJob per selected .lsbak file sequentially, aggregating
  * progress across the whole batch. Each archive is still restored into
- * its own independent destination subfolder — batching is purely UI/
+ * its own independent destination subfolder - batching is purely UI/
  * orchestration convenience, matching BatchBackupJob's approach.
  */
 public class BatchRestoreJob extends Task<List<Integer>>

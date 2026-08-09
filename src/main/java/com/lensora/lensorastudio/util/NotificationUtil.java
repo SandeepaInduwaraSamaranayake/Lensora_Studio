@@ -125,7 +125,7 @@ public final class NotificationUtil
 
     /**
      * Determines dark/light by checking the "dark-theme" marker class
-     * ThemeManager already applies to each scene's root — same source of
+     * ThemeManager already applies to each scene's root - same source of
      * truth used for icon and menu-bar coloring elsewhere in the app, so
      * this toast always matches the currently active theme correctly,
      * including for windows other than the main one (dialogs, image viewer).

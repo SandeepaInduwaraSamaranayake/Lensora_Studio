@@ -26,10 +26,10 @@ import java.io.StringWriter;
  *
  * <h3>Usage</h3>
  * <pre>{@code
- * // From any controller or service — shows dialog on the FX thread:
+ * // From any controller or service - shows dialog on the FX thread:
  * ErrorHandler.show(owner, "Failed to load projects", e);
  *
- * // Convenience — no owner, centers on screen:
+ * // Convenience - no owner, centers on screen:
  * ErrorHandler.show("Could not save settings", e);
  *
  * // Install as global uncaught-exception handler in App.start():
@@ -53,9 +53,9 @@ public final class ErrorHandler
     /**
      * Shows an error dialog, ensuring it runs on the JavaFX Application Thread.
      *
-     * @param owner   Parent window for modal anchoring — may be {@code null}.
+     * @param owner   Parent window for modal anchoring - may be {@code null}.
      * @param message Short user-readable description of what went wrong.
-     * @param cause   The exception — may be {@code null} for message-only errors.
+     * @param cause   The exception - may be {@code null} for message-only errors.
      */
     public static void show(Window owner, String message, Throwable cause)
     {
@@ -67,13 +67,13 @@ public final class ErrorHandler
             Platform.runLater(() -> showDialog(owner, message, cause));
     }
 
-    /** Convenience overload — no owner window. */
+    /** Convenience overload - no owner window. */
     public static void show(String message, Throwable cause)
     {
         show(null, message, cause);
     }
 
-    /** Convenience overload — message only, no exception. */
+    /** Convenience overload - message only, no exception. */
     public static void show(Window owner, String message)
     {
         show(owner, message, null);
@@ -104,7 +104,7 @@ public final class ErrorHandler
     {
         Stage dialog = new Stage();
 
-        // borderless — we draw our own chrome
+        // borderless - we draw our own chrome
         dialog.initStyle(StageStyle.UNDECORATED);   
         if (owner != null) dialog.initOwner(owner);
         dialog.initModality(Modality.APPLICATION_MODAL);

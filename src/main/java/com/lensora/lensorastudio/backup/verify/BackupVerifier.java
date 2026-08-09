@@ -59,7 +59,7 @@ public final class BackupVerifier
                     return new VerificationResult(false, "Missing file in archive: " + entry.relativePath);
                 }
 
-                // Hashes the entry by streaming through it directly — no
+                // Hashes the entry by streaming through it directly - no
                 // temp file is ever written to disk, so verifying a
                 // multi-hundred-GB backup can't exhaust the system drive.
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -87,7 +87,7 @@ public final class BackupVerifier
             }
 
             return new VerificationResult(true,
-                    String.format("Backup verified successfully — %d file(s), all hashes match.", verified));
+                    String.format("Backup verified successfully - %d file(s), all hashes match.", verified));
         }
         catch (Exception e)
         {

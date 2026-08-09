@@ -91,7 +91,7 @@ public class BackupJob extends Task<File>
 
                     if (Files.isDirectory(path))
                     {
-                        // Preserve empty directory structure — without this,
+                        // Preserve empty directory structure - without this,
                         // photographers' intentional folder hierarchies
                         // (RAW/, Exports/, Selected/) collapse on restore.
                         ZipEntry dirEntry = new ZipEntry("files/" + relativePath + "/");

@@ -1,4 +1,4 @@
-/* Default (dark-icon) case — used under light/Modena/Caspian themes */
+/* Default (dark-icon) case - used under light/Modena/Caspian themes */
 .ikonli-font-icon 
 {
     -fx-icon-size: 16px;
@@ -22,7 +22,7 @@
 .icon-size-60 { -fx-icon-size: 60px; }
 
 
-/* MenuBar/Menu text color — Caspian's default menu text can render
+/* MenuBar/Menu text color - Caspian's default menu text can render
  * invisible against a transparent MenuBar background (our custom title
  * bar has no theme-provided background of its own), since only its
  * hover/showing pseudo-classes carry an explicit contrasting fill. Pin
@@ -39,7 +39,7 @@
     -fx-text-fill: #dcdcdc;
 }
 
-/* Toast notification icon — accent-colored, same literal-color pattern as
+/* Toast notification icon - accent-colored, same literal-color pattern as
  * everything else (no -color-* variable lookups). */
 .toast-icon {
     -fx-icon-color: #3574f0;

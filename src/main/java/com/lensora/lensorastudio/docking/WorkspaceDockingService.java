@@ -40,7 +40,7 @@ public class WorkspaceDockingService
 
     public WorkspaceDockingService()
     {
-        // Ask SnapFX to pick its correct internal stylesheet itself —
+        // Ask SnapFX to pick its correct internal stylesheet itself -
         // no custom CSS, no jar patching needed for either theme family.
         snapFX.setUserAgentThemeMode(DockUserAgentThemeMode.AUTO);
         snapFX.setDefaultCloseBehavior(org.snapfx.close.DockCloseBehavior.HIDE);
@@ -127,13 +127,13 @@ public class WorkspaceDockingService
 
         if (node.getLastKnownTarget() != null)
         {
-            // SnapFX remembers exactly where this was docked before — use it.
+            // SnapFX remembers exactly where this was docked before - use it.
             snapFX.restore(node);
         }
         else
         {
             // Never docked this session (e.g. the saved layout JSON didn't
-            // include it at startup) — fall back to a sensible default spot.
+            // include it at startup) - fall back to a sensible default spot.
             dockToDefaultPosition(node);
             saveLayout(); 
         }
@@ -186,7 +186,7 @@ public class WorkspaceDockingService
 
         if (target == null || target.getParent() == null)
         {
-            // Nothing else visible to dock next to — become root.
+            // Nothing else visible to dock next to - become root.
             snapFX.getDockGraph().setRoot(node);
         }
         else

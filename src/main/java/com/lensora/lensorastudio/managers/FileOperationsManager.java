@@ -443,7 +443,7 @@ public class FileOperationsManager
     }
 
     /**
-     * Handles files dropped onto a folder — either from within the app
+     * Handles files dropped onto a folder - either from within the app
      * (move) or from the OS (copy). Reuses the same progress-bound
      * FileCopyTask pipeline as clipboard paste.
      */
@@ -466,7 +466,7 @@ public class FileOperationsManager
             }
             if (src.getParentFile() != null && src.getParentFile().equals(targetFolder))
             {
-                // Already in this folder — nothing to do for this entry.
+                // Already in this folder - nothing to do for this entry.
                 continue;
             }
         }

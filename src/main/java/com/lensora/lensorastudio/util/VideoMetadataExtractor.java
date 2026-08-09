@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * Invokes the ffprobe binary (part of FFmpeg) to extract video/audio stream
  * metadata as JSON, then flattens it into MediaMetadata groups.
  *
- * ffprobe is NOT bundled — it must be installed and resolvable via PATH,
+ * ffprobe is NOT bundled - it must be installed and resolvable via PATH,
  * or its full path configured in AppSettings (getFfprobePath()).
  */
 public final class VideoMetadataExtractor
@@ -79,7 +79,7 @@ public final class VideoMetadataExtractor
             if (process.exitValue() != 0)
             {
                 result.put("Error", "Message", "ffprobe exited with code " + process.exitValue()
-                        + " — is FFmpeg installed and on PATH?");
+                        + " - is FFmpeg installed and on PATH?");
                 return result;
             }
 

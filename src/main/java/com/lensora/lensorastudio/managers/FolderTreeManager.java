@@ -50,9 +50,9 @@ public class FolderTreeManager
     private Runnable onRefreshRequested;
     private Consumer<String> onPathChanged;
     private Consumer<File> onNavigationPersisted;
-    /** Paste is delegated out — FileOperationsManager owns the actual copy-with-progress logic. */
+    /** Paste is delegated out - FileOperationsManager owns the actual copy-with-progress logic. */
     private Runnable pasteRequested = () -> {};
-    /** (files, targetFolder, isMove) — isMove is true for internal drags, false for external OS drag-ins. */
+    /** (files, targetFolder, isMove) - isMove is true for internal drags, false for external OS drag-ins. */
     private TriConsumer<java.util.List<File>, File, Boolean> onFilesDropped = (files, folder, move) -> {};
 
     public FolderTreeManager(TreeView<File> folderTree, HBox breadcrumbContainer,
@@ -70,7 +70,7 @@ public class FolderTreeManager
         setupNavigationButtons();
     }
 
-    /** Small local functional interface — java.util has no 3-arg Consumer. */
+    /** Small local functional interface - java.util has no 3-arg Consumer. */
     @FunctionalInterface
     public interface TriConsumer<A, B, C>
     {

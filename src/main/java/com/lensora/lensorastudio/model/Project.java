@@ -146,7 +146,7 @@ public class Project
     @Override
     public String toString()
     {
-        return projectNumber + " — " + clientName;
+        return projectNumber + " - " + clientName;
     }
 
     // ─── Property Getters ──────────────────────────────────────────────────────

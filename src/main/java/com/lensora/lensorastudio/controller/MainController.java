@@ -444,7 +444,7 @@ public class MainController
         DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
                 .icon("🛡")
                 .resizable(true)
-                .minSize(720, 480)
+                .minSize(750, 500)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof BackupRestoreCenterController brcc)
                     {

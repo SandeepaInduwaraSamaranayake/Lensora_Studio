@@ -4,7 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Generic container for extracted metadata — a simple ordered key/value map
+ * Generic container for extracted metadata - a simple ordered key/value map
  * per logical group (e.g. "File", "EXIF", "GPS", "Video", "Audio").
  */
 public class MediaMetadata

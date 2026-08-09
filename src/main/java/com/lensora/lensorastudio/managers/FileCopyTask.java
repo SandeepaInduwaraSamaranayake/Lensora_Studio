@@ -61,7 +61,7 @@ public class FileCopyTask extends Task<Void>
     @Override
     protected Void call() throws Exception
     {
-        // Indeterminate progress while scanning — progress < 0 tells any
+        // Indeterminate progress while scanning - progress < 0 tells any
         // bound ProgressBar to show its indeterminate animation instead
         // of sitting at 0%.
         updateProgress(-1, 1);
