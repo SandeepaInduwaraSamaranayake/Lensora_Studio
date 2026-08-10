@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.ScheduleEditController">
+
+    <center>
+        <ScrollPane fitToWidth="true">
+            <VBox spacing="12" prefWidth="480">
+                <padding>
+                    <Insets top="16" right="16" bottom="16" left="16"/>
+                </padding>
+
+                <Label text="Name" style="-fx-font-weight: bold;"/>
+                <TextField fx:id="nameField" promptText="Schedule name"/>
+
+                <Label text="Projects" style="-fx-font-weight: bold;"/>
+                <ComboBox fx:id="scopeCombo" maxWidth="Infinity"/>
+
+                <VBox fx:id="projectListContainer" spacing="6">
+                    <Label text="Select project(s):"/>
+                    <ListView fx:id="projectListView" prefHeight="140"/>
+                </VBox>
+
+                <Label text="Destination" style="-fx-font-weight: bold;"/>
+                <HBox spacing="6">
+                    <TextField fx:id="destinationField" editable="false" promptText="Backup destination folder (local, external drive, or NAS path)…" HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="btnBrowseDestination" text="Browse…"/>
+                </HBox>
+
+                <Separator/>
+
+                <Label text="Frequency" style="-fx-font-weight: bold;"/>
+                <GridPane hgap="10" vgap="10">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="100" prefWidth="110"/>
+                        <ColumnConstraints hgrow="ALWAYS"/>
+                    </columnConstraints>
+
+                    <Label text="Frequency" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
+                    <ComboBox fx:id="frequencyCombo" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
+
+                    <Label text="Every" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
+                    <Spinner fx:id="intervalSpinner" editable="true" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+
+                    <Label fx:id="timeLabel" text="Time (HH:mm)" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                    <TextField fx:id="timeField" promptText="02:00" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+
+                    <Label fx:id="dayOfWeekLabel" text="Day of Week" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                    <ComboBox fx:id="dayOfWeekCombo" maxWidth="Infinity" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+
+                    <rowConstraints>
+                        <RowConstraints/>
+                        <RowConstraints/>
+                        <RowConstraints/>
+                        <RowConstraints/>
+                    </rowConstraints>
+                </GridPane>
+
+                <CheckBox fx:id="enabledCheck" text="Enabled"/>
+            </VBox>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="12" right="16" bottom="16" left="16"/>
+            </padding>
+            <Button fx:id="btnCancel" text="Cancel"/>
+            <Button fx:id="btnSave" text="Save" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>

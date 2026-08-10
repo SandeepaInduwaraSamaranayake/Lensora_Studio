@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.lensora.lensorastudio.controller.NoteEditController">
+
+    <center>
+        <VBox spacing="10" prefWidth="420">
+            <padding>
+                <Insets top="16" right="16" bottom="8" left="16"/>
+            </padding>
+
+            <Label text="Title" style="-fx-font-weight: bold;"/>
+            <TextField fx:id="titleField" promptText="Title (optional)"/>
+
+            <Label text="Content" style="-fx-font-weight: bold;"/>
+            <TextArea fx:id="contentArea" promptText="Note content..." wrapText="true" prefRowCount="8" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox alignment="CENTER_RIGHT" spacing="10">
+            <padding>
+                <Insets top="8" right="16" bottom="16" left="16"/>
+            </padding>
+            <Button fx:id="btnCancel" text="Cancel"/>
+            <Button fx:id="btnSave" text="Save" defaultButton="true"/>
+        </HBox>
+    </bottom>
+</BorderPane>

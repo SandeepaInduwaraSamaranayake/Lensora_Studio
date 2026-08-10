@@ -199,6 +199,24 @@ CREATE TABLE IF NOT EXISTS project_last_folder (
                                                 REFERENCES project (project_id)
 );
 
+CREATE TABLE IF NOT EXISTS backup_schedule (
+                                                schedule_id       INTEGER       PRIMARY KEY AUTOINCREMENT,
+                                                name              VARCHAR(200)  NOT NULL,
+                                                scope             VARCHAR(20)   NOT NULL,   -- SINGLE, MULTIPLE, ALL
+                                                project_ids       TEXT,                     -- JSON array, null for ALL
+                                                destination_path  VARCHAR(2000) NOT NULL,
+                                                frequency         VARCHAR(20)   NOT NULL,   -- HOURLY, DAILY, WEEKLY
+                                                interval_value    INTEGER       NOT NULL DEFAULT 1,
+                                                time_of_day       VARCHAR(5),               -- "HH:mm" for DAILY/WEEKLY
+                                                day_of_week       INTEGER,                  -- 1(Mon)-7(Sun) for WEEKLY
+                                                enabled           BOOLEAN       NOT NULL DEFAULT 1,
+                                                last_run          TIMESTAMP,
+                                                next_run          TIMESTAMP,
+                                                created_at        TIMESTAMP     NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_backup_schedule_enabled ON backup_schedule(enabled);
+
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Seed default folder templates (skipped if already present)

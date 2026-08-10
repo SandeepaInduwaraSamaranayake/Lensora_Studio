@@ -80,7 +80,7 @@ public class FileManager
                                                                     colFileDimensions, 
                                                                     colFileModified,
                                                                     lblCurrentFolder, 
-                                                                    lblFileCount, 
+                                                                    lblFileCount,
                                                                     fileSearchField,
                                                                     btnDetails, 
                                                                     btnList, 

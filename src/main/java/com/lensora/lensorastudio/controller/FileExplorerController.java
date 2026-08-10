@@ -26,7 +26,7 @@ public class FileExplorerController
     @FXML private TreeView<File> folderTree;
     @FXML private TableView<File> fileTable;
     @FXML private TableColumn<File, String> colFileName, colFileType, colFileSize, colFileDimensions, colFileModified;
-    @FXML private Label lblCurrentFolder, lblFileCount, lblFolderHeader;
+    @FXML private Label lblCurrentFolder, lblFileCount, lblSelectedFileCount, lblFolderHeader;
     @FXML private HBox breadcrumbContainer;
     @FXML private Button btnFolderBack, btnFolderForward, btnRefreshFileList;
     @FXML private TextField fileSearchField;

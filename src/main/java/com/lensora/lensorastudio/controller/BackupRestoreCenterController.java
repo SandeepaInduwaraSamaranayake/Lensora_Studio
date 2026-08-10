@@ -1,19 +1,25 @@
 package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.backup.engine.*;
+import com.lensora.lensorastudio.backup.model.BackupSchedule;
 import com.lensora.lensorastudio.backup.model.RestoreQueueItem;
 import com.lensora.lensorastudio.backup.ui.ProjectCheckBoxListCell;
 import com.lensora.lensorastudio.backup.verify.BackupVerifier;
 import com.lensora.lensorastudio.backup.verify.BatchVerifyTask;
 import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.repository.BackupScheduleRepository;
 import com.lensora.lensorastudio.repository.ProjectRepository;
 import com.lensora.lensorastudio.services.AppSettings;
+import com.lensora.lensorastudio.util.DialogBuilder;
 import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.NotificationUtil;
+import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.ObservableSet;
@@ -21,6 +27,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
@@ -33,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.awt.Desktop;
 import java.io.File;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -61,6 +69,12 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private VBox restoreProgressBox, verifyProgressBox;
     @FXML private Label restoreStatusLabel, verifyStatusLabel;
     @FXML private ProgressBar restoreProgressBar, verifyProgressBar;
+
+    // Schedule tab
+    @FXML private TableView<BackupSchedule> scheduleTableView;
+    @FXML private TableColumn<BackupSchedule, String> colScheduleName, colScheduleScope, colScheduleFrequency, colScheduleDestination, colScheduleNextRun;
+    @FXML private TableColumn<BackupSchedule, Boolean> colScheduleEnabled;
+    @FXML private Button btnNewSchedule, btnRunScheduleNow, btnEditSchedule, btnDeleteSchedule;
 
     // History tab
     @FXML private ListView<String> historyListView;
@@ -124,6 +138,7 @@ public class BackupRestoreCenterController implements DialogController
     {
         setupBackupTab();
         setupRestoreTab();
+        setupScheduleTab();
         setupHistoryTab();
     }
 
@@ -517,6 +532,141 @@ public class BackupRestoreCenterController implements DialogController
         btnBrowseRestoreDestination.setDisable(disabled);
         btnStartRestore.setDisable(disabled);
     }
+
+    // ─── Schedule tab ────────────────────────────────────────────────────────
+    private void setupScheduleTab()
+    {
+        colScheduleName.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getName()));
+        colScheduleScope.setCellValueFactory(c -> new SimpleStringProperty(
+                switch (c.getValue().getScope()) {
+                    case ALL -> "All Projects";
+                    case SINGLE -> "1 project";
+                    case MULTIPLE -> (c.getValue().getProjectIds() != null ? c.getValue().getProjectIds().size() : 0) + " projects";
+                }));
+        colScheduleFrequency.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().describeFrequency()));
+        colScheduleDestination.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDestinationPath()));
+        colScheduleNextRun.setCellValueFactory(c -> new SimpleStringProperty(
+                c.getValue().getNextRun() != null ? c.getValue().getNextRun().toString() : "-"));
+        colScheduleEnabled.setCellValueFactory(c -> new SimpleBooleanProperty(c.getValue().isEnabled()));
+        colScheduleEnabled.setCellFactory(CheckBoxTableCell.forTableColumn(colScheduleEnabled));
+
+        btnNewSchedule.setOnAction(e -> createSchedule());
+        btnEditSchedule.setOnAction(e -> editSelectedSchedule());
+        btnDeleteSchedule.setOnAction(e -> deleteSelectedSchedule());
+        btnRunScheduleNow.setOnAction(e -> runSelectedScheduleNow());
+
+        refreshScheduleList();
+    }
+
+    private void refreshScheduleList()
+    {
+        try
+        {
+            scheduleTableView.setItems(FXCollections.observableArrayList(BackupScheduleRepository.findAll()));
+        }
+        catch (SQLException e)
+        {
+            logger.error("Failed to load schedules", e);
+        }
+    }
+
+    private void createSchedule()
+    {
+        Stage owner = getStage();
+        DialogBuilder.of(Resources.SCHEDULE_EDIT_VIEW.url(), "New Backup Schedule", owner)
+                .icon("🗓")
+                .resizable(false)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof ScheduleEditController sec)
+                    {
+                        sec.setContext(allProjectsOrEmpty(), null, schedule -> {
+                            try
+                            {
+                                BackupScheduleRepository.insert(schedule);
+                                refreshScheduleList();
+                            }
+                            catch (SQLException e)
+                            {
+                                ErrorHandler.show(owner, "Failed to save schedule", e);
+                            }
+                        });
+                    }
+                })
+                .build();
+    }
+
+    private List<Project> allProjectsOrEmpty()
+    {
+        try { return ProjectRepository.findAll(); }
+        catch (SQLException e) { return List.of(); }
+    }
+
+    private void editSelectedSchedule()
+    {
+        BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        Stage owner = getStage();
+        DialogBuilder.of(Resources.SCHEDULE_EDIT_VIEW.url(), "Edit Backup Schedule", owner)
+                .icon("🗓")
+                .resizable(false)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof ScheduleEditController sec)
+                    {
+                        sec.setContext(allProjectsOrEmpty(), selected, updated -> {
+                            try
+                            {
+                                BackupScheduleRepository.update(updated);
+                                refreshScheduleList();
+                            }
+                            catch (SQLException e)
+                            {
+                                ErrorHandler.show(owner, "Failed to update schedule", e);
+                            }
+                        });
+                    }
+                })
+                .build();
+    }
+
+    private void deleteSelectedSchedule()
+    {
+        BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setContentText("Delete schedule \"" + selected.getName() + "\"?");
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+            try
+            {
+                BackupScheduleRepository.delete(selected.getScheduleId());
+                refreshScheduleList();
+            }
+            catch (SQLException e)
+            {
+                ErrorHandler.show(getStage(), "Failed to delete schedule", e);
+            }
+        });
+    }
+
+    private void runSelectedScheduleNow()
+    {
+        BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+
+        selected.setNextRun(LocalDateTime.now().minusMinutes(1)); // force due
+        try
+        {
+            BackupScheduleRepository.update(selected);
+            NotificationUtil.showToast(getStage(), "Schedule will run within the next minute.");
+        }
+        catch (SQLException e)
+        {
+            ErrorHandler.show(getStage(), "Failed to trigger schedule", e);
+        }
+    }
+
 
     // ─── History tab ────────────────────────────────────────────────────────
 

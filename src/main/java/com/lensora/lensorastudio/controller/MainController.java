@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.controller;
 
+import com.lensora.lensorastudio.backup.engine.BackupScheduler;
 import com.lensora.lensorastudio.docking.WorkspaceDockingService;
 import com.lensora.lensorastudio.managers.FileListingManager;
 import com.lensora.lensorastudio.managers.FileManager;
@@ -19,6 +20,7 @@ import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
 
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -96,10 +98,11 @@ public class MainController
         setupMenuItems();
         setupKeyboardShortcuts();
         setupSearchField();
+        setupBackupSchedular();
 
         WindowDragManager.attach(headerBar);
-
         projectsViewModel.refresh();
+
     }
 
     // ─── Panel loading ──────────────────────────────────────────────────────
@@ -341,6 +344,20 @@ public class MainController
             }
             searchDelay.setOnFinished(e -> projectsViewModel.searchProjects(newVal));
             searchDelay.playFromStart();
+        });
+    }
+
+    private void setupBackupSchedular()
+    {
+        BackupScheduler.getInstance().setOnJobTriggered((scheduleName, job) -> {
+        NotificationUtil.showToast(
+                (Stage) headerBar.getScene().getWindow(),
+                "Scheduled backup \"" + scheduleName + "\" is running…");
+        trackBackgroundTask("Scheduled Backup: " + scheduleName, job);
+
+        job.setOnSucceeded(e -> NotificationUtil.showToast(
+                (Stage) headerBar.getScene().getWindow(),
+                "Scheduled backup \"" + scheduleName + "\" completed."));
         });
     }
 
@@ -597,5 +614,18 @@ public class MainController
     {
         int ms = AppSettings.getInstance().getFolderSaveDelayMs();
         folderSaveDelay.setDuration(Duration.millis(ms));
+    }
+
+    /**
+     * Tracks a background task in the status bar, showing its live progress/message and automatically hiding again when it finishes.
+     * @param title The title to display in the status bar.
+     * @param task The JavaFX Task to track.
+     */
+    public void trackBackgroundTask(String title, Task<?> task)
+    {
+        if (statusBarController != null)
+        {
+            statusBarController.trackTask(title, task);
+        }
     }
 }

@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.CompletableFuture;
 
+import com.lensora.lensorastudio.backup.engine.BackupScheduler;
 import com.lensora.lensorastudio.controller.MainController;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.DatabaseManager;
@@ -76,6 +77,9 @@ public class App extends Application
 
         // Splash screen renders immediately
         SplashScreen.show();
+
+        // Start BackupScheduler early so it can tick while the UI is loading.
+        startBackupScheduler();
 
         // Begin startup pipeline
         initializeDatabaseAsync(stage);
@@ -173,6 +177,7 @@ public class App extends Application
     private void installShutdownHandler(Stage stage, MainController controller)
     {
         stage.setOnCloseRequest(event -> {
+            stopBackupScheduler();
             controller.getDockingService().saveLayout();
             logger.info("[Lensora] Application intercepting shutdown sequence. Cleaning up pools...");
 
@@ -204,6 +209,22 @@ public class App extends Application
 
         ErrorHandler.show(null, "Lensora Studio failed to start.", errorDialogException);
         Platform.exit();
+    }
+
+    /**
+     * Starts the background BackupScheduler, which ticks every minute and triggers any BackupSchedules that
+     */
+    private void startBackupScheduler()
+    {
+        BackupScheduler.getInstance().start();
+    }
+
+    /**
+     * Stops the background BackupScheduler, which is called on application shutdown to ensure a clean exit.
+     */
+    private void stopBackupScheduler()
+    {
+        BackupScheduler.getInstance().stop();
     }
 
     public static void main(String[] args)

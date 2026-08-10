@@ -87,7 +87,7 @@ public class FileListingManager
                                 TableColumn<File, String> colFileDimensions,
                                 TableColumn<File, String> colFileModified,
                                 Label lblCurrentFolder, 
-                                Label lblFileCount, 
+                                Label lblFileCount,
                                 TextField fileSearchField,
                                 ToggleButton btnDetails, 
                                 ToggleButton btnList, 
@@ -144,6 +144,11 @@ public class FileListingManager
             selectedFileProperty.set(newVal);
         });
 
+        // Update label when selection changes
+        fileTable.getSelectionModel().getSelectedItems().addListener(
+            (javafx.collections.ListChangeListener<File>) change -> updateFileCountLabel()
+        );
+
         btnRefreshFileList.setOnAction(e -> {
             if (refreshCallback != null) refreshCallback.run();
         });
@@ -154,7 +159,7 @@ public class FileListingManager
         fileTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
-    public BooleanBinding moreThanOneSelectedBinding() 
+    public BooleanBinding moreThanOneSelectedBinding()
     {
         return Bindings.size(fileTable.getSelectionModel().getSelectedItems()).isNotEqualTo(1);
     }
@@ -172,7 +177,7 @@ public class FileListingManager
         {
             fileTable.getItems().clear();
             lblCurrentFolder.setText("");
-            lblFileCount.setText("");
+            updateFileCountLabel();
             return;
         }
 
@@ -182,7 +187,7 @@ public class FileListingManager
 
         fileTable.getItems().setAll(files);
         lblCurrentFolder.setText(folder.getName());
-        lblFileCount.setText(files.length + " files");
+        updateFileCountLabel();
 
         refreshActiveView();
 
@@ -574,6 +579,7 @@ public class FileListingManager
     private void displaySearchResults(List<File> results)
     {
         fileTable.getItems().setAll(results);
+        updateFileCountLabel();
         refreshActiveView();
     }
 
@@ -582,7 +588,7 @@ public class FileListingManager
         return fileTable.isFocused();
     }
 
-    public ObjectProperty<File> selectedFileProperty() 
+    public ObjectProperty<File> selectedFileProperty()
     {
         return selectedFileProperty;
     }
@@ -670,6 +676,26 @@ public class FileListingManager
         else
         {
             openFile(file);
+        }
+    }
+
+    private void updateFileCountLabel() 
+    {
+        int total = fileTable.getItems().size();
+        int selected = fileTable.getSelectionModel().getSelectedItems().size();
+
+        if (total == 0) 
+        {
+            lblFileCount.setText("0 files");
+        } 
+        else if (selected == 0) 
+        {
+            lblFileCount.setText(total + (total == 1 ? " file" : " files"));
+        } 
+        else 
+        {
+            lblFileCount.setText(String.format("%d %s (%d selected)", 
+                total, (total == 1 ? "file" : "files"), selected));
         }
     }
 }

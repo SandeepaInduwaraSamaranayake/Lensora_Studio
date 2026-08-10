@@ -4,8 +4,9 @@ import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.model.ProjectNote;
 import com.lensora.lensorastudio.repository.ProjectLastFolderRepository;
 import com.lensora.lensorastudio.repository.ProjectNoteRepository;
+import com.lensora.lensorastudio.util.DialogBuilder;
 import com.lensora.lensorastudio.util.ErrorHandler;
-import com.lensora.lensorastudio.util.NoteEditDialog;
+import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
 import javafx.application.Platform;
@@ -17,6 +18,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -232,19 +234,28 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        NoteEditDialog.show(notesContainer.getScene().getWindow(), current.getProjectId(), null)
-                .ifPresent(note -> {
-                    try
+        Stage owner = (Stage) notesContainer.getScene().getWindow();
+        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Add Note", owner)
+                .icon("📝")
+                .resizable(true)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof NoteEditController nec)
                     {
-                        ProjectNoteRepository.insert(note);
-                        loadNotes(current.getProjectId());
+                        nec.setContext(current.getProjectId(), null, note -> {
+                            try
+                            {
+                                ProjectNoteRepository.insert(note);
+                                loadNotes(current.getProjectId());
+                            }
+                            catch (SQLException e)
+                            {
+                                logger.error("Failed to save note", e);
+                                ErrorHandler.show(owner, "Failed to save note", e);
+                            }
+                        });
                     }
-                    catch (SQLException e)
-                    {
-                        logger.error("Failed to save note", e);
-                        ErrorHandler.show(null, "Failed to save note", e);
-                    }
-                });
+                })
+                .build();
     }
 
     private void editNote(ProjectNote note)
@@ -252,19 +263,28 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        NoteEditDialog.show(notesContainer.getScene().getWindow(), current.getProjectId(), note)
-                .ifPresent(updated -> {
-                    try
+        Stage owner = (Stage) notesContainer.getScene().getWindow();
+        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Edit Note", owner)
+                .icon("📝")
+                .resizable(true)
+                .withControllerConsumer(controller -> {
+                    if (controller instanceof NoteEditController nec)
                     {
-                        ProjectNoteRepository.update(updated);
-                        loadNotes(current.getProjectId());
+                        nec.setContext(current.getProjectId(), note, updated -> {
+                            try
+                            {
+                                ProjectNoteRepository.update(updated);
+                                loadNotes(current.getProjectId());
+                            }
+                            catch (SQLException e)
+                            {
+                                logger.error("Failed to update note", e);
+                                ErrorHandler.show(owner, "Failed to update note", e);
+                            }
+                        });
                     }
-                    catch (SQLException e)
-                    {
-                        logger.error("Failed to update note", e);
-                        ErrorHandler.show(null, "Failed to update note", e);
-                    }
-                });
+                })
+                .build();
     }
 
     private void deleteNote(ProjectNote note)

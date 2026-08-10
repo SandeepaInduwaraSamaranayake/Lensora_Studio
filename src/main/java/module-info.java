@@ -39,6 +39,7 @@ module com.lensora.lensorastudio
     exports com.lensora.lensorastudio.docking;
 
     exports com.lensora.lensorastudio.managers;
+    exports com.lensora.lensorastudio.backup.model;
 
     opens com.lensora.lensorastudio to javafx.fxml;
     opens com.lensora.lensorastudio.controller to javafx.fxml;
