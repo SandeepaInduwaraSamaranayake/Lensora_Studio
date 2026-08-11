@@ -41,6 +41,7 @@ public class AppSettings
     private static final String     KEY_IMAGE_CACHE_SIZE                            = "image.cache.size";
     private static final String     KEY_ZOOM_SENSITIVITY                            = "image.viewer.zoom_sensitivity";
     private static final String     KEY_BACKUP_HISTORY                              = "backup.history.paths";
+    private static final String     KEY_IMAGE_VIEWER_QUALITY                        = "image.viewer.quality";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -61,6 +62,7 @@ public class AppSettings
     public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
     public static final int         DEFAULT_IMAGE_CACHE_SIZE                        = 200;
     public static final double      DEFAULT_ZOOM_SENSITIVITY                        = 1.40;
+    public static final String      DEFAULT_IMAGE_VIEWER_QUALITY                    = ImageQuality.HIGH.name();
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -81,6 +83,28 @@ public class AppSettings
             this.displayName = displayName;
             this.atlantaFxBased = atlantaFxBased;
         }
+    }
+
+    // ----------------------- Supported image qualities ------------------------------
+
+    public enum ImageQuality
+    {
+        LOW             ("Low (800px)", 800),
+        MEDIUM          ("Medium (1600px)", 1600),
+        HIGH            ("High (2600px)", 2600),
+        ORIGINAL        ("Original (Full Resolution)", 0); // 0 = load at native size, no downscale
+
+        public final String displayName;
+        public final int maxDimension;
+
+        ImageQuality(String displayName, int maxDimension)
+        {
+            this.displayName = displayName;
+            this.maxDimension = maxDimension;
+        }
+
+        @Override
+        public String toString() { return displayName; }
     }
 
     // ----------------------------- Singleton ---------------------------------------
@@ -361,5 +385,24 @@ public class AppSettings
         List<String> paths = getBackupHistoryPaths();
         paths.remove(path);
         prefs.put(KEY_BACKUP_HISTORY, new Gson().toJson(paths));
+    }
+
+    // --------------------- Image Viewer Quality  ----------------------------
+    public ImageQuality getImageViewerQuality()
+    {
+        String saved = prefs.get(KEY_IMAGE_VIEWER_QUALITY, DEFAULT_IMAGE_VIEWER_QUALITY);
+        try
+        {
+            return ImageQuality.valueOf(saved);
+        }
+        catch (IllegalArgumentException e)
+        {
+            return ImageQuality.HIGH;
+        }
+    }
+
+    public void setImageViewerQuality(ImageQuality quality)
+    {
+        prefs.put(KEY_IMAGE_VIEWER_QUALITY, quality.name());
     }
 }

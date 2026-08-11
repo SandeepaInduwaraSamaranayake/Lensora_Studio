@@ -35,60 +35,63 @@ public class SettingsController implements DialogController
     // ----------------------------- FXML fields --------------------------------
 
     @FXML 
-    private ComboBox<AppSettings.Theme>     themeCombo;
+    private ComboBox<AppSettings.Theme>                     themeCombo;
+
+    @FXML private ComboBox<AppSettings.ImageQuality>        imageViewerPreviewQualityCombo;
 
     @FXML 
-    private ComboBox<Integer>               metadataPreviewQualityCombo;
+    private ComboBox<Integer>                               metadataPreviewQualityCombo;
 
     @FXML 
-    private Spinner<Double>                 fontSizeSpinner,
-                                            zoomSensitivitySpinner;
+    private Spinner<Double>                                 fontSizeSpinner,
+                                                            zoomSensitivitySpinner;
 
-    @FXML private Spinner<Integer>          searchDebounceSpinner, 
-                                            folderSaveDebounceSpinner,
-                                            cacheSizeSpinner;
+    @FXML private Spinner<Integer>                          searchDebounceSpinner, 
+                                                            folderSaveDebounceSpinner,
+                                                            cacheSizeSpinner;
 
     @FXML
-    private Button                          btnCancel, 
-                                            btnSave, 
-                                            btnApply, 
-                                            btnRestoreDefaults, 
-                                            btnBrowseDefaultRoot, 
-                                            btnBrowseLogDir;
+    private Button                                          btnCancel, 
+                                                            btnSave, 
+                                                            btnApply, 
+                                                            btnRestoreDefaults, 
+                                                            btnBrowseDefaultRoot, 
+                                                            btnBrowseLogDir;
 
     @FXML 
-    private HBox                            prefHeaderBar;
+    private HBox                                            prefHeaderBar;
 
     @FXML 
-    private TextField                       projectRootField, 
-                                            logDirField;
+    private TextField                                       projectRootField, 
+                                                            logDirField;
 
     @FXML
-    private CheckBox                        openOnStartupCheck, 
-                                            openLastProjectCheck, 
-                                            clearSearchOnProjectSelectCheck,
-                                            resetStatusOnClearSearchCheck,
-                                            showMetadataImagePreviewCheck;
+    private CheckBox                                        openOnStartupCheck, 
+                                                            openLastProjectCheck, 
+                                                            clearSearchOnProjectSelectCheck,
+                                                            resetStatusOnClearSearchCheck,
+                                                            showMetadataImagePreviewCheck;
 
     private final AppSettings settings = AppSettings.getInstance();
 
     private Runnable            onSettingsApplied;
 
     // ---------------- Temporary copies to revert on Cancel --------------------
-    private AppSettings.Theme   tempTheme;
-    private double              tempFontSize;
-    private String              tempProjectRoot;
-    private String              tempLogDir;
-    private boolean             tempOpenOnStartup;
-    private boolean             tempClearSearchOnSelect;
-    private boolean             tempOpenLastProject;
-    private boolean             tempResetStatusOnClearSearch;
-    private int                 tempSearchDebounce;
-    private int                 tempFolderSaveDebounce;
-    private boolean             tempShowImagePreviewInMetadata;
-    private int                 tempMetadataPreviewSize;
-    private int                 tempCacheSize;
-    private double              tempZoomSensitivity;
+    private AppSettings.Theme               tempTheme;
+    private double                          tempFontSize;
+    private String                          tempProjectRoot;
+    private String                          tempLogDir;
+    private boolean                         tempOpenOnStartup;
+    private boolean                         tempClearSearchOnSelect;
+    private boolean                         tempOpenLastProject;
+    private boolean                         tempResetStatusOnClearSearch;
+    private int                             tempSearchDebounce;
+    private int                             tempFolderSaveDebounce;
+    private boolean                         tempShowImagePreviewInMetadata;
+    private int                             tempMetadataPreviewSize;
+    private int                             tempCacheSize;
+    private double                          tempZoomSensitivity;
+    private AppSettings.ImageQuality        tempImageViewerQuality;
 
     // ----------------------------- Initialization ----------------------------
     @FXML
@@ -106,6 +109,7 @@ public class SettingsController implements DialogController
         setupZoomSensitivitySpinner();
         updateUIFromTemp();
         setupButtonActions();
+        setupImageViewerQualityCombo();
     }
 
     private void loadCurrentSettingsIntoTemp()
@@ -125,6 +129,7 @@ public class SettingsController implements DialogController
         tempMetadataPreviewSize         = settings.getMetadataPreviewSize();
         tempCacheSize                   = settings.getImageCacheSize();
         tempZoomSensitivity             = settings.getZoomSensitivity();
+        tempImageViewerQuality          = settings.getImageViewerQuality();
     }
 
     private void setupThemeCombo() 
@@ -270,6 +275,13 @@ public class SettingsController implements DialogController
         btnBrowseLogDir.setOnAction(e -> browseFolder(logDirField, "Select Default Log Directory"));
     }
 
+    private void setupImageViewerQualityCombo()
+    {
+        imageViewerPreviewQualityCombo.getItems().addAll(AppSettings.ImageQuality.values());
+        imageViewerPreviewQualityCombo.setValue(tempImageViewerQuality);
+        imageViewerPreviewQualityCombo.valueProperty().addListener((obs, old, val) -> tempImageViewerQuality = val);
+    }
+
 
     // -------- Save changes to preferences and apply to all windows ----------------
     private void applyChanges()
@@ -284,6 +296,7 @@ public class SettingsController implements DialogController
         applyLogDirectory();
         applyStartupBehaviour();
         applyUiBehaviour();
+        applyImageViewerQuality();
         if (onSettingsApplied != null)  onSettingsApplied.run();
         NotificationUtil.showToast(getOwnerWindow(), "All Settings Applied");
         logger.info("[SettingsController] Settings applied.");
@@ -425,6 +438,14 @@ public class SettingsController implements DialogController
         settings.setShowMetadataImagePreview(showMetadataImagePreviewCheck.isSelected());
     }
 
+    private void applyImageViewerQuality()
+    {
+        if (tempImageViewerQuality != settings.getImageViewerQuality())
+        {
+            settings.setImageViewerQuality(tempImageViewerQuality);
+        }
+    }
+
     private void saveAndClose()
     {
         applyChanges();
@@ -461,6 +482,7 @@ public class SettingsController implements DialogController
         tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;        
         tempCacheSize                    = AppSettings.DEFAULT_IMAGE_CACHE_SIZE;
         tempZoomSensitivity              = AppSettings.DEFAULT_ZOOM_SENSITIVITY;
+        tempImageViewerQuality           = AppSettings.ImageQuality.valueOf(AppSettings.DEFAULT_IMAGE_VIEWER_QUALITY);
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -504,11 +526,15 @@ public class SettingsController implements DialogController
         // Reset folder save debounce
         folderSaveDebounceSpinner.getValueFactory().setValue(tempFolderSaveDebounce);
 
+        // Reset image viewer quality
+        imageViewerPreviewQualityCombo.setValue(tempImageViewerQuality);
+
         // Immediately preview the defaults
         ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
         // Also apply default theme to this window (but not save)
         ThemeManager.applyTheme(tempTheme);
         ThemeManager.applyFontSizeToAllWindows(tempFontSize);
+
     }
 
     private void browseFolder(TextField target, String title) 

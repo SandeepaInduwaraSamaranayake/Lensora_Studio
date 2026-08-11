@@ -19,6 +19,7 @@ import javafx.geometry.Point2D;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -56,6 +57,7 @@ public class ImageViewerNode
     private final BorderPane root;
 
     private final ObjectProperty<File> currentFile = new SimpleObjectProperty<>();
+    private final ComboBox<AppSettings.ImageQuality> qualityCombo = new ComboBox<>();
     private List<File> siblings = List.of();
     private int currentIndex = -1;
 
@@ -270,9 +272,11 @@ public class ImageViewerNode
             zoomAnimation.stop();
         }
 
-        Image image = ImageCache.getOrLoad(file, 1600, 0);
-        imageView.setImage(image);
         currentFile.set(file);
+        AppSettings.ImageQuality quality = AppSettings.getInstance().getImageViewerQuality();
+        
+        Image image = ImageCache.getOrLoad(file, quality.maxDimension, 0);
+        imageView.setImage(image);
 
         zoom.set(1.0);
         anchorArmed = false;
@@ -365,6 +369,8 @@ public class ImageViewerNode
         Button fullScreenBtn = createIconButton("fas-expand", "Toggle Full Screen");
         fullScreenBtn.setOnAction(e -> toggleFullScreen());
 
+        setupQualityCombo();
+
         Region leftSpacer = new Region();
         Region rightSpacer = new Region();
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
@@ -373,7 +379,7 @@ public class ImageViewerNode
         toolbar.getChildren().addAll(
                 prevBtn, leftSpacer, zoomOutBtn, zoomInBtn, zoomResetBtn,
                 rotateLeftBtn, rotateRightBtn,
-                fullScreenBtn, rightSpacer, nextBtn
+                fullScreenBtn, qualityCombo, rightSpacer, nextBtn
         );
 
         return toolbar;
@@ -395,6 +401,32 @@ public class ImageViewerNode
         if (root.getScene() == null) return;
         Stage stage = (Stage) root.getScene().getWindow();
         stage.setFullScreen(!stage.isFullScreen());
+    }
+
+    private void setupQualityCombo()
+    {
+        qualityCombo.getItems().addAll(AppSettings.ImageQuality.values());
+        qualityCombo.setValue(AppSettings.getInstance().getImageViewerQuality());
+        qualityCombo.setPrefWidth(150);
+        Tooltip.install(qualityCombo, new Tooltip("Image Quality"));
+
+        qualityCombo.valueProperty().addListener((obs, old, newQuality) -> {
+            if (newQuality == null) return;
+            AppSettings.getInstance().setImageViewerQuality(newQuality);
+            reloadCurrentImageAtQuality(newQuality);
+        });
+    }
+
+    private void reloadCurrentImageAtQuality(AppSettings.ImageQuality quality)
+    {
+        File file = currentFile.get();
+        if (file == null) return;
+
+        Image image = ImageCache.getOrLoad(file, quality.maxDimension, 0);
+        imageView.setImage(image);
+        // Zoom/rotation/pan state is intentionally preserved - the user is
+        // just requesting a sharper/lighter version of the same view, not
+        // resetting their place in the image.
     }
 
     public Parent getNode()
