@@ -6,6 +6,7 @@ import com.lensora.lensorastudio.controller.MainController;
 
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.TextField;
@@ -40,7 +41,14 @@ import org.slf4j.Logger;
  * <h3>Usage</h3>
  * <pre>{@code
  * // In any controller's initialize():
- * WindowDragManager.attach(headerBarNode);
+ * // Attach all behaviors (default):
+ *      WindowDragManager.attach(headerBarNode);
+ * 
+ * // Attach only specific behaviors using fluent configuration:
+ *      WindowDragManager.attach(headerBarNode)
+ *          .enableSnapMaximise(false)
+ *          .withDrag(true)
+ *          .withDoubleClickMaximize(false);
  * }</pre>
  */
 public class WindowDragManager
@@ -68,6 +76,13 @@ public class WindowDragManager
      */
     private static final double RESTORED_Y_ANCHOR = 15.0;
 
+    // ─── Feature Flags ─────────────────────────────────────────────────────────
+
+    private boolean dragEnabled = true;
+    private boolean snapToMaximizeEnabled = true;
+    private boolean pullDownRestoreEnabled = true;
+    private boolean doubleClickMaximizeEnabled = true;
+
     // ─── State ────────────────────────────────────────────────────────────────
 
     private final Node  titleBarNode;
@@ -86,6 +101,7 @@ public class WindowDragManager
 
     /** Whether the window is currently in the maximised state. */
     private boolean isMaximised = false;
+    private boolean isDraggingControl = false;
 
     /**
      * True while a snap-maximise is in flight. Blocks re-entry on platforms
@@ -118,6 +134,49 @@ public class WindowDragManager
     {
         return new WindowDragManager(titleBarNode);
     }
+
+    // ─── Fluent Feature Toggles ───────────────────────────────────────────────
+
+    /** Enables or disables free window dragging. */
+    public WindowDragManager withDrag(boolean enabled)
+    {
+        this.dragEnabled = enabled;
+        return this;
+    }
+
+    /** Enables or disables snapping to maximize when dragging to the top screen edge. */
+    public WindowDragManager withSnapToMaximize(boolean enabled)
+    {
+        this.snapToMaximizeEnabled = enabled;
+        return this;
+    }
+
+    /** Enables or disables pulling down from a maximized window to restore it. */
+    public WindowDragManager withPullDownRestore(boolean enabled)
+    {
+        this.pullDownRestoreEnabled = enabled;
+        return this;
+    }
+
+    /** Enables or disables double-clicking the title bar to toggle maximize state. */
+    public WindowDragManager withDoubleClickMaximize(boolean enabled)
+    {
+        this.doubleClickMaximizeEnabled = enabled;
+        return this;
+    }
+
+    // Getters and Setters
+    public boolean isDragEnabled() { return dragEnabled; }
+    public void setDragEnabled(boolean dragEnabled) { this.dragEnabled = dragEnabled; }
+
+    public boolean isSnapToMaximizeEnabled() { return snapToMaximizeEnabled; }
+    public void setSnapToMaximizeEnabled(boolean snapToMaximizeEnabled) { this.snapToMaximizeEnabled = snapToMaximizeEnabled; }
+
+    public boolean isPullDownRestoreEnabled() { return pullDownRestoreEnabled; }
+    public void setPullDownRestoreEnabled(boolean pullDownRestoreEnabled) { this.pullDownRestoreEnabled = pullDownRestoreEnabled; }
+
+    public boolean isDoubleClickMaximizeEnabled() { return doubleClickMaximizeEnabled; }
+    public void setDoubleClickMaximizeEnabled(boolean doubleClickMaximizeEnabled) { this.doubleClickMaximizeEnabled = doubleClickMaximizeEnabled; }
 
     // ─── Wiring ──────────────────────────────────────────────────────────────
 
@@ -152,7 +211,7 @@ public class WindowDragManager
      *
      * @param scene The scene that has just been assigned to the node.
      */
-    private void wireWindowListener(javafx.scene.Scene scene)
+    private void wireWindowListener(Scene scene)
     {
         scene.windowProperty().addListener((obsWindow, oldWindow, newWindow) -> {
             if (!(newWindow instanceof Stage s)) return;
@@ -210,7 +269,11 @@ public class WindowDragManager
 
     private void onPressed(MouseEvent e)
     {
-        if (!e.isPrimaryButtonDown() || isInteractiveControl(e)) return;
+        if (!e.isPrimaryButtonDown()) return;
+
+        // Cache interactive control check once on press instead of on every drag frame
+        isDraggingControl = isInteractiveControl(e);
+        if (isDraggingControl) return;
 
         if (isMaximised)
         {
@@ -233,12 +296,22 @@ public class WindowDragManager
 
     private void onDragged(MouseEvent e)
     {
-        if (!e.isPrimaryButtonDown() || isInteractiveControl(e)) return;
+        // Fast exit if user started drag on a button or textfield
+        if (!e.isPrimaryButtonDown() || isDraggingControl) return;
 
+        // Fast Path: Free movement without querying screen bounds continuously
+        if (dragEnabled && !isMaximised && !isSnapping && e.getScreenY() > SNAP_THRESHOLD + 50)
+        {
+            stage.setX(e.getScreenX() - dragOffsetX);
+            stage.setY(e.getScreenY() - dragOffsetY);
+            return;
+        }
+
+        // Slow Path: Only query screen geometry when near edges or handling maximized pull-down
         Rectangle2D screen = screenFor(e.getScreenX(), e.getScreenY());
 
         // ── Pull-down restore ──────────────────────────────────────────────
-        if (isMaximised && e.getScreenY() > screen.getMinY() + RESTORE_THRESHOLD)
+        if (pullDownRestoreEnabled && isMaximised && e.getScreenY() > screen.getMinY() + RESTORE_THRESHOLD)
         {
             // Proportional X anchor: preserves the cursor's relative position
             // across the title bar instead of always snapping to the centre
@@ -252,14 +325,14 @@ public class WindowDragManager
         }
 
         // ── Top-edge snap ──────────────────────────────────────────────────
-        if (!isMaximised && !isSnapping && e.getScreenY() <= screen.getMinY() + SNAP_THRESHOLD)
+        if (snapToMaximizeEnabled && !isMaximised && !isSnapping && e.getScreenY() <= screen.getMinY() + SNAP_THRESHOLD)
         {
             snapToMaximise(screen);
             return;
         }
 
         // ── Free movement ──────────────────────────────────────────────────
-        if (!isMaximised && !isSnapping)
+        if (dragEnabled && !isMaximised && !isSnapping)
         {
             stage.setX(e.getScreenX() - dragOffsetX);
             stage.setY(e.getScreenY() - dragOffsetY);
@@ -277,6 +350,8 @@ public class WindowDragManager
 
     private void onClicked(MouseEvent e)
     {
+        if (!doubleClickMaximizeEnabled) return;
+
         if (e.getClickCount() != 2
                 || e.getButton() != MouseButton.PRIMARY
                 || isInteractiveControl(e)) return;

@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.controller;
 
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
 
@@ -8,6 +9,8 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.layout.HBox;
 
 public class StatusBarController
@@ -19,6 +22,23 @@ public class StatusBarController
 
     private Task<?> currentTrackedTask;
     private final java.util.Queue<Runnable> pendingTrackRequests = new java.util.LinkedList<>();
+
+    @FXML
+    public void initialize()
+    {
+        // Copy path to clipboard on click
+        lblStatusPath.setOnMouseClicked(event -> {
+            String path = lblStatusPath.getText();
+            if (path != null && !path.trim().isEmpty()) 
+            {
+                Clipboard clipboard = Clipboard.getSystemClipboard();
+                ClipboardContent content = new ClipboardContent();
+                content.putString(path);
+                clipboard.setContent(content);
+                NotificationUtil.showToast(lblStatusPath, "The current path has been copied to the clipboard.");
+            }
+        });
+    }
 
     public void bind(StatusBarViewModel vm, ProjectsViewModel projectsViewModel)
     {
@@ -88,8 +108,6 @@ public class StatusBarController
             pendingTrackRequests.add(startTracking);
         }
     }
-
-    
 
     // Exposed so FileExplorerController can attach the FileCopyTask progress bindings.
     public HBox getProgressContainer()   { return progressContainer; }

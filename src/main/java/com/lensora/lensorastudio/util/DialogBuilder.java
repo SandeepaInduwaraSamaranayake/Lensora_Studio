@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.util;
 
 import com.lensora.lensorastudio.controller.DialogController;
+import com.lensora.lensorastudio.managers.WindowDragManager;
 import com.lensora.lensorastudio.services.ThemeManager;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
@@ -8,12 +9,9 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -91,6 +89,7 @@ public class DialogBuilder
      * Builds the dialog, loads the FXML, applies styles, and sets up dragging.
      * @return the created {@link Stage} (already shown)
      */
+    @SuppressWarnings("deprecation")
     public Stage build() 
     {
         try 
@@ -113,7 +112,7 @@ public class DialogBuilder
 
             // Create a new secondary stage (window)
             Stage stage = new Stage();
-            stage.initStyle(StageStyle.UNDECORATED);
+            stage.initStyle(StageStyle.EXTENDED);
             stage.initModality(modality);
             stage.setTitle(title);
             stage.setResizable(resizable);
@@ -167,17 +166,18 @@ public class DialogBuilder
             stage.setOnCloseRequest(event -> {
                 if (!requestClose(controller, stage))
                 {
+                    logger.info("[Lensora] Dialog Builder: Close request denied by controller for " + title + " window.");
                     event.consume();
                 }
             });
 
-            setupWindowDrag(stage, header);
+            setupWindowDragMaximize(header);
 
             stage.show();
             return stage;
 
         } 
-        catch (IOException ex) 
+        catch (IOException ex)
         {
             logger.error("Failed to load FXML: {}", fxmlUrl, ex);
             return null;
@@ -191,22 +191,14 @@ public class DialogBuilder
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setSpacing(8);
-        header.setPadding(new Insets(8, 8, 8, 8));
+        header.setPadding(new Insets(2, 8, 2, 8));
 
         Label iconLabel = new Label(icon);
         iconLabel.setFont(Font.font(25));
 
         Label titleLabel = new Label(title);
 
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-
-        Button closeButton = new Button("✕");
-        closeButton.setPrefSize(35.0, 35.0);
-        closeButton.setFont(Font.font(11));
-        closeButton.setOnAction(e -> requestClose(controller, stage));
-
-        header.getChildren().addAll(iconLabel, titleLabel, spacer, closeButton);
+        header.getChildren().addAll(iconLabel, titleLabel);
         return header;
     }
 
@@ -221,21 +213,18 @@ public class DialogBuilder
         {
             dc.onClosing();
         }
+        logger.info("[Lensora] Dialog Builder: Closing " + title + " window.");
         stage.close();
         return true;
     }
 
-    // --- DRAG SETUP ---
-    private void setupWindowDrag(Stage stage, Node header) 
+    // --- DRAG & MAXIMIZE SETUP ---
+    private void setupWindowDragMaximize(Node header)
     {
-        final double[] dragDelta = new double[2];
-        header.setOnMousePressed(e -> {
-            dragDelta[0] = e.getSceneX();
-            dragDelta[1] = e.getSceneY();
-        });
-        header.setOnMouseDragged(e -> {
-            stage.setX(e.getScreenX() - dragDelta[0]);
-            stage.setY(e.getScreenY() - dragDelta[1]);
-        });
+        WindowDragManager.attach(header)
+            .withDrag(true)
+            .withDoubleClickMaximize(resizable)
+            .withSnapToMaximize(resizable)
+            .withPullDownRestore(resizable);
     }
 }
