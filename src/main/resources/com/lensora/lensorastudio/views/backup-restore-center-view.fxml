@@ -20,16 +20,23 @@
                         <Label text="Create a Backup" style="-fx-font-weight: bold;"/>
                         <Label text="Choose a project and destination to create a self-contained .lsbak archive." wrapText="true" style="-fx-opacity: 0.75;"/>
 
-                        <GridPane hgap="12" vgap="10">
+                        <!-- Set GridPane to grow vertically inside the VBox -->
+                        <GridPane hgap="12" vgap="10" VBox.vgrow="ALWAYS">
                             <columnConstraints>
                                 <ColumnConstraints minWidth="120" prefWidth="130"/>
                                 <ColumnConstraints hgrow="ALWAYS"/>
                             </columnConstraints>
+                            <rowConstraints>
+                                <!-- Row 0 (ListView) takes all vertical expansion space -->
+                                <RowConstraints vgrow="ALWAYS"/>
+                                <RowConstraints vgrow="NEVER"/>
+                            </rowConstraints>
 
                             <Label text="Projects" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
                             <VBox spacing="4" GridPane.columnIndex="1" GridPane.rowIndex="0">
                                 <CheckBox fx:id="selectAllProjectsCheckBox" text="Select All"/>
-                                <ListView fx:id="backupProjectListView" prefHeight="200"/>
+                                <!-- Allow ListView to expand vertically -->
+                                <ListView fx:id="backupProjectListView" VBox.vgrow="ALWAYS" maxHeight="Infinity"/>
                             </VBox>
 
                             <Label text="Destination" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
@@ -71,7 +78,8 @@
                         <Label text="Restore from Backup" style="-fx-font-weight: bold;"/>
                         <Label text="Select one or more .lsbak files. Each will be restored into its own subfolder under the chosen destination." wrapText="true" style="-fx-opacity: 0.75;"/>
 
-                        <ListView fx:id="restoreFileListView" prefHeight="160"/>
+                        <!-- Allow ListView to expand vertically -->
+                        <ListView fx:id="restoreFileListView" VBox.vgrow="ALWAYS" maxHeight="Infinity"/>
 
                         <HBox spacing="6">
                             <Button fx:id="btnAddRestoreFiles" text="Add Files…"/>
