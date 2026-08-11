@@ -125,7 +125,7 @@ public class NewProjectController implements DialogController
     private void setupStatusCombo() 
     {
         cmbStatus.getItems().setAll(Project.ALL_STATUSES);
-        cmbStatus.setValue(Project.STATUS_BOOKED);
+        cmbStatus.setValue(AppSettings.getInstance().getDefaultProjectStatus());
     }
 
     private void setupFolderTemplates() 
@@ -139,7 +139,14 @@ public class NewProjectController implements DialogController
             {
                 cmbFolderTemplate.getItems().add(t.name());
             }
-            cmbFolderTemplate.setValue("(None - empty folder)");
+            
+            int defaultTemplateId = AppSettings.getInstance().getDefaultFolderTemplateId();
+            String defaultName = templates.stream()
+                    .filter(t -> t.id() == defaultTemplateId)
+                    .map(FolderTemplateRepository.FolderTemplate::name)
+                    .findFirst()
+                    .orElse("(None - empty folder)");
+            cmbFolderTemplate.setValue(defaultName);
         } 
         catch (SQLException e) 
         {

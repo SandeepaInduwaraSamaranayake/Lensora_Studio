@@ -7,6 +7,7 @@ import java.util.prefs.Preferences;
 
 import com.google.gson.Gson;
 import  com.lensora.lensorastudio.model.ExternalApp;
+import com.lensora.lensorastudio.model.Project;
 
 /**
  * Singleton that persists user-configurable UI preferences using the Java
@@ -42,6 +43,8 @@ public class AppSettings
     private static final String     KEY_ZOOM_SENSITIVITY                            = "image.viewer.zoom_sensitivity";
     private static final String     KEY_BACKUP_HISTORY                              = "backup.history.paths";
     private static final String     KEY_IMAGE_VIEWER_QUALITY                        = "image.viewer.quality";
+    private static final String     KEY_DEFAULT_FOLDER_TEMPLATE_ID                  = "project.default_template_id";
+    private static final String     KEY_DEFAULT_PROJECT_STATUS                      = "project.default_status";
 
     // ------------------------------- Defaults --------------------------------------
 
@@ -63,6 +66,8 @@ public class AppSettings
     public static final int         DEFAULT_IMAGE_CACHE_SIZE                        = 200;
     public static final double      DEFAULT_ZOOM_SENSITIVITY                        = 1.40;
     public static final String      DEFAULT_IMAGE_VIEWER_QUALITY                    = ImageQuality.HIGH.name();
+    public static final int         DEFAULT_FOLDER_TEMPLATE_ID                      = -1; // -1 = "(None - empty folder)"
+    public static final String      DEFAULT_PROJECT_STATUS                          = Project.STATUS_BOOKED;
 
     // --------------------------- Supported themes ----------------------------------
 
@@ -404,5 +409,27 @@ public class AppSettings
     public void setImageViewerQuality(ImageQuality quality)
     {
         prefs.put(KEY_IMAGE_VIEWER_QUALITY, quality.name());
+    }
+
+    // --------------------- Default Folder Template ID  ----------------------------
+    public int getDefaultFolderTemplateId()
+    {
+        return prefs.getInt(KEY_DEFAULT_FOLDER_TEMPLATE_ID, DEFAULT_FOLDER_TEMPLATE_ID);
+    }
+
+    public void setDefaultFolderTemplateId(int templateId)
+    {
+        prefs.putInt(KEY_DEFAULT_FOLDER_TEMPLATE_ID, templateId);
+    }
+
+    // --------------------- Default Project Status  ----------------------------
+    public String getDefaultProjectStatus()
+    {
+        return prefs.get(KEY_DEFAULT_PROJECT_STATUS, DEFAULT_PROJECT_STATUS);
+    }
+
+    public void setDefaultProjectStatus(String status)
+    {
+        prefs.put(KEY_DEFAULT_PROJECT_STATUS, status);
     }
 }

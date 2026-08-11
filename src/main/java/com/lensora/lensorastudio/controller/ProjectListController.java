@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.controller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -47,7 +48,15 @@ public class ProjectListController
 
         cmbStatusFilter.getItems().add("All Statuses");
         cmbStatusFilter.getItems().addAll(Project.ALL_STATUSES);
-        cmbStatusFilter.setValue("All Statuses");
+        
+        // Apply the user's configured default status filter on first load,
+        // instead of always defaulting to "All Statuses".
+        String defaultStatus = AppSettings.getInstance().getDefaultProjectStatus();
+        String initialFilter = Arrays.asList(Project.ALL_STATUSES).contains(defaultStatus)
+                ? defaultStatus : "All Statuses";
+        cmbStatusFilter.setValue(initialFilter);
+        viewModel.filterByStatus(initialFilter);
+
         cmbStatusFilter.valueProperty().addListener((obs, old, val) -> {
             viewModel.filterByStatus(val);
             updateCountLabel();

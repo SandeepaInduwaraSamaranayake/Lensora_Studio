@@ -1,11 +1,14 @@
 package com.lensora.lensorastudio.controller;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.repository.FolderTemplateRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.services.ThemeManager;
 import com.lensora.lensorastudio.util.Dialogs;
@@ -31,6 +34,10 @@ import javafx.util.StringConverter;
 public class SettingsController implements DialogController
 {
     private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
+    
+    // Constant for the empty template state with a Sentinel Object
+    private static final FolderTemplateRepository.FolderTemplate NONE_TEMPLATE = 
+            new FolderTemplateRepository.FolderTemplate(-1, "(None - empty folder)", null);
 
     // ----------------------------- FXML fields --------------------------------
 
@@ -38,6 +45,10 @@ public class SettingsController implements DialogController
     private ComboBox<AppSettings.Theme>                     themeCombo;
 
     @FXML private ComboBox<AppSettings.ImageQuality>        imageViewerPreviewQualityCombo;
+
+    @FXML private ComboBox<String>                          defaultStatusCombo;
+
+    @FXML private ComboBox<FolderTemplateRepository.FolderTemplate> defaultTemplateCombo;
 
     @FXML 
     private ComboBox<Integer>                               metadataPreviewQualityCombo;
@@ -92,6 +103,8 @@ public class SettingsController implements DialogController
     private int                             tempCacheSize;
     private double                          tempZoomSensitivity;
     private AppSettings.ImageQuality        tempImageViewerQuality;
+    private int                             tempDefaultTemplateId;
+    private String                          tempDefaultStatus;
 
     // ----------------------------- Initialization ----------------------------
     @FXML
@@ -110,6 +123,7 @@ public class SettingsController implements DialogController
         updateUIFromTemp();
         setupButtonActions();
         setupImageViewerQualityCombo();
+        setupProjectDefaultsCombos();
     }
 
     private void loadCurrentSettingsIntoTemp()
@@ -130,6 +144,8 @@ public class SettingsController implements DialogController
         tempCacheSize                   = settings.getImageCacheSize();
         tempZoomSensitivity             = settings.getZoomSensitivity();
         tempImageViewerQuality          = settings.getImageViewerQuality();
+        tempDefaultTemplateId           = settings.getDefaultFolderTemplateId();
+        tempDefaultStatus               = settings.getDefaultProjectStatus();
     }
 
     private void setupThemeCombo() 
@@ -282,6 +298,56 @@ public class SettingsController implements DialogController
         imageViewerPreviewQualityCombo.valueProperty().addListener((obs, old, val) -> tempImageViewerQuality = val);
     }
 
+    private void setupProjectDefaultsCombos()
+    {
+        // Status combo - static list, same source as NewProjectController
+        defaultStatusCombo.getItems().setAll(Project.ALL_STATUSES);
+        defaultStatusCombo.setValue(tempDefaultStatus);
+        defaultStatusCombo.valueProperty().addListener((obs, old, val) -> tempDefaultStatus = val);
+
+        // Template combo - loaded from DB, same source as NewProjectController
+        try
+        {
+            List<FolderTemplateRepository.FolderTemplate> templates = FolderTemplateRepository.findAll();
+            
+            defaultTemplateCombo.getItems().clear();
+            defaultTemplateCombo.getItems().add(NONE_TEMPLATE);
+            defaultTemplateCombo.getItems().addAll(templates);
+
+            // Tell JavaFX how to render the object in the dropdown
+            defaultTemplateCombo.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(FolderTemplateRepository.FolderTemplate template) 
+                {
+                    return template == null ? "" : template.name();
+                }
+
+                @Override
+                public FolderTemplateRepository.FolderTemplate fromString(String string) 
+                {
+                    return null;
+                }
+            });
+
+            // Resolve current selection by ID
+            FolderTemplateRepository.FolderTemplate currentSelection = templates.stream()
+                    .filter(t -> t.id() == tempDefaultTemplateId)
+                    .findFirst()
+                    .orElse(NONE_TEMPLATE);
+
+            defaultTemplateCombo.setValue(currentSelection);
+
+            // Clean listener using type-safe IDs
+            defaultTemplateCombo.valueProperty().addListener((obs, old, val) -> {
+                tempDefaultTemplateId = (val != null) ? val.id() : -1;
+            });
+        }
+        catch (SQLException e)
+        {
+            logger.error("Failed to load folder templates for settings", e);
+        }
+    }
+
 
     // -------- Save changes to preferences and apply to all windows ----------------
     private void applyChanges()
@@ -297,6 +363,7 @@ public class SettingsController implements DialogController
         applyStartupBehaviour();
         applyUiBehaviour();
         applyImageViewerQuality();
+        applyProjectDefaults();
         if (onSettingsApplied != null)  onSettingsApplied.run();
         NotificationUtil.showToast(getOwnerWindow(), "All Settings Applied");
         logger.info("[SettingsController] Settings applied.");
@@ -446,6 +513,12 @@ public class SettingsController implements DialogController
         }
     }
 
+    private void applyProjectDefaults()
+    {
+        settings.setDefaultFolderTemplateId(tempDefaultTemplateId);
+        settings.setDefaultProjectStatus(tempDefaultStatus);
+    }
+
     private void saveAndClose()
     {
         applyChanges();
@@ -483,6 +556,8 @@ public class SettingsController implements DialogController
         tempCacheSize                    = AppSettings.DEFAULT_IMAGE_CACHE_SIZE;
         tempZoomSensitivity              = AppSettings.DEFAULT_ZOOM_SENSITIVITY;
         tempImageViewerQuality           = AppSettings.ImageQuality.valueOf(AppSettings.DEFAULT_IMAGE_VIEWER_QUALITY);
+        tempDefaultTemplateId            = AppSettings.DEFAULT_FOLDER_TEMPLATE_ID;
+        tempDefaultStatus                = AppSettings.DEFAULT_PROJECT_STATUS;
 
         // Update UI
         themeCombo.setValue(tempTheme);
@@ -529,12 +604,17 @@ public class SettingsController implements DialogController
         // Reset image viewer quality
         imageViewerPreviewQualityCombo.setValue(tempImageViewerQuality);
 
+        // Reset Template
+        defaultTemplateCombo.setValue(NONE_TEMPLATE);
+
+        // Reset Status
+        defaultStatusCombo.setValue(tempDefaultStatus);
+
         // Immediately preview the defaults
         ThemeManager.applyFontSizeToScene(fontSizeSpinner.getScene(), tempFontSize);
         // Also apply default theme to this window (but not save)
         ThemeManager.applyTheme(tempTheme);
         ThemeManager.applyFontSizeToAllWindows(tempFontSize);
-
     }
 
     private void browseFolder(TextField target, String title) 
