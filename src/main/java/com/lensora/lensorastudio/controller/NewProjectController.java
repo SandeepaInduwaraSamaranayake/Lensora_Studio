@@ -2,10 +2,10 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.repository.FolderTemplateRepository;
+import com.lensora.lensorastudio.repository.FolderTemplateRepository.FolderTemplate;
 import com.lensora.lensorastudio.repository.ProjectRepository;
 import com.lensora.lensorastudio.services.AppSettings;
 
-import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -13,6 +13,7 @@ import javafx.scene.layout.HBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.stage.WindowEvent;
+import javafx.util.StringConverter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.LocalDate;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -45,7 +46,10 @@ public class NewProjectController implements DialogController
                             fldBalanceAmount, fldProjectPath;
 
     @FXML 
-    private ComboBox<String> cmbStatus, cmbFolderTemplate;
+    private ComboBox<String> cmbStatus;
+
+    @FXML 
+    private ComboBox<FolderTemplateRepository.FolderTemplate> cmbFolderTemplate;
 
     @FXML 
     private DatePicker dpEventDate, dpDueDate;
@@ -68,6 +72,7 @@ public class NewProjectController implements DialogController
 
     private ToggleGroup typeGroup;
     private String selectedPrefix = "CUS"; // default
+    private List<FolderTemplate> cachedTemplates = new ArrayList<>();
     private List<String> currentTemplateFolders;
     private Consumer<Integer> onProjectCreated;
 
@@ -77,16 +82,59 @@ public class NewProjectController implements DialogController
     public void initialize() 
     {
         logger.info("[NewProjectController] Initializing NewProjectController...");
+        setupFolderTemplates(); // Load templates first so they are available for typeGroup
         setupTypeGroup();
         setupStatusCombo();
-        setupFolderTemplates();
         setupAutoNumberGeneration();
         setupBalanceCalculation();
         setupTemplatePreview();
         setDefaultValues();
     }
 
-    private void setupTypeGroup() 
+    private void setupFolderTemplates() 
+    {
+        try 
+        {
+            // Cache DB templates into memory
+            cachedTemplates = FolderTemplateRepository.findAll();
+
+            // Set up custom StringConverter for object rendering
+            cmbFolderTemplate.setConverter(new StringConverter<>() {
+                @Override
+                public String toString(FolderTemplate template) 
+                {
+                    return (template == null) ? "(None - empty folder)" : template.name();
+                }
+
+                @Override
+                public FolderTemplate fromString(String string) 
+                {
+                    return null;
+                }
+            });
+
+            cmbFolderTemplate.getItems().clear();
+            cmbFolderTemplate.getItems().add(null); // Represents "(None - empty folder)"
+            cmbFolderTemplate.getItems().addAll(cachedTemplates);
+
+            // Match default setting ID to template object
+            int defaultTemplateId = AppSettings.getInstance().getDefaultFolderTemplateId();
+            FolderTemplate defaultTemplate = cachedTemplates.stream()
+                    .filter(t -> t.id() == defaultTemplateId)
+                    .findFirst()
+                    .orElse(null);
+
+            cmbFolderTemplate.setValue(defaultTemplate);
+        }
+        catch (SQLException e) 
+        {
+            logger.error("Failed to load folder templates", e);
+            lblFormError.setText("Could not load folder templates.");
+            lblFormError.setVisible(true);
+        }
+    }
+
+    private void setupTypeGroup()
     {
         // Add toggles into a group, so only one can be selected
         typeGroup = new ToggleGroup();
@@ -99,22 +147,22 @@ public class NewProjectController implements DialogController
             if (newVal == rbWedding) 
             {
                 selectedPrefix = "WED";
-                cmbFolderTemplate.setValue("Wedding Standard");
+                selectTemplateByName("Wedding Standard");
             } 
             else if (newVal == rbEvent) 
             {
                 selectedPrefix = "EVT";
-                cmbFolderTemplate.setValue("Event Standard");
+                selectTemplateByName("Event Standard");
             } 
             else if (newVal == rbGraduation) 
             {
                 selectedPrefix = "GRD";
-                cmbFolderTemplate.setValue("Graduation Standard");
+                selectTemplateByName("Graduation Standard");
             } 
             else if (newVal == rbCustom) 
             {
                 selectedPrefix = "CUS";
-                cmbFolderTemplate.setValue("(None - empty folder)");
+                selectTemplateByName(null);
             }
             generateProjectNumber();
         });
@@ -122,38 +170,26 @@ public class NewProjectController implements DialogController
         rbWedding.setSelected(true);
     }
 
-    private void setupStatusCombo() 
+    private void selectTemplateByName(String templateName) 
+    {
+        if (templateName == null || cachedTemplates == null) 
+        {
+            cmbFolderTemplate.setValue(null);
+            return;
+        }
+
+        FolderTemplate match = cachedTemplates.stream()
+                .filter(t -> t.name().equalsIgnoreCase(templateName))
+                .findFirst()
+                .orElse(null);
+
+        cmbFolderTemplate.setValue(match);
+    }
+
+    private void setupStatusCombo()
     {
         cmbStatus.getItems().setAll(Project.ALL_STATUSES);
         cmbStatus.setValue(AppSettings.getInstance().getDefaultProjectStatus());
-    }
-
-    private void setupFolderTemplates() 
-    {
-        try 
-        {
-            List<FolderTemplateRepository.FolderTemplate> templates = FolderTemplateRepository.findAll();
-            cmbFolderTemplate.getItems().clear();
-            cmbFolderTemplate.getItems().add("(None - empty folder)");
-            for (var t : templates) 
-            {
-                cmbFolderTemplate.getItems().add(t.name());
-            }
-            
-            int defaultTemplateId = AppSettings.getInstance().getDefaultFolderTemplateId();
-            String defaultName = templates.stream()
-                    .filter(t -> t.id() == defaultTemplateId)
-                    .map(FolderTemplateRepository.FolderTemplate::name)
-                    .findFirst()
-                    .orElse("(None - empty folder)");
-            cmbFolderTemplate.setValue(defaultName);
-        } 
-        catch (SQLException e) 
-        {
-            logger.error("Failed to load folder templates", e);
-            lblFormError.setText("Could not load folder templates.");
-            lblFormError.setVisible(true);
-        }
     }
 
     private void setupAutoNumberGeneration() 
@@ -212,38 +248,26 @@ public class NewProjectController implements DialogController
 
     private void setupTemplatePreview() 
     {
-        cmbFolderTemplate.valueProperty().addListener((obs, old, newVal) -> {
-            if (newVal == null || newVal.equals("(None - empty folder)")) 
+        cmbFolderTemplate.valueProperty().addListener((obs, old, selectedTemplate) -> {
+            // Clear current folders to prevent state leak on errors or deselection
+            currentTemplateFolders = null;
+
+            if (selectedTemplate == null) 
             {
                 lblTemplatePreview.setText("No template selected");
-                currentTemplateFolders = null;
                 return;
             }
 
             try 
             {
-                int templateId = -1;
-                for (var t : FolderTemplateRepository.findAll()) 
-                {
-                    if (t.name().equals(newVal)) 
-                    {
-                        templateId = t.id();
-                        break;
-                    }
-                }
-                if (templateId == -1) 
-                {
-                    lblTemplatePreview.setText("Template not found");
-                    return;
-                }
-                List<String> folders = FolderTemplateRepository.getFolderNames(templateId);
+                List<String> folders = FolderTemplateRepository.getFolderNames(selectedTemplate.id());
                 currentTemplateFolders = folders;
                 lblTemplatePreview.setText(String.join("\n", folders));
             } 
             catch (SQLException e) 
             {
-                logger.error("Failed to load template preview", e);
-                lblTemplatePreview.setText("Error loading template");
+                logger.error("Failed to load template folders for ID: {}", selectedTemplate.id(), e);
+                lblTemplatePreview.setText("Error loading template preview");
             }
         });
     }
@@ -296,6 +320,7 @@ public class NewProjectController implements DialogController
         // Get root path and project number
         String root = fldProjectPath.getText().trim();
         String projectNumber = fldProjectNumber.getText().trim();
+
         // Build the actual project folder path
         String projectFolderPath = root + File.separator + projectNumber;
         project.setProjectPath(projectFolderPath);
@@ -325,7 +350,7 @@ public class NewProjectController implements DialogController
             // Notify MainController on the FX thread
             if (onProjectCreated != null) 
             {
-                Platform.runLater(() -> onProjectCreated.accept(projectId));
+                onProjectCreated.accept(projectId);
             }
             closeDialog();
         });
@@ -421,7 +446,7 @@ public class NewProjectController implements DialogController
 
         // Validate phone
         String phone = fldClientPhone.getText().trim();
-        if (!phone.isEmpty() && !phone.matches("^[+0-9\\\\s()\\\\-]{7,20}$")) 
+        if (!phone.isEmpty() && !phone.matches("^[+0-9\\s()\\-]{7,20}$")) 
         {
             showFieldError(errClientPhone, "Invalid phone number.");
             valid = false;
