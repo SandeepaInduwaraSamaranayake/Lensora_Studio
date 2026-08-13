@@ -6,6 +6,7 @@ import com.lensora.lensorastudio.services.AppSettings;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Insets;
 import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -38,6 +39,9 @@ import java.util.Map;
 public final class MetadataPanel
 {
     private static final Logger logger = LoggerFactory.getLogger(MetadataPanel.class);
+
+    private static Double cachedVerticalScrollbarWidth = null;
+    private static final Tooltip SHARED_COPY_TOOLTIP = new Tooltip("Click to copy");
 
     private MetadataPanel() {}
 
@@ -184,36 +188,75 @@ public final class MetadataPanel
         Image cachedImage = ImageCache.getOrLoad(file, previewSize, 0);
         imageView.setImage(cachedImage);
 
-        // Force the StackPane to track the ScrollPane's viewport width exactly
-        // - this breaks the circular sizing dependency (pane sized by content,
-        // content sized by pane) that prevents shrinking. minWidth(0) is
-        // essential: without it, Region defaults minWidth to prefWidth, which
-        // is exactly what was blocking shrink-below-content-size before.
         pane.minWidthProperty().set(0);
-        pane.prefWidthProperty().bind(scrollPane.viewportBoundsProperty()
-                .map(b -> b.getWidth()));
 
-        imageView.fitWidthProperty().bind(Bindings.createDoubleBinding(
-                () -> {
+        imageView.fitWidthProperty().bind(Bindings.createDoubleBinding(() -> {
                     double insetLeft = pane.getInsets().getLeft();
                     double insetRight = pane.getInsets().getRight();
-                    double viewportWidth = scrollPane.getViewportBounds() != null
-                            ? scrollPane.getViewportBounds().getWidth()
-                            : scrollPane.getWidth();
-                    double available = viewportWidth - (insetLeft + insetRight + 20);  // added 20 as the padding
+                    double scrollbarWidth = getVerticalScrollbarWidth(scrollPane); // measured once, cached - not reactive
+
+                    double available = scrollPane.getWidth() - (insetLeft + insetRight + scrollbarWidth + 20);
                     return Math.max(50, available);
                 },
-                scrollPane.viewportBoundsProperty()
+                scrollPane.widthProperty()
         ));
 
         return pane;
     }
 
+    /**
+     * Measures the ScrollPane skin's actual vertical scrollbar width via CSS
+     * lookup, instead of hardcoding a platform-specific guess. This is
+     * intentionally NOT a reactive binding — it's read once (and cached
+     * statically, since scrollbar width is a theme/platform constant, not
+     * something that varies per-instance) — so it can never participate in
+     * the same layout feedback loop that viewportBounds caused.
+     */
+    private static double getVerticalScrollbarWidth(ScrollPane scrollPane)
+    {
+        if (cachedVerticalScrollbarWidth != null) 
+        {
+            return cachedVerticalScrollbarWidth;
+        }
+
+        // Guard: if the ScrollPane isn't in a Scene yet, CSS lookup won't work.
+        if (scrollPane.getScene() == null) 
+        {
+            return 16.0; // fallback, not cached
+        }
+
+        // Force CSS to be applied (one-time cost, safe off the layout pulse)
+        scrollPane.applyCss();
+
+        // The scrollbar Node only exists in the scene graph after the skin
+        // has been applied (i.e., after this ScrollPane has had at least one
+        // layout/CSS pass). If it's not available yet, fall back to a
+        // conservative estimate for THIS call only - nothing is cached yet,
+        // so the next call will look it up fresh once the skin is ready.
+        Node vbar = scrollPane.lookup(".scroll-bar:vertical");
+        if (vbar instanceof Region region) 
+        {
+            double w = region.getWidth();
+            if (w <= 0) 
+            {
+                // The skin knows its intrinsic width even when hidden
+                w = region.prefWidth(-1);
+            }
+            if (w > 0) 
+            {
+                cachedVerticalScrollbarWidth = w;
+                return w;
+            }
+        }
+
+        // Temporary fallback – not cached
+        return 16.0;
+    }
+
     private static void makeCopyable(Label label, String textToCopy)
     {
         label.setCursor(Cursor.HAND);
-        Tooltip tooltip = new Tooltip("Click to copy");
-        label.setTooltip(tooltip);
+        label.setTooltip(SHARED_COPY_TOOLTIP);
 
         label.setOnMouseClicked(event -> {
             Clipboard clipboard = Clipboard.getSystemClipboard();

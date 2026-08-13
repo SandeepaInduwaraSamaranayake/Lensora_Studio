@@ -46,28 +46,37 @@
                             <TextField fx:id="detProjectNumber" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="0"/>
 
                             <Label text="Client:" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                            <TextField fx:id="detClientName" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
+                            <TextField fx:id="detClientName" GridPane.columnIndex="1" GridPane.rowIndex="1"/>
 
                             <Label text="Phone:" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                            <TextField fx:id="detClientPhone" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
+                            <TextField fx:id="detClientPhone" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
                             <Label text="Email:" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                            <TextField fx:id="detClientEmail" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
+                            <TextField fx:id="detClientEmail" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
 
                             <Label text="Event Type:" GridPane.columnIndex="0" GridPane.rowIndex="4"/>
-                            <TextField fx:id="detEventType" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
+                            <TextField fx:id="detEventType" GridPane.columnIndex="1" GridPane.rowIndex="4"/>
 
                             <Label text="Event Date:" GridPane.columnIndex="0" GridPane.rowIndex="5"/>
-                            <TextField fx:id="detEventDate" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="5"/>
+                            <StackPane GridPane.columnIndex="1" GridPane.rowIndex="5">
+                                <TextField fx:id="detEventDate" editable="false"/>
+                                <DatePicker fx:id="detEventDatePicker" maxWidth="Infinity" visible="false" managed="false"/>
+                            </StackPane>
 
                             <Label text="Due Date:" GridPane.columnIndex="0" GridPane.rowIndex="6"/>
-                            <TextField fx:id="detDueDate" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="6"/>
+                            <StackPane GridPane.columnIndex="1" GridPane.rowIndex="6">
+                                <TextField fx:id="detDueDate" editable="false"/>
+                                <DatePicker fx:id="detDueDatePicker" maxWidth="Infinity" visible="false" managed="false"/>
+                            </StackPane>
 
                             <Label text="Status:" GridPane.columnIndex="0" GridPane.rowIndex="7"/>
-                            <TextField fx:id="detStatus" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="7"/>
+                            <StackPane GridPane.columnIndex="1" GridPane.rowIndex="7">
+                                <TextField fx:id="detStatus" editable="false"/>
+                                <ComboBox fx:id="detStatusCombo" maxWidth="Infinity" visible="false" managed="false"/>
+                            </StackPane>
 
                             <Label text="Package:" GridPane.columnIndex="0" GridPane.rowIndex="8"/>
-                            <TextField fx:id="detPackage" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
+                            <TextField fx:id="detPackage" GridPane.columnIndex="1" GridPane.rowIndex="8"/>
 
                             <Label text="Project Path:" GridPane.columnIndex="0" GridPane.rowIndex="9"/>
                             <TextField fx:id="detProjectPath" editable="false" GridPane.columnIndex="1" GridPane.rowIndex="9"/>
@@ -85,11 +94,11 @@
                             <HBox spacing="16">
                                 <VBox spacing="3" HBox.hgrow="ALWAYS">
                                     <Label text="Total"/>
-                                    <TextField fx:id="detTotalAmount" editable="false"/>
+                                    <TextField fx:id="detTotalAmount"/>
                                 </VBox>
                                 <VBox spacing="3" HBox.hgrow="ALWAYS">
                                     <Label text="Advance"/>
-                                    <TextField fx:id="detAdvanceAmount" editable="false"/>
+                                    <TextField fx:id="detAdvanceAmount"/>
                                 </VBox>
                                 <VBox spacing="3" HBox.hgrow="ALWAYS">
                                     <Label text="Balance Due"/>

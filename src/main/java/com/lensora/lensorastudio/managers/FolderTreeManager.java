@@ -190,25 +190,37 @@ public class FolderTreeManager
 
     public void goBack()
     {
-        if (!backStack.isEmpty())
+        if (backStack.isEmpty()) return;
+
+        isNavigatingHistory = true;
+        try 
         {
-            isNavigatingHistory = true;
             forwardStack.push(currentFolder);
-            navigateTo(backStack.pop());
+            File target = backStack.pop();
+            navigateTo(target);
+            selectFolderInTree(target);
+        } 
+        finally
+        {
             isNavigatingHistory = false;
-            selectFolderInTree(currentFolder);
         }
     }
 
     public void goForward()
     {
-        if (!forwardStack.isEmpty())
+        if (forwardStack.isEmpty()) return;
+
+        isNavigatingHistory = true;
+        try
         {
-            isNavigatingHistory = true;
             backStack.push(currentFolder);
-            navigateTo(forwardStack.pop());
+            File target = forwardStack.pop();
+            navigateTo(target);
+            selectFolderInTree(target);
+        } 
+        finally
+        {
             isNavigatingHistory = false;
-            selectFolderInTree(currentFolder);
         }
     }
 
@@ -361,10 +373,20 @@ public class FolderTreeManager
     private void setupTreeSelectionListener()
     {
         folderTree.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null && newVal.getValue() != null && newVal.getValue().isDirectory())
+            if (newVal == null || newVal.getValue() == null || !newVal.getValue().isDirectory()) 
             {
-                navigateTo(newVal.getValue());
+                return;
             }
+
+            File folder = newVal.getValue();
+            
+            // Prevent loop/re-entry if folder is already selected
+            if (folder.equals(currentFolder)) 
+            {
+                return;
+            }
+            
+            navigateTo(folder);
         });
     }
 

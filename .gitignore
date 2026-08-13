@@ -40,3 +40,7 @@ build/
 
 ### Distribute ###
 .dist
+
+## Logs ##
+lensora.jfr
+lensora.txt

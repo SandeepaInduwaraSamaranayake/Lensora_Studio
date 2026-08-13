@@ -4,8 +4,11 @@ import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.model.ProjectNote;
 import com.lensora.lensorastudio.repository.ProjectLastFolderRepository;
 import com.lensora.lensorastudio.repository.ProjectNoteRepository;
+import com.lensora.lensorastudio.repository.ProjectRepository;
 import com.lensora.lensorastudio.util.DialogBuilder;
+import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.ErrorHandler;
+import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.util.Resources;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
@@ -19,16 +22,19 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
 
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +49,8 @@ public class ProjectDetailsController
     @FXML private TextArea detRemarks;
     @FXML private HBox progressStepper;
     @FXML private Button btnDetailEdit, btnDetailOpenFolder, btnDetailArchive;
+    @FXML private ComboBox<String> detStatusCombo;
+    @FXML private DatePicker detEventDatePicker, detDueDatePicker;
 
     // Notes tab
     @FXML private VBox notesContainer;
@@ -61,6 +69,7 @@ public class ProjectDetailsController
     private ProjectsViewModel viewModel;
     private Consumer<String> onProjectPathChanged;
     private Consumer<String> onRestoreLastFolder;
+    private boolean editMode = false;
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a");
 
@@ -68,14 +77,19 @@ public class ProjectDetailsController
     {
         this.viewModel = viewModel;
 
-        viewModel.selectedProjectProperty().addListener((obs, oldVal, newVal) -> loadProject(newVal));
+        viewModel.selectedProjectProperty().addListener((obs, oldVal, newVal) -> {
+            exitEditMode(false); // discard any in-progress edit when switching projects
+            loadProject(newVal);
+        });
         loadProject(viewModel.getSelectedProject());
 
-        btnDetailOpenFolder.setOnAction(e -> openProjectFolder());
+        setEditControlsVisible(false);
+        detStatusCombo.getItems().setAll(Project.ALL_STATUSES);
 
-        // Not implemented yet - wired so the buttons don't silently do nothing.
-        btnDetailEdit.setOnAction(e -> { });
+        btnDetailOpenFolder.setOnAction(e -> openProjectFolder());
+        btnDetailEdit.setOnAction(e -> onEditButtonClicked());
         btnDetailArchive.setOnAction(e -> { /* TODO: archive project */ });
+
         btnAddNote.setOnAction(e -> {  addNote(); });
         btnAddReminder.setOnAction(e -> { /* TODO: insert into reminder table */ });
         btnAddPayment.setOnAction(e -> { /* TODO: insert into payment table */ });
@@ -105,6 +119,10 @@ public class ProjectDetailsController
         detBalanceAmount.setText(project.getBalanceAmount() != null ? project.getBalanceAmount().toString() : "0.00");
         detRemarks.setText(project.getRemarks());
 
+        detStatusCombo.setValue(project.getProjectStatus());
+        detEventDatePicker.setValue(project.getEventDate());
+        detDueDatePicker.setValue(project.getDueDate());
+
         progressStepper.getChildren().clear();
         Label statusLabel = new Label("Status: " + project.getProjectStatus());
         statusLabel.setStyle("-fx-font-weight: bold;");
@@ -132,6 +150,146 @@ public class ProjectDetailsController
         notesContainer.getChildren().clear();
     }
 
+        // ─── Edit mode ──────────────────────────────────────────────────────────
+
+    private void onEditButtonClicked()
+    {
+        if (editMode)
+        {
+            saveEdits();
+        }
+        else
+        {
+            enterEditMode();
+        }
+    }
+
+    private void enterEditMode()
+    {
+        if (viewModel.getSelectedProject() == null) return;
+
+        editMode = true;
+        setEditControlsVisible(true);
+        setFieldsEditable(true);
+
+        FontIcon icon = new FontIcon("fas-save");
+        icon.getStyleClass().add("icon-size-10");
+        btnDetailEdit.setGraphic(icon);
+        btnDetailEdit.setTooltip(new Tooltip("Save Changes"));
+    }
+
+    private void exitEditMode(boolean reloadFromModel)
+    {
+        editMode = false;
+        setEditControlsVisible(false);
+        setFieldsEditable(false);
+
+        FontIcon icon = new FontIcon("fas-edit");
+        icon.getStyleClass().add("icon-size-10");
+        btnDetailEdit.setGraphic(icon);
+        btnDetailEdit.setTooltip(new Tooltip("Edit Project"));
+
+        if (reloadFromModel)
+        {
+            loadProject(viewModel.getSelectedProject());
+        }
+    }
+
+    /** Swaps the read-only display fields and their edit-mode counterparts (ComboBox/DatePicker) in/out of view. */
+    private void setEditControlsVisible(boolean editing)
+    {
+        detStatus.setVisible(!editing);
+        detStatus.setManaged(!editing);
+        detStatusCombo.setVisible(editing);
+        detStatusCombo.setManaged(editing);
+
+        detEventDate.setVisible(!editing);
+        detEventDate.setManaged(!editing);
+        detEventDatePicker.setVisible(editing);
+        detEventDatePicker.setManaged(editing);
+
+        detDueDate.setVisible(!editing);
+        detDueDate.setManaged(!editing);
+        detDueDatePicker.setVisible(editing);
+        detDueDatePicker.setManaged(editing);
+    }
+
+    private void setFieldsEditable(boolean editable)
+    {
+        detClientName.setEditable(editable);
+        detClientPhone.setEditable(editable);
+        detClientEmail.setEditable(editable);
+        detEventType.setEditable(editable);
+        detPackage.setEditable(editable);
+        detTotalAmount.setEditable(editable);
+        detAdvanceAmount.setEditable(editable);
+        detRemarks.setEditable(editable);
+        // detProjectNumber, detProjectPath, detBalanceAmount stay read-only always.
+    }
+
+    private void saveEdits()
+    {
+        Project current = viewModel.getSelectedProject();
+        if (current == null) return;
+
+        if (detClientName.getText() == null || detClientName.getText().isBlank())
+        {
+            Dialogs.showInfo(getWindow(), "Save Project", null, "Client name is required.");
+            return;
+        }
+
+        BigDecimal total, advance;
+        try
+        {
+            total = parseCurrencyOrZero(detTotalAmount.getText());
+            advance = parseCurrencyOrZero(detAdvanceAmount.getText());
+        }
+        catch (NumberFormatException e)
+        {
+            Dialogs.showInfo(getWindow(), "Save Project", null, "Total and advance amounts must be valid numbers.");
+            return;
+        }
+
+        current.setClientName(detClientName.getText().trim());
+        current.setClientPhone(detClientPhone.getText());
+        current.setClientEmail(detClientEmail.getText());
+        current.setEventType(detEventType.getText());
+        current.setEventDate(detEventDatePicker.getValue());
+        current.setDueDate(detDueDatePicker.getValue());
+        current.setProjectStatus(detStatusCombo.getValue() != null ? detStatusCombo.getValue() : current.getProjectStatus());
+        current.setPackageName(detPackage.getText());
+        current.setTotalAmount(total);
+        current.setAdvanceAmount(advance);
+        current.setBalanceAmount(total.subtract(advance));
+        current.setRemarks(detRemarks.getText());
+
+        try
+        {
+            ProjectRepository.update(current);
+            viewModel.refreshSelectedFromDb();
+            exitEditMode(true);
+            NotificationUtil.showToast(getWindow(), "Project details saved.");
+        }
+        catch (SQLException e)
+        {
+            logger.error("Failed to save project {}", current.getProjectId(), e);
+            ErrorHandler.show(getWindow(), "Failed to save project", e);
+        }
+    }
+
+    private BigDecimal parseCurrencyOrZero(String text)
+    {
+        if (text == null || text.trim().isEmpty()) return BigDecimal.ZERO;
+        return new BigDecimal(text.replaceAll("[^\\d.]", ""));
+    }
+
+    private Window getWindow()
+    {
+        return notesContainer.getScene() != null ? notesContainer.getScene().getWindow() : null;
+    }
+
+    // ─── Folder ──────────────────────────────────────────────────────────────
+
     private void openProjectFolder()
     {
         Project current = viewModel.getSelectedProject();
@@ -153,7 +311,6 @@ public class ProjectDetailsController
             }
         });
     }
-
 
     // ─── Notes ──────────────────────────────────────────────────────────────
 
@@ -197,6 +354,8 @@ public class ProjectDetailsController
 
         Label contentLabel = new Label(note.getNoteContent());
         contentLabel.setWrapText(true);
+        contentLabel.setMinWidth(0);
+        contentLabel.setMaxWidth(Double.MAX_VALUE);
 
         Button editBtn = new Button("Edit");
         editBtn.setOnAction(e -> editNote(note));
@@ -211,6 +370,8 @@ public class ProjectDetailsController
         actions.setAlignment(Pos.CENTER_RIGHT);
 
         VBox card = new VBox(6, header, contentLabel, actions);
+        card.setMinWidth(0);
+        card.setMaxWidth(Double.MAX_VALUE);
         card.setPadding(new Insets(10));
         card.setStyle("""
                 -fx-background-color: -color-bg-subtle;

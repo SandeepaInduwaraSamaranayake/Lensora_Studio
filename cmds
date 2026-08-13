@@ -11,6 +11,9 @@ cd Lensora_Studio
 --run debug
 .\mvnw clean javafx:run -X
 
+-- convert .jfr to txt
+jfr print --events jdk.ExecutionSample lensora.jfr > lensora.txt
+
 -- build
 .\mvnw compile
 
