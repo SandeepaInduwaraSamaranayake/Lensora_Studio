@@ -317,29 +317,40 @@ public class ProjectDetailsController
 
     private void loadNotes(int projectId)
     {
+        logger.info("Loading notes for project ID: {}", projectId);
         notesContainer.getChildren().clear();
 
-        try
-        {
-            List<ProjectNote> notes = ProjectNoteRepository.findByProject(projectId);
-            logger.info("Loading notes for project ID: {}", projectId);
-            if (notes.isEmpty())
-            {
-                Label empty = new Label("No notes yet. Click \"+ Add Note\" to create one.");
-                notesContainer.getChildren().add(empty);
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return ProjectNoteRepository.findByProject(projectId);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        }).thenAcceptAsync(notes -> {
+            // Double check: confirm current selected project still matches before populating
+            Project current = viewModel.getSelectedProject();
+            if (current == null || current.getProjectId() != projectId) {
+                return; // Discard stale background query result
+            }
+
+            notesContainer.getChildren().clear();
+            if (notes.isEmpty()) {
+                notesContainer.getChildren().add(new Label("No notes yet. Click \"+ Add Note\" to create one."));
                 return;
             }
 
-            for (ProjectNote note : notes)
-            {
+            for (ProjectNote note : notes) {
                 notesContainer.getChildren().add(buildNoteCard(note));
             }
-        }
-        catch (SQLException e)
-        {
-            logger.error("Failed to load notes for project {}", projectId, e);
-            ErrorHandler.show(null, "Failed to load notes", e);
-        }
+        }, Platform::runLater)
+        .exceptionally(ex -> {
+            Platform.runLater(() -> {
+                Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                logger.error("Failed to load notes for project {}", projectId, cause);
+                ErrorHandler.show(null, "Failed to load notes", cause);
+            });
+            return null;
+        });
     }
 
     private VBox buildNoteCard(ProjectNote note)
@@ -476,19 +487,33 @@ public class ProjectDetailsController
     // ─── Restore last visited folder ──────────────────────────────────────────────
     private void restoreLastFolderFor(Project project)
     {
-        if (onRestoreLastFolder == null) return;
-        try
-        {
-            String relativePath = ProjectLastFolderRepository.findByProject(project.getProjectId());
-            if (relativePath != null)
+        if (onRestoreLastFolder == null || project == null) return;
+
+        final int targetProjectId = project.getProjectId();
+
+        CompletableFuture.supplyAsync(() -> {
+            try 
+            {
+                return ProjectLastFolderRepository.findByProject(targetProjectId);
+            } 
+            catch (SQLException e) 
+            {
+                logger.warn("Failed to load last-visited folder for project {}", targetProjectId, e);
+                return null;
+            }
+        }).thenAcceptAsync(relativePath -> {
+            // Guard against race conditions: verify the selected project hasn't changed
+            Project current = viewModel.getSelectedProject();
+            if (current == null || current.getProjectId() != targetProjectId) 
+            {
+                return; // Discard stale result if user switched projects
+            }
+
+            if (relativePath != null && !relativePath.isBlank()) 
             {
                 onRestoreLastFolder.accept(relativePath);
             }
-        }
-        catch (SQLException e)
-        {
-            logger.warn("Failed to load last-visited folder for project {}", project.getProjectId(), e);
-        }
+        }, Platform::runLater);
     }
 
     public void setOnRestoreLastFolder(Consumer<String> callback)
