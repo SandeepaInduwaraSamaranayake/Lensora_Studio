@@ -136,7 +136,7 @@ public class MainController
             projectListController.setOnRowClicked(projectSearchField::clear);
             dockingService.register("projects", listRoot, "Projects");
 
-            // Project detals Panel
+            // Project details Panel
             FXMLLoader detailsLoader = new FXMLLoader(Resources.PROJECT_DETAILS_VIEW.url());
             Node detailsRoot = detailsLoader.load();
             ProjectDetailsController detailsController = detailsLoader.getController();

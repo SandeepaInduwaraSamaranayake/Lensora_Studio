@@ -9,7 +9,7 @@ import com.lensora.lensorastudio.model.Project;
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
-import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
@@ -31,7 +31,7 @@ public class ProjectListController
     private ProjectsViewModel viewModel;
     private boolean syncingSelection = false;
     private Runnable onRowClicked;
-    private java.util.function.Consumer<List<Project>> onBackupRequested;
+    private Consumer<List<Project>> onBackupRequested;
     private Consumer<Project> onArchiveRequested;
 
     public void bind(ProjectsViewModel viewModel)
@@ -46,6 +46,7 @@ public class ProjectListController
         colStatus.setCellValueFactory(c -> c.getValue().projectStatusProperty());
         projectTable.setItems(viewModel.getFilteredProjects());
 
+        cmbStatusFilter.getItems().clear();
         cmbStatusFilter.getItems().add("All Statuses");
         cmbStatusFilter.getItems().addAll(Project.ALL_STATUSES);
         
@@ -58,31 +59,52 @@ public class ProjectListController
         viewModel.filterByStatus(initialFilter);
 
         cmbStatusFilter.valueProperty().addListener((obs, old, val) -> {
-            viewModel.filterByStatus(val);
-            updateCountLabel();
+            if (val != null) 
+            {
+                viewModel.filterByStatus(val);
+                updateCountLabel();
+            }
         });
 
         projectTable.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
             if (syncingSelection) return;
+            // Prevent wiping detail view if table selection temporarily drops to null during filtering/refresh
+            if (newVal == null && !projectTable.getItems().isEmpty() && oldVal != null && projectTable.getItems().contains(oldVal)) 
+            {
+                return;
+            }
             viewModel.setSelectedProject(newVal);
         });
 
+
         viewModel.selectedProjectProperty().addListener((obs, oldVal, newVal) -> {
             if (projectTable.getSelectionModel().getSelectedItem() == newVal) return;
+
             syncingSelection = true;
-            projectTable.getSelectionModel().select(newVal);
+            if (newVal == null) 
+            {
+                projectTable.getSelectionModel().clearSelection();
+            } 
+            else 
+            {
+                // Preserves focus while selecting without resetting whole selection if already selected
+                projectTable.getSelectionModel().select(newVal);
+            }
             syncingSelection = false;
         });
 
         viewModel.getFilteredProjects().addListener(
-                (javafx.collections.ListChangeListener<Project>) c -> updateCountLabel());
+                (ListChangeListener<Project>) c -> updateCountLabel());
         updateCountLabel();
 
+        // Handle Row Click cleanly without deferring layout mutations via Platform.runLater
         projectTable.setOnMouseClicked(e -> {
-            if (e.getClickCount() == 1 && AppSettings.getInstance().getClearSearchOnProjectSelect()
-                    && projectTable.getSelectionModel().getSelectedItem() != null && onRowClicked != null)
+            if (e.getClickCount() == 1
+                        && AppSettings.getInstance().getClearSearchOnProjectSelect()
+                        && projectTable.getSelectionModel().getSelectedItem() != null 
+                        && onRowClicked != null)
             {
-                Platform.runLater(() -> onRowClicked.run());
+                onRowClicked.run();
             }
         });
 

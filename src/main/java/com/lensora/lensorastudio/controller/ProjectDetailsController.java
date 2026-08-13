@@ -102,6 +102,7 @@ public class ProjectDetailsController
 
     private void loadProject(Project project)
     {
+        System.out.println("DEBUG: loadProject called for: " + (project != null ? project.getProjectNumber() : "null"));
         if (project == null) { clearFields(); return; }
 
         detProjectNumber.setText(project.getProjectNumber());
@@ -130,7 +131,7 @@ public class ProjectDetailsController
 
         if (onProjectPathChanged != null) onProjectPathChanged.accept(project.getProjectPath());
 
-         // restore whichever folder the user was last browsing in it.
+        // restore whichever folder the user was last browsing in it.
         restoreLastFolderFor(project);
 
         // load notes when the project is loading

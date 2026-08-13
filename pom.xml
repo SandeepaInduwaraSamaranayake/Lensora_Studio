@@ -134,7 +134,7 @@
                                 <option>-Djavafx.suppressPreviewWarning=true</option>
                                 <option>--enable-native-access=javafx.graphics,ALL-UNNAMED</option>
                                 <!-- For JavaFX pulse logging (Remove in Production)-->
-                                <!-- <option>-Djavafx.pulseLogger=true</option> -->
+                                <option>-Djavafx.pulseLogger=false</option>
                                 <option>-XX:StartFlightRecording=filename=E:/Lensora_Studio/Lensora_Studio/lensora.jfr,settings=profile,disk=true,dumponexit=true,maxsize=500M,maxage=1h</option>
                                 <option>-Dprism.showfps=true</option>
                                 <option>-Dprism.verbose=true</option>
