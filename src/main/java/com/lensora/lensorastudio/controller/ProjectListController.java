@@ -10,6 +10,7 @@ import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 
 import javafx.collections.ListChangeListener;
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 
@@ -44,7 +45,11 @@ public class ProjectListController
         colProjectNumber.setCellValueFactory(c -> c.getValue().projectNumberProperty());
         colClientName.setCellValueFactory(c -> c.getValue().clientNameProperty());
         colStatus.setCellValueFactory(c -> c.getValue().projectStatusProperty());
-        projectTable.setItems(viewModel.getFilteredProjects());
+
+        // FilteredList → SortedList → TableView
+        SortedList<Project> sorted = new SortedList<>(viewModel.getFilteredProjects());
+        sorted.comparatorProperty().bind(projectTable.comparatorProperty());
+        projectTable.setItems(sorted);
 
         cmbStatusFilter.getItems().clear();
         cmbStatusFilter.getItems().add("All Statuses");
@@ -93,8 +98,11 @@ public class ProjectListController
             syncingSelection = false;
         });
 
+        // Future updates: whenever the filtered list changes later
         viewModel.getFilteredProjects().addListener(
                 (ListChangeListener<Project>) c -> updateCountLabel());
+
+        //Initial value: set the label right now, on bind
         updateCountLabel();
 
         // Handle Row Click cleanly without deferring layout mutations via Platform.runLater
