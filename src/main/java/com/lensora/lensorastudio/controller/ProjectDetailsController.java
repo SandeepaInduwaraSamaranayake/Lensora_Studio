@@ -509,7 +509,7 @@ public class ProjectDetailsController
             {
                 return ProjectLastFolderRepository.findByProject(targetProjectId);
             } 
-            catch (SQLException e) 
+            catch (SQLException e)
             {
                 logger.warn("Failed to load last-visited folder for project {}", targetProjectId, e);
                 return null;

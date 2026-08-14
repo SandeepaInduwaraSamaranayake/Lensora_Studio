@@ -19,45 +19,76 @@ import javafx.stage.Window;
 
 import java.io.File;
 
-
-public final class ExternalAppsDialog
+public final class ExternalAppsDialog 
 {
     private ExternalAppsDialog() {}
 
-    public static void show(Window owner)
+    public static void show(Window owner) 
     {
         Stage stage = new Stage();
         stage.initModality(Modality.APPLICATION_MODAL);
         if (owner != null) stage.initOwner(owner);
         stage.setTitle("Manage External Apps");
+        AppIconUtil.setAppIcon(stage);
 
         ObservableList<ExternalApp> apps = FXCollections.observableArrayList(
                 AppSettings.getInstance().getExternalApps());
 
+        // ---- ListView with custom cell ----
         ListView<ExternalApp> listView = new ListView<>(apps);
         listView.setPrefSize(400, 250);
+        listView.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        VBox.setVgrow(listView, Priority.ALWAYS);
+
+        listView.setCellFactory(lv -> new ListCell<>() {
+            private final VBox cellBox = new VBox(2);
+            private final Label nameLabel = new Label();
+            private final Label pathLabel = new Label();
+
+            {
+                cellBox.getChildren().addAll(nameLabel, pathLabel);
+                nameLabel.setStyle("-fx-font-weight: bold;");
+                pathLabel.setStyle("-fx-opacity: 0.7;");
+            }
+
+            @Override
+            protected void updateItem(ExternalApp item, boolean empty) 
+            {
+                super.updateItem(item, empty);
+                if (empty || item == null) 
+                {
+                    setText(null);
+                    setGraphic(null);
+                } 
+                else 
+                {
+                    nameLabel.setText(item.getName());
+                    pathLabel.setText(item.getExecutablePath());
+                    setGraphic(cellBox);
+                }
+            }
+        });
 
         TextField nameField = new TextField();
         nameField.setPromptText("Display name (e.g. Adobe Photoshop)");
 
         TextField pathField = new TextField();
-        pathField.setPromptText("Path to executable");
-        pathField.setEditable(false);
+        pathField.setPromptText("Path to executable or app bundle");
 
         Button browseButton = new Button("Browse…");
         browseButton.setOnAction(e -> {
             FileChooser chooser = new FileChooser();
             chooser.setTitle("Select Application Executable");
-            if (System.getProperty("os.name").toLowerCase().contains("win"))
+            if (System.getProperty("os.name").toLowerCase().contains("win")) 
             {
                 chooser.getExtensionFilters().add(
                         new FileChooser.ExtensionFilter("Executable", "*.exe"));
             }
             File selected = chooser.showOpenDialog(stage);
-            if (selected != null)
+            if (selected != null) 
             {
                 pathField.setText(selected.getAbsolutePath());
-                if (nameField.getText().isBlank())
+                if (nameField.getText().isBlank()) 
                 {
                     String fileName = selected.getName();
                     int dot = fileName.lastIndexOf('.');
@@ -66,55 +97,132 @@ public final class ExternalAppsDialog
             }
         });
 
+        // ---- Controls & Form Action ----
         Button addButton = new Button("Add");
+        Button clearButton = new Button("Clear");
+        Button removeButton = new Button("Remove Selected");
+
+        // Disable remove button when nothing is selected
+        removeButton.disableProperty().bind(listView.getSelectionModel().selectedItemProperty().isNull());
+
+        listView.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            if (selected != null) 
+            {
+                nameField.setText(selected.getName());
+                pathField.setText(selected.getExecutablePath());
+                addButton.setText("Update");
+            } 
+            else 
+            {
+                nameField.clear();
+                pathField.clear();
+                addButton.setText("Add");
+            }
+        });
+
         addButton.setOnAction(e -> {
             String name = nameField.getText().trim();
             String path = pathField.getText().trim();
 
-            // Check for empty fields
-            if (name.isBlank() || path.isBlank()) return;
+            if (name.isBlank() || path.isBlank()) 
+            {
+                NotificationUtil.showToast(stage, "Name and path are required", "fas-exclamation-circle");
+                return;
+            }
 
-            // Check if the executable exists and is a file
+            // Check exists() instead of isFile() to support macOS .app packages
             File exeFile = new File(path);
-            if (!exeFile.exists() || !exeFile.isFile()) return;
+            if (!exeFile.exists()) 
+            {
+                NotificationUtil.showToast(stage, "Executable not found at that path", "fas-exclamation-circle");
+                return;
+            }
 
-            // Check for duplicate display names (case‑insensitive)
-            boolean duplicate = apps.stream().anyMatch(a -> a.getName().equalsIgnoreCase(name));
-            if (duplicate) return;
+            ExternalApp selected = listView.getSelectionModel().getSelectedItem();
 
-            apps.add(new ExternalApp(name, path));
-            nameField.clear();
-            pathField.clear();
+            if (selected != null) 
+            {
+                // Update existing
+                boolean duplicate = apps.stream()
+                        .filter(a -> a != selected)
+                        .anyMatch(a -> a.getName().equalsIgnoreCase(name));
+                if (duplicate)
+                {
+                    NotificationUtil.showToast(stage, "Duplicate Name : Another app already has that name", "fas-exclamation-circle");
+                    return;
+                }
+                selected.setName(name);
+                selected.setExecutablePath(path);
+                listView.refresh();
+                AppSettings.getInstance().setExternalApps(apps);
+                NotificationUtil.showToast(stage, "Application updated successfully", "fas-check-circle");
+            } 
+            else 
+            {
+                // Add new
+                boolean duplicate = apps.stream()
+                        .anyMatch(a -> a.getName().equalsIgnoreCase(name));
+                if (duplicate) 
+                {
+                    NotificationUtil.showToast(stage, "Duplicate Name : An app with that name already exists", "fas-exclamation-circle");
+                    return;
+                }
+                ExternalApp newApp = new ExternalApp(name, path);
+                apps.add(newApp);
+                AppSettings.getInstance().setExternalApps(apps);
+                nameField.clear();
+                pathField.clear();
+                NotificationUtil.showToast(stage, "Application added successfully.", "fas-check-circle");
+            }
         });
 
-        Button removeButton = new Button("Remove Selected");
+        clearButton.setOnAction(e -> listView.getSelectionModel().clearSelection());
+
         removeButton.setOnAction(e -> {
             ExternalApp selected = listView.getSelectionModel().getSelectedItem();
-            if (selected != null) apps.remove(selected);
+            if (selected != null) 
+            {
+                apps.remove(selected);
+                AppSettings.getInstance().setExternalApps(apps);
+                listView.getSelectionModel().clearSelection();
+            }
         });
 
+        // ---- Layout ----
         HBox pathRow = new HBox(6, pathField, browseButton);
         HBox.setHgrow(pathField, Priority.ALWAYS);
+        pathField.setMaxWidth(Double.MAX_VALUE);
 
-        VBox formBox = new VBox(6, new Label("Name"), nameField, new Label("Executable"), pathRow, addButton);
+        VBox formBox = new VBox(6,
+                new Label("Name"), nameField,
+                new Label("Executable Path"), pathRow,
+                new HBox(8, addButton, clearButton, removeButton)
+        );
         formBox.setPadding(new Insets(0, 0, 10, 0));
 
         Button closeButton = new Button("Close");
-        closeButton.setOnAction(e -> {
-            AppSettings.getInstance().setExternalApps(apps);
-            stage.close();
-        });
+        closeButton.setOnAction(e -> stage.close());
 
-        HBox footer = new HBox(10, removeButton, spacerRegion(), closeButton);
+        HBox footer = new HBox(10, spacerRegion(), closeButton);
 
-        VBox root = new VBox(10, new Label("Configured Applications"), listView, new Separator(), formBox, footer);
+        VBox root = new VBox(10,
+                new Label("Configured Applications"),
+                listView,
+                new Separator(),
+                formBox,
+                footer
+        );
         root.setPadding(new Insets(15));
+        root.setFillWidth(true);
 
-        stage.setScene(new Scene(root));
+        Scene scene = new Scene(root, 460, 420);
+        stage.setScene(scene);
+        stage.setMinWidth(400);
+        stage.setMinHeight(360);
         stage.showAndWait();
     }
 
-    private static Region spacerRegion()
+    private static Region spacerRegion() 
     {
         Region r = new Region();
         HBox.setHgrow(r, Priority.ALWAYS);
