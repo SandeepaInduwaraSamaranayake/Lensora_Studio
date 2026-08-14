@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
@@ -167,6 +166,7 @@ public class ProjectDetailsController
 
     private void enterEditMode()
     {
+        System.out.println("DEBUG: enterEditMode() called");
         if (viewModel.getSelectedProject() == null) return;
 
         editMode = true;
@@ -181,6 +181,7 @@ public class ProjectDetailsController
 
     private void exitEditMode(boolean reloadFromModel)
     {
+        System.out.println("DEBUG: exitEditMode() called");
         editMode = false;
         setEditControlsVisible(false);
         setFieldsEditable(false);
@@ -321,25 +322,31 @@ public class ProjectDetailsController
         notesContainer.getChildren().clear();
 
         CompletableFuture.supplyAsync(() -> {
-            try {
+            try 
+            {
                 return ProjectNoteRepository.findByProject(projectId);
-            } catch (SQLException e) {
+            } 
+            catch (SQLException e) 
+            {
                 throw new RuntimeException(e);
             }
         }).thenAcceptAsync(notes -> {
             // Double check: confirm current selected project still matches before populating
             Project current = viewModel.getSelectedProject();
-            if (current == null || current.getProjectId() != projectId) {
+            if (current == null || current.getProjectId() != projectId) 
+            {
                 return; // Discard stale background query result
             }
 
             notesContainer.getChildren().clear();
-            if (notes.isEmpty()) {
+            if (notes.isEmpty()) 
+            {
                 notesContainer.getChildren().add(new Label("No notes yet. Click \"+ Add Note\" to create one."));
                 return;
             }
 
-            for (ProjectNote note : notes) {
+            for (ProjectNote note : notes) 
+            {
                 notesContainer.getChildren().add(buildNoteCard(note));
             }
         }, Platform::runLater)
@@ -362,7 +369,7 @@ public class ProjectDetailsController
         titleLabel.setStyle("-fx-font-weight: bold;");
 
         Label dateLabel = new Label(note.getCreatedAt() != null ? note.getCreatedAt().format(DATE_TIME_FORMAT) : "");
-        dateLabel.setStyle("-fx-opacity: 0.6; -fx-font-size: 11px;");
+        dateLabel.setStyle("-fx-opacity: 0.6;");
 
         Label contentLabel = new Label(note.getNoteContent());
         contentLabel.setWrapText(true);
@@ -407,7 +414,7 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        Stage owner = (Stage) notesContainer.getScene().getWindow();
+        Stage owner = (Stage) getWindow();
         DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Add Note", owner)
                 .icon("📝")
                 .resizable(true)
@@ -436,7 +443,7 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        Stage owner = (Stage) notesContainer.getScene().getWindow();
+        Stage owner = (Stage) getWindow();
         DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Edit Note", owner)
                 .icon("📝")
                 .resizable(true)
@@ -487,6 +494,7 @@ public class ProjectDetailsController
     // ─── Restore last visited folder ──────────────────────────────────────────────
     private void restoreLastFolderFor(Project project)
     {
+        System.out.println("DEBUG: restoreLastFolderFor called for: " + (project != null ? project.getProjectNumber() : "null"));
         if (onRestoreLastFolder == null || project == null) return;
 
         final int targetProjectId = project.getProjectId();
