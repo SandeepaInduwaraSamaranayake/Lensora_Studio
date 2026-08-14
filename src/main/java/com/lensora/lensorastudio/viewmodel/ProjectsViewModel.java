@@ -62,6 +62,12 @@ public class ProjectsViewModel
 
     public void setSelectedProject(Project project)
     {
+        // Early exit if the project reference hasn't changed
+        if (selectedProject.get() == project)
+        {
+            return;
+        }
+        
         selectedProject.set(project);
         if (project != null)
         {

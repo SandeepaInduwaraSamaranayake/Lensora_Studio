@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.sql.SQLException;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.time.format.DateTimeFormatter;
@@ -77,6 +78,10 @@ public class ProjectDetailsController
         this.viewModel = viewModel;
 
         viewModel.selectedProjectProperty().addListener((obs, oldVal, newVal) -> {
+            if (Objects.equals(oldVal, newVal))
+            {
+                return;
+            }
             exitEditMode(false); // discard any in-progress edit when switching projects
             loadProject(newVal);
         });
