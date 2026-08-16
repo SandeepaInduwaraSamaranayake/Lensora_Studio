@@ -33,7 +33,7 @@
             <Button fx:id="clearLogsButton" text="Clear Logs" onAction="#handleClearLogs" />
             <Button fx:id="refreshButton" text="Refresh" onAction="#handleRefresh" />
             <Button fx:id="copyButton" text="Copy to Clipboard" onAction="#handleCopy" />
-            <Button fx:id="closeButtonBottom" text="Close" onAction="#handleClose" defaultButton="true" />
+            <Button fx:id="closeButton" text="Close" onAction="#handleClose" defaultButton="true" />
         </HBox>
     </bottom>
 </BorderPane>

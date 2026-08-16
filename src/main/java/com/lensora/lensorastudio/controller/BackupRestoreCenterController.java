@@ -41,6 +41,7 @@ import java.awt.Desktop;
 import java.io.File;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -74,12 +75,13 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private TableView<BackupSchedule> scheduleTableView;
     @FXML private TableColumn<BackupSchedule, String> colScheduleName, colScheduleScope, colScheduleFrequency, colScheduleDestination, colScheduleNextRun;
     @FXML private TableColumn<BackupSchedule, Boolean> colScheduleEnabled;
-    @FXML private Button btnNewSchedule, btnRunScheduleNow, btnEditSchedule, btnDeleteSchedule;
+    @FXML private Button btnNewSchedule, btnRefresh, btnRunScheduleNow, btnEditSchedule, btnDeleteSchedule;
 
     // History tab
     @FXML private ListView<String> historyListView;
     @FXML private Button btnRefreshHistory, btnOpenHistoryFolder, btnVerifyHistoryItem, btnRestoreHistoryItem;
 
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private final ObservableList<String> historyItems = FXCollections.observableArrayList();
     private final ObservableSet<Project> checkedProjects = FXCollections.observableSet(new java.util.LinkedHashSet<>());
     private final ObservableList<RestoreQueueItem> restoreQueue = FXCollections.observableArrayList();
@@ -546,10 +548,11 @@ public class BackupRestoreCenterController implements DialogController
         colScheduleFrequency.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().describeFrequency()));
         colScheduleDestination.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getDestinationPath()));
         colScheduleNextRun.setCellValueFactory(c -> new SimpleStringProperty(
-                c.getValue().getNextRun() != null ? c.getValue().getNextRun().toString() : "-"));
+                c.getValue().getNextRun() != null ? c.getValue().getNextRun().format(DATE_FORMATTER) : "-"));
         colScheduleEnabled.setCellValueFactory(c -> new SimpleBooleanProperty(c.getValue().isEnabled()));
         colScheduleEnabled.setCellFactory(CheckBoxTableCell.forTableColumn(colScheduleEnabled));
 
+        btnRefresh.setOnAction(e -> refreshScheduleList());
         btnNewSchedule.setOnAction(e -> createSchedule());
         btnEditSchedule.setOnAction(e -> editSelectedSchedule());
         btnDeleteSchedule.setOnAction(e -> deleteSelectedSchedule());
@@ -575,7 +578,7 @@ public class BackupRestoreCenterController implements DialogController
         Stage owner = getStage();
         DialogBuilder.of(Resources.SCHEDULE_EDIT_VIEW.url(), "New Backup Schedule", owner)
                 .icon("🗓")
-                .resizable(false)
+                .resizable(true)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof ScheduleEditController sec)
                     {
@@ -604,12 +607,16 @@ public class BackupRestoreCenterController implements DialogController
     private void editSelectedSchedule()
     {
         BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+        if (selected == null) 
+        {
+            NotificationUtil.showToast(getStage(), "Select a backup schedule to edit", "fas-exclamation-circle");
+            return;
+        }
 
         Stage owner = getStage();
         DialogBuilder.of(Resources.SCHEDULE_EDIT_VIEW.url(), "Edit Backup Schedule", owner)
                 .icon("🗓")
-                .resizable(false)
+                .resizable(true)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof ScheduleEditController sec)
                     {
@@ -632,7 +639,11 @@ public class BackupRestoreCenterController implements DialogController
     private void deleteSelectedSchedule()
     {
         BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+        if (selected == null) 
+        {
+            NotificationUtil.showToast(getStage(), "Select a backup schedule to delete", "fas-exclamation-circle");
+            return;
+        }
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setContentText("Delete schedule \"" + selected.getName() + "\"?");
@@ -653,7 +664,11 @@ public class BackupRestoreCenterController implements DialogController
     private void runSelectedScheduleNow()
     {
         BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+        if (selected == null)
+        {
+            NotificationUtil.showToast(getStage(), "Select a backup schedule to run", "fas-exclamation-circle");
+            return;
+        }
 
         selected.setNextRun(LocalDateTime.now().minusMinutes(1)); // force due
         try

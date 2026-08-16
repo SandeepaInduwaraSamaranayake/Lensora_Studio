@@ -23,9 +23,9 @@ import java.util.zip.ZipOutputStream;
 
 public class BackupJob extends Task<File>
 {
-    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final String APP_VERSION = "1.0-SNAPSHOT";
-    private static final int BUFFER_SIZE = 64 * 1024;
+    private static final Gson       GSON            = new GsonBuilder().setPrettyPrinting().create();
+    private static final String     APP_VERSION     = "1.0-SNAPSHOT";
+    private static final int        BUFFER_SIZE     = 64 * 1024;
 
     private final Project project;
     private final File destinationFile;

@@ -7,7 +7,7 @@
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.BackupRestoreCenterController">
 
     <center>
-        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" prefWidth="750" prefHeight="500">
+        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" prefWidth="1000" prefHeight="600">
 
             <!-- ====================== Backup tab ====================== -->
             <Tab text="Backup">
@@ -138,6 +138,7 @@
                         <HBox alignment="CENTER_LEFT" spacing="10">
                             <Label text="Backup Schedules" style="-fx-font-weight: bold;"/>
                             <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnRefresh" text="Refresh"/>
                             <Button fx:id="btnNewSchedule" text="New Schedule…"/>
                         </HBox>
 

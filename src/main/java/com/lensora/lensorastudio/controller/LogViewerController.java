@@ -2,6 +2,7 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.services.AppSettings;
 import com.lensora.lensorastudio.util.Dialogs;
+import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.NotificationUtil;
 
 import javafx.fxml.FXML;
@@ -38,8 +39,7 @@ public class LogViewerController implements DialogController
     @FXML private Button    clearLogsButton,
                             refreshButton, 
                             copyButton, 
-                            closeButton, 
-                            closeButtonBottom;
+                            closeButton;
 
 
     private Stage stage;
@@ -69,7 +69,7 @@ public class LogViewerController implements DialogController
         try 
         {
             long size = logFile.length();
-            logSizeLabel.setText(formatFileSize(size));
+            logSizeLabel.setText(FileSizeFormatter.formatFileSize(size));
 
             // Read the whole file; for large logs this could be heavy, but logs are usually small.
             String content = Files.readString(logPath);
@@ -135,21 +135,13 @@ public class LogViewerController implements DialogController
         this.stage = stage;
     }
 
-    private String formatFileSize(long size) 
-    {
-        if (size < 1024) return size + " B";
-        int exp = (int) (Math.log(size) / Math.log(1024));
-        String pre = "KMGTPE".charAt(exp - 1) + "";
-        return String.format("%.1f %sB", size / Math.pow(1024, exp), pre);
-    }
-
     private void clearLogFile()
     {
         String logDir = AppSettings.getInstance().getDefaultLogDir();
         Path logPath = Paths.get(logDir, "app.log");
         File logFile = logPath.toFile();
 
-        try 
+        try
         {
             // Truncate the file to zero bytes (if it exists)
             if (logFile.exists()) 

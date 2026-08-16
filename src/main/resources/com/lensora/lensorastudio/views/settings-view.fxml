@@ -24,7 +24,7 @@
    <VBox >
       <children>
          <!-- Main Content Container -->
-         <TabPane fx:id="settingsTabPane" prefWidth="700.0" prefHeight="400.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+         <TabPane fx:id="settingsTabPane" prefWidth="700.0" prefHeight="500.0" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
 
             <!-- Tab 1: General -->
             <tabs>
@@ -216,17 +216,26 @@
                                  <Label text="Last Folder Save Delay (ms)" GridPane.columnIndex="0" GridPane.rowIndex="1" />
                                  <Spinner fx:id="folderSaveDebounceSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                                 <Label text="Thumbnail Cache Size (Entries)" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                 <Spinner fx:id="cacheSizeSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                                 <Label text="Image Cache - Memory (images)" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
+                                 <Spinner fx:id="imageCacheMemorySpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="2"/>
 
-                                 <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                                 <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                                 <Label text="Image Cache - Disk (images)" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
+                                 <Spinner fx:id="imageCacheDiskSpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="3"/>
 
-                                 <Label text="Default Image Viewer Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="4" />
-                                 <ComboBox fx:id="imageViewerPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                                 <Label text="Clear Image Cache: " GridPane.columnIndex="0" GridPane.rowIndex="4"/>
+                                 <VBox spacing="10" GridPane.columnIndex="1" GridPane.rowIndex="4">
+                                    <Button fx:id="btnClearImageCache" text="Clear Image Cache"/>
+                                    <Label fx:id="imageCacheSizeLabel" style="-fx-opacity: 0.7;"/>
+                                 </VBox>
 
-                                 <Label text="Image Viewer Zoom Sensitivity" GridPane.columnIndex="0" GridPane.rowIndex="5" />
-                                 <Spinner fx:id="zoomSensitivitySpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                                 <Label text="Metadata Image Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="5" />
+                                 <ComboBox fx:id="metadataPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+
+                                 <Label text="Default Image Viewer Preview Quality" GridPane.columnIndex="0" GridPane.rowIndex="6" />
+                                 <ComboBox fx:id="imageViewerPreviewQualityCombo" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+
+                                 <Label text="Image Viewer Zoom Sensitivity" GridPane.columnIndex="0" GridPane.rowIndex="7" />
+                                 <Spinner fx:id="zoomSensitivitySpinner" editable="true" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="7" />
 
                                  <rowConstraints>
                                     <RowConstraints />

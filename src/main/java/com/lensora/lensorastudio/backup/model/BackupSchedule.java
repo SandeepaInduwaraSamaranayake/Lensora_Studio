@@ -23,32 +23,32 @@ public class BackupSchedule
     private LocalDateTime createdAt;
 
     // getters/setters
-    public int getScheduleId() { return scheduleId; }
-    public void setScheduleId(int v) { scheduleId = v; }
-    public String getName() { return name; }
-    public void setName(String v) { name = v; }
-    public Scope getScope() { return scope; }
-    public void setScope(Scope v) { scope = v; }
-    public List<Integer> getProjectIds() { return projectIds; }
-    public void setProjectIds(List<Integer> v) { projectIds = v; }
-    public String getDestinationPath() { return destinationPath; }
-    public void setDestinationPath(String v) { destinationPath = v; }
-    public Frequency getFrequency() { return frequency; }
-    public void setFrequency(Frequency v) { frequency = v; }
-    public int getIntervalValue() { return intervalValue; }
-    public void setIntervalValue(int v) { intervalValue = v; }
-    public String getTimeOfDay() { return timeOfDay; }
-    public void setTimeOfDay(String v) { timeOfDay = v; }
-    public Integer getDayOfWeek() { return dayOfWeek; }
-    public void setDayOfWeek(Integer v) { dayOfWeek = v; }
-    public boolean isEnabled() { return enabled; }
-    public void setEnabled(boolean v) { enabled = v; }
-    public LocalDateTime getLastRun() { return lastRun; }
-    public void setLastRun(LocalDateTime v) { lastRun = v; }
-    public LocalDateTime getNextRun() { return nextRun; }
-    public void setNextRun(LocalDateTime v) { nextRun = v; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime v) { createdAt = v; }
+    public int getScheduleId()                      { return scheduleId; }
+    public void setScheduleId(int v)                { scheduleId = v; }
+    public String getName()                         { return name; }
+    public void setName(String v)                   { name = v; }
+    public Scope getScope()                         { return scope; }
+    public void setScope(Scope v)                   { scope = v; }
+    public List<Integer> getProjectIds()            { return projectIds; }
+    public void setProjectIds(List<Integer> v)      { projectIds = v; }
+    public String getDestinationPath()              { return destinationPath; }
+    public void setDestinationPath(String v)        { destinationPath = v; }
+    public Frequency getFrequency()                 { return frequency; }
+    public void setFrequency(Frequency v)           { frequency = v; }
+    public int getIntervalValue()                   { return intervalValue; }
+    public void setIntervalValue(int v)             { intervalValue = v; }
+    public String getTimeOfDay()                    { return timeOfDay; }
+    public void setTimeOfDay(String v)              { timeOfDay = v; }
+    public Integer getDayOfWeek()                   { return dayOfWeek; }
+    public void setDayOfWeek(Integer v)             { dayOfWeek = v; }
+    public boolean isEnabled()                      { return enabled; }
+    public void setEnabled(boolean v)               { enabled = v; }
+    public LocalDateTime getLastRun()               { return lastRun; }
+    public void setLastRun(LocalDateTime v)         { lastRun = v; }
+    public LocalDateTime getNextRun()               { return nextRun; }
+    public void setNextRun(LocalDateTime v)         { nextRun = v; }
+    public LocalDateTime getCreatedAt()             { return createdAt; }
+    public void setCreatedAt(LocalDateTime v)       { createdAt = v; }
 
     public String describeFrequency()
     {

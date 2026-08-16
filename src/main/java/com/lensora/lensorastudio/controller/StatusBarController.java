@@ -1,11 +1,18 @@
 package com.lensora.lensorastudio.controller;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 import com.lensora.lensorastudio.util.NotificationUtil;
 import com.lensora.lensorastudio.viewmodel.ProjectsViewModel;
 import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
 
 import javafx.beans.binding.Bindings;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
+import javafx.concurrent.Worker;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -21,7 +28,7 @@ public class StatusBarController
     @FXML private Label progressLabel, progressSpeedLabel, progressEtaLabel;
 
     private Task<?> currentTrackedTask;
-    private final java.util.Queue<Runnable> pendingTrackRequests = new java.util.LinkedList<>();
+    private final Queue<Runnable> pendingTrackRequests = new LinkedList<>();
 
     @FXML
     public void initialize()
@@ -52,7 +59,7 @@ public class StatusBarController
         Runnable updateCount = () -> vm.projectsCountProperty()
                 .set("Projects: " + projectsViewModel.getFilteredCount());
         projectsViewModel.getFilteredProjects().addListener(
-                (javafx.collections.ListChangeListener<Object>) c -> updateCount.run());
+                (ListChangeListener<Object>) c -> updateCount.run());
         updateCount.run();
     }
 
@@ -94,9 +101,31 @@ public class StatusBarController
                 if (next != null) next.run();
             };
 
-            task.setOnSucceeded(e -> cleanup.run());
-            task.setOnFailed(e -> cleanup.run());
-            task.setOnCancelled(e -> cleanup.run());
+            // Attach state listener instead of using setOnSucceeded/Failed/Cancelled.
+            // These setter methods overwrite any previously assigned handler.
+            // The listener pattern avoids this collision.
+            ChangeListener<Worker.State> stateListener = new ChangeListener<>() {
+                @Override
+                public void changed(ObservableValue<? extends Worker.State> obs, Worker.State oldState, Worker.State newState) 
+                {
+                    if (newState == Worker.State.SUCCEEDED || newState == Worker.State.FAILED || newState == Worker.State.CANCELLED) 
+                    {
+                        task.stateProperty().removeListener(this);
+                        cleanup.run();
+                    }
+                }
+            };
+
+            // If the task finished before tracking started, cleanup immediately
+            Worker.State state = task.getState();
+            if (state == Worker.State.SUCCEEDED || state == Worker.State.FAILED || state == Worker.State.CANCELLED)
+            {
+                cleanup.run();
+            }
+            else
+            {
+                task.stateProperty().addListener(stateListener);
+            }
         };
 
         if (currentTrackedTask == null)

@@ -1,9 +1,13 @@
 package com.lensora.lensorastudio.controller;
 
+import com.lensora.lensorastudio.backup.engine.BackupScheduler;
 import com.lensora.lensorastudio.backup.model.BackupSchedule;
+import com.lensora.lensorastudio.backup.ui.ProjectCheckBoxListCell;
 import com.lensora.lensorastudio.model.Project;
 
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableSet;
+import javafx.collections.SetChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
@@ -11,6 +15,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -30,6 +35,11 @@ public class ScheduleEditController implements DialogController
     @FXML private ComboBox<Integer> dayOfWeekCombo;
     @FXML private CheckBox enabledCheck;
     @FXML private Button btnCancel, btnSave;
+    @FXML private CheckBox selectAllSchedProjectsCheckBox;
+
+    // Checked-projects source of truth, same pattern as the Backup tab.
+    private final ObservableSet<Project> checkedProjects = FXCollections.observableSet(new LinkedHashSet<>());
+    private boolean suppressSelectAllEvents = false;
 
     private BackupSchedule existing;
     private Consumer<BackupSchedule> onSaved;
@@ -44,15 +54,10 @@ public class ScheduleEditController implements DialogController
         this.onSaved = onSaved;
 
         projectListView.setItems(FXCollections.observableArrayList(allProjects));
-        projectListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        projectListView.setCellFactory(lv -> new ListCell<>() {
-            @Override protected void updateItem(Project p, boolean empty) {
-                super.updateItem(p, empty);
-                setText(empty || p == null ? null : p.getProjectNumber() + " — " + p.getClientName());
-            }
-        });
-
+        projectListView.setCellFactory(lv -> new ProjectCheckBoxListCell(checkedProjects));
+        
         populateFieldsFromExisting();
+        updateSelectAllCheckboxState();
     }
 
     @FXML
@@ -72,6 +77,22 @@ public class ScheduleEditController implements DialogController
         });
 
         intervalSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 30, 1));
+
+        // Keep "Select All" in sync when individual rows are checked/unchecked.
+        checkedProjects.addListener((SetChangeListener<Project>) change -> updateSelectAllCheckboxState());
+
+        selectAllSchedProjectsCheckBox.setOnAction(e -> {
+            if (suppressSelectAllEvents) return;
+            if (selectAllSchedProjectsCheckBox.isSelected())
+            {
+                checkedProjects.addAll(projectListView.getItems());
+            }
+            else
+            {
+                checkedProjects.clear();
+            }
+            projectListView.refresh();
+        });
 
         btnBrowseDestination.setOnAction(e -> browseDestination());
         btnCancel.setOnAction(e -> closeDialog());
@@ -101,16 +122,18 @@ public class ScheduleEditController implements DialogController
         dayOfWeekCombo.setValue(existing.getDayOfWeek() != null ? existing.getDayOfWeek() : 1);
         enabledCheck.setSelected(existing.isEnabled());
 
+        checkedProjects.clear();
         if (existing.getProjectIds() != null)
         {
             for (Project p : projectListView.getItems())
             {
                 if (existing.getProjectIds().contains(p.getProjectId()))
                 {
-                    projectListView.getSelectionModel().select(p);
+                    checkedProjects.add(p);
                 }
             }
         }
+        projectListView.refresh();
 
         updateScopeVisibility();
         updateFrequencyVisibility();
@@ -145,6 +168,18 @@ public class ScheduleEditController implements DialogController
         dayOfWeekCombo.setManaged(showDow);
     }
 
+    private void updateSelectAllCheckboxState()
+    {
+        suppressSelectAllEvents = true;
+        List<Project> allItems = projectListView.getItems();
+        boolean allChecked = !allItems.isEmpty() && checkedProjects.containsAll(allItems);
+        boolean noneChecked = checkedProjects.isEmpty();
+
+        selectAllSchedProjectsCheckBox.setSelected(allChecked);
+        selectAllSchedProjectsCheckBox.setIndeterminate(!allChecked && !noneChecked);
+        suppressSelectAllEvents = false;
+    }
+
     private void browseDestination()
     {
         DirectoryChooser chooser = new DirectoryChooser();
@@ -167,20 +202,26 @@ public class ScheduleEditController implements DialogController
                     destinationField.getScene().getWindow(), "Schedule", null, "Please choose a destination folder.");
             return;
         }
+        if (scopeCombo.getValue() != BackupSchedule.Scope.ALL && checkedProjects.isEmpty())
+        {
+            com.lensora.lensorastudio.util.Dialogs.showInfo(
+                    destinationField.getScene().getWindow(), "Schedule", null,
+                    "Please check at least one project, or choose \"ALL\".");
+            return;
+        }
 
         BackupSchedule schedule = existing != null ? existing : new BackupSchedule();
         schedule.setName(nameField.getText().trim());
         schedule.setScope(scopeCombo.getValue());
         schedule.setProjectIds(scopeCombo.getValue() == BackupSchedule.Scope.ALL ? null
-                : projectListView.getSelectionModel().getSelectedItems().stream()
-                        .map(Project::getProjectId).collect(Collectors.toList()));
+                : checkedProjects.stream().map(Project::getProjectId).collect(Collectors.toList()));
         schedule.setDestinationPath(destinationField.getText());
         schedule.setFrequency(frequencyCombo.getValue());
         schedule.setIntervalValue(intervalSpinner.getValue());
         schedule.setTimeOfDay(timeField.getText());
         schedule.setDayOfWeek(dayOfWeekCombo.getValue());
         schedule.setEnabled(enabledCheck.isSelected());
-        schedule.setNextRun(com.lensora.lensorastudio.backup.engine.BackupScheduler.computeNextRun(schedule, LocalDateTime.now()));
+        schedule.setNextRun(BackupScheduler.computeNextRun(schedule, LocalDateTime.now()));
 
         if (onSaved != null) onSaved.accept(schedule);
         closeDialog();

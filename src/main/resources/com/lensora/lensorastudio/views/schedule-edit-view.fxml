@@ -7,8 +7,8 @@
     xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.ScheduleEditController">
 
     <center>
-        <ScrollPane fitToWidth="true">
-            <VBox spacing="12" prefWidth="480">
+        <ScrollPane fitToWidth="true" prefViewportHeight="500">
+            <VBox spacing="12" prefWidth="500">
                 <padding>
                     <Insets top="16" right="16" bottom="16" left="16"/>
                 </padding>
@@ -20,8 +20,8 @@
                 <ComboBox fx:id="scopeCombo" maxWidth="Infinity"/>
 
                 <VBox fx:id="projectListContainer" spacing="6">
-                    <Label text="Select project(s):"/>
-                    <ListView fx:id="projectListView" prefHeight="140"/>
+                    <CheckBox fx:id="selectAllSchedProjectsCheckBox" text="Select All"/>
+                    <ListView fx:id="projectListView" prefHeight="150" minHeight="100"/>
                 </VBox>
 
                 <Label text="Destination" style="-fx-font-weight: bold;"/>

@@ -10,11 +10,11 @@
     <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
     <Label fx:id="lblStatusReminders" text="Reminders: 0"/>
     <Pane HBox.hgrow="ALWAYS"/>
-    <HBox fx:id="progressContainer" spacing="10" alignment="CENTER_LEFT" visible="false" managed="false">
-        <ProgressBar fx:id="progressBar" prefWidth="200" progress="0"/>
-        <Label fx:id="progressLabel" text="0%"/>
-        <Label fx:id="progressSpeedLabel" text="0 KB/s"/>
-        <Label fx:id="progressEtaLabel" text="ETA: --"/>
+    <HBox fx:id="progressContainer" spacing="6" alignment="CENTER_LEFT" visible="false" managed="false">
+        <ProgressBar fx:id="progressBar" style="-fx-min-width: 18em; -fx-pref-width: 18em; -fx-max-width: 18em;" progress="0"/>
+        <Label fx:id="progressLabel" text="0%" style="-fx-min-width: 5em; -fx-alignment: center-left;"/>
+        <Label fx:id="progressSpeedLabel" text="0 KB/s" style="-fx-min-width: 5em; -fx-alignment: center-left;"/>
+        <Label fx:id="progressEtaLabel" text="ETA: --" style="-fx-min-width: 8em; -fx-alignment: center-left;"/>
     </HBox>
     <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
     <Label fx:id="lblStatusPath" text="" style="-fx-cursor: hand;"/>

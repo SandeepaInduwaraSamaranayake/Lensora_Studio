@@ -20,6 +20,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
@@ -34,6 +35,35 @@ import javafx.util.StringConverter;
 public class SettingsController implements DialogController
 {
     private static final Logger logger = LoggerFactory.getLogger(ThemeManager.class);
+
+    // ---------------------------- Constants ----------------------------------
+    private static final double FONT_SIZE_MIN                   =   8.0;
+    private static final double FONT_SIZE_MAX                   =   24.0;
+    private static final double FONT_SIZE_STEP                  =   0.5;
+
+    private static final int    SEARCH_DEBOUNCE_MIN             =   0;
+    private static final int    SEARCH_DEBOUNCE_MAX             =   1000;
+    private static final int    SEARCH_DEBOUNCE_STEP            =   50;
+
+    private static final int    FOLDER_SAVE_DEBOUNCE_MIN        =   0;
+    private static final int    FOLDER_SAVE_DEBOUNCE_MAX        =   1000;
+    private static final int    FOLDER_SAVE_DEBOUNCE_STEP       =   50;
+
+    private static final double ZOOM_SENSITIVITY_MIN            =   1.0;
+    private static final double ZOOM_SENSITIVITY_MAX            =   2.0;
+    private static final double ZOOM_SENSITIVITY_STEP           =   0.05;
+
+    private static final List<Integer> METADATA_RESOLUTIONS     =   List.of(100, 200, 400, 600, 800, 1200);
+
+    private static final int    IMG_CACHE_MEMORY_ENTRIES_MIN    =  50;
+    private static final int    IMG_CACHE_MEMORY_ENTRIES_MAX    =  2000;
+    private static final int    IMG_CACHE_MEMORY_ENTRIES_STEP   =  10;
+
+    private static final int    IMG_CACHE_DISK_ENTRIES_MIN      =  50;
+    private static final int    IMG_CACHE_DISK_ENTRIES_MAX      =  2000000;
+    private static final int    IMG_CACHE_DISK_ENTRIES_STEP     =  100;
+
+
     
     // Constant for the empty template state with a Sentinel Object
     private static final FolderTemplateRepository.FolderTemplate NONE_TEMPLATE = 
@@ -59,7 +89,8 @@ public class SettingsController implements DialogController
 
     @FXML private Spinner<Integer>                          searchDebounceSpinner, 
                                                             folderSaveDebounceSpinner,
-                                                            cacheSizeSpinner;
+                                                            imageCacheMemorySpinner, 
+                                                            imageCacheDiskSpinner;
 
     @FXML
     private Button                                          btnCancel, 
@@ -67,7 +98,8 @@ public class SettingsController implements DialogController
                                                             btnApply, 
                                                             btnRestoreDefaults, 
                                                             btnBrowseDefaultRoot, 
-                                                            btnBrowseLogDir;
+                                                            btnBrowseLogDir,
+                                                            btnClearImageCache;
 
     @FXML 
     private HBox                                            prefHeaderBar;
@@ -82,29 +114,33 @@ public class SettingsController implements DialogController
                                                             clearSearchOnProjectSelectCheck,
                                                             resetStatusOnClearSearchCheck,
                                                             showMetadataImagePreviewCheck;
+    @FXML 
+    private Label                                           imageCacheSizeLabel;
 
     private final AppSettings settings = AppSettings.getInstance();
 
-    private Runnable            onSettingsApplied;
+    private Runnable onSettingsApplied;
 
     // ---------------- Temporary copies to revert on Cancel --------------------
     private AppSettings.Theme               tempTheme;
-    private double                          tempFontSize;
-    private String                          tempProjectRoot;
-    private String                          tempLogDir;
-    private boolean                         tempOpenOnStartup;
-    private boolean                         tempClearSearchOnSelect;
-    private boolean                         tempOpenLastProject;
-    private boolean                         tempResetStatusOnClearSearch;
-    private int                             tempSearchDebounce;
-    private int                             tempFolderSaveDebounce;
-    private boolean                         tempShowImagePreviewInMetadata;
-    private int                             tempMetadataPreviewSize;
-    private int                             tempCacheSize;
-    private double                          tempZoomSensitivity;
+    private double                          tempFontSize,
+                                            tempZoomSensitivity;
+    private String                          tempProjectRoot,
+                                            tempDefaultStatus,
+                                            tempLogDir;
+    private boolean                         tempOpenOnStartup,
+                                            tempClearSearchOnSelect,
+                                            tempOpenLastProject,
+                                            tempShowImagePreviewInMetadata,
+                                            tempResetStatusOnClearSearch;
+    private int                             tempSearchDebounce,
+                                            tempFolderSaveDebounce,
+                                            tempMetadataPreviewSize,
+                                            tempDefaultTemplateId,
+                                            tempImageCacheMemoryEntries, 
+                                            tempImageCacheDiskEntries;
     private AppSettings.ImageQuality        tempImageViewerQuality;
-    private int                             tempDefaultTemplateId;
-    private String                          tempDefaultStatus;
+    
 
     // ----------------------------- Initialization ----------------------------
     @FXML
@@ -118,7 +154,7 @@ public class SettingsController implements DialogController
         setupSearchDebounceSpinner();
         setupFolderSaveDebounceSpinner();
         setupMetadataPreviewQuality();
-        setupCacheSizeSpinner();
+        setupImageCacheSpinners();
         setupZoomSensitivitySpinner();
         updateUIFromTemp();
         setupButtonActions();
@@ -141,7 +177,8 @@ public class SettingsController implements DialogController
         tempFolderSaveDebounce          = settings.getFolderSaveDelayMs();
         tempShowImagePreviewInMetadata  = settings.getShowMetadataImagePreview();
         tempMetadataPreviewSize         = settings.getMetadataPreviewSize();
-        tempCacheSize                   = settings.getImageCacheSize();
+        tempImageCacheMemoryEntries     = settings.getImageCacheMemoryEntries();
+        tempImageCacheDiskEntries       = settings.getImageCacheDiskEntries();
         tempZoomSensitivity             = settings.getZoomSensitivity();
         tempImageViewerQuality          = settings.getImageViewerQuality();
         tempDefaultTemplateId           = settings.getDefaultFolderTemplateId();
@@ -175,7 +212,13 @@ public class SettingsController implements DialogController
     private void setupFontSizeSpinner() 
     {
         // Set range and step
-        SpinnerValueFactory<Double> valueFactory = new SpinnerValueFactory.DoubleSpinnerValueFactory(8, 24, tempFontSize, 0.5);
+        SpinnerValueFactory<Double> valueFactory = 
+                    new SpinnerValueFactory.DoubleSpinnerValueFactory(
+                        FONT_SIZE_MIN, 
+                        FONT_SIZE_MAX, 
+                        tempFontSize, 
+                        FONT_SIZE_STEP
+                    );
         fontSizeSpinner.setValueFactory(valueFactory);
         // Optionally add a custom converter to show "12 px"
         fontSizeSpinner.getEditor().setText(String.format("%.1f px", tempFontSize));
@@ -189,7 +232,13 @@ public class SettingsController implements DialogController
 
     private void setupSearchDebounceSpinner() 
     {
-        SpinnerValueFactory<Integer> debounceFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1000, tempSearchDebounce, 50);
+        SpinnerValueFactory<Integer> debounceFactory = 
+                    new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                        SEARCH_DEBOUNCE_MIN, 
+                        SEARCH_DEBOUNCE_MAX, 
+                        tempSearchDebounce, 
+                        SEARCH_DEBOUNCE_STEP
+                    );
         searchDebounceSpinner.setValueFactory(debounceFactory);
 
         searchDebounceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -199,7 +248,13 @@ public class SettingsController implements DialogController
 
     private void setupFolderSaveDebounceSpinner() 
     {
-        SpinnerValueFactory<Integer> debounceFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 1000, tempFolderSaveDebounce, 50);
+        SpinnerValueFactory<Integer> debounceFactory = 
+                    new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                        FOLDER_SAVE_DEBOUNCE_MIN, 
+                        FOLDER_SAVE_DEBOUNCE_MAX, 
+                        tempFolderSaveDebounce,
+                        FOLDER_SAVE_DEBOUNCE_STEP
+                    );
         folderSaveDebounceSpinner.setValueFactory(debounceFactory);
 
         folderSaveDebounceSpinner.valueProperty().addListener((obs, oldVal, newVal) -> {
@@ -210,15 +265,19 @@ public class SettingsController implements DialogController
     private void setupZoomSensitivitySpinner()
     {
         SpinnerValueFactory<Double> factory =
-                new SpinnerValueFactory.DoubleSpinnerValueFactory(1.05, 2.0, tempZoomSensitivity, 0.05);
+                    new SpinnerValueFactory.DoubleSpinnerValueFactory(
+                        ZOOM_SENSITIVITY_MIN,
+                        ZOOM_SENSITIVITY_MAX,
+                        tempZoomSensitivity,
+                        ZOOM_SENSITIVITY_STEP
+                    );
         zoomSensitivitySpinner.setValueFactory(factory);
         zoomSensitivitySpinner.valueProperty().addListener((obs, old, val) -> tempZoomSensitivity = val);
     }
 
     private void setupMetadataPreviewQuality()
     {
-        List<Integer> sizes = List.of(100, 200, 400, 600, 800, 1200);
-        metadataPreviewQualityCombo.getItems().addAll(sizes);
+        metadataPreviewQualityCombo.getItems().addAll(METADATA_RESOLUTIONS);
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
         metadataPreviewQualityCombo.setCellFactory(lv -> new ListCell<>() {
             @Override
@@ -233,13 +292,37 @@ public class SettingsController implements DialogController
         });
     }
 
-    private void setupCacheSizeSpinner() 
+    private void setupImageCacheSpinners()
     {
-        SpinnerValueFactory<Integer> valueFactory = new SpinnerValueFactory.IntegerSpinnerValueFactory(1, 2000, tempCacheSize, 50);
-        cacheSizeSpinner.setValueFactory(valueFactory);
-        cacheSizeSpinner.valueProperty().addListener((obs, old, val) -> {
-            tempCacheSize = val;
+        imageCacheMemorySpinner.setValueFactory(
+                    new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                        IMG_CACHE_MEMORY_ENTRIES_MIN, 
+                        IMG_CACHE_MEMORY_ENTRIES_MAX, 
+                        tempImageCacheMemoryEntries, 
+                        IMG_CACHE_MEMORY_ENTRIES_STEP)
+                    );
+        imageCacheMemorySpinner.valueProperty().addListener((obs, old, val) -> tempImageCacheMemoryEntries = val);
+
+        imageCacheDiskSpinner.setValueFactory(
+                    new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                        IMG_CACHE_DISK_ENTRIES_MIN, 
+                        IMG_CACHE_DISK_ENTRIES_MAX, 
+                        tempImageCacheDiskEntries, 
+                        IMG_CACHE_DISK_ENTRIES_STEP)
+                    );
+        imageCacheDiskSpinner.valueProperty().addListener((obs, old, val) -> tempImageCacheDiskEntries = val);
+
+        btnClearImageCache.setOnAction(e -> {
+            btnClearImageCache.setDisable(true);
+
+            ImageCache.clearAll(() -> {
+                btnClearImageCache.setDisable(false);
+                updateImageCacheSizeLabel();
+                NotificationUtil.showToast(getOwnerWindow(), "Cache Cleared", "fas-check-circle");
+            });
         });
+
+        updateImageCacheSizeLabel();
     }
 
     private void updateUIFromTemp() 
@@ -269,7 +352,8 @@ public class SettingsController implements DialogController
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
 
         // Reset cache size
-        cacheSizeSpinner.getValueFactory().setValue(tempCacheSize);
+        imageCacheMemorySpinner.getValueFactory().setValue(tempImageCacheMemoryEntries);
+        imageCacheDiskSpinner.getValueFactory().setValue(tempImageCacheDiskEntries);
 
         // Sync the actual open-on-startup with the system (in case it changed externally)
         boolean actual = StartupManager.isStartupEnabled();
@@ -356,7 +440,7 @@ public class SettingsController implements DialogController
         applySearchDebounce();
         applyFolderSaveDebounce();
         applyMetadataPreviewSize();
-        applyCacheSize();
+        applyImageCacheSettings();
         applyZoomSensitivity();
         applyProjectRoot();
         applyLogDirectory();
@@ -413,16 +497,21 @@ public class SettingsController implements DialogController
         if (tempMetadataPreviewSize != settings.getMetadataPreviewSize())
         {
             settings.setMetadataPreviewSize(tempMetadataPreviewSize);
-            ImageCache.clear();
+            ImageCache.clearAll();
         }
     }
 
-    private void applyCacheSize() 
+    private void applyImageCacheSettings()
     {
-        if (tempCacheSize != settings.getImageCacheSize()) 
+        if (tempImageCacheMemoryEntries != settings.getImageCacheMemoryEntries())
         {
-            settings.setImageCacheSize(tempCacheSize);
-            ImageCache.setMaxEntries(tempCacheSize);
+            settings.setImageCacheMemoryEntries(tempImageCacheMemoryEntries);
+            ImageCache.setMaxMemoryEntries(tempImageCacheMemoryEntries);
+        }
+        if (tempImageCacheDiskEntries != settings.getImageCacheDiskEntries())
+        {
+            settings.setImageCacheDiskEntries(tempImageCacheDiskEntries);
+            ImageCache.setMaxDiskEntries(tempImageCacheDiskEntries);
         }
     }
 
@@ -464,7 +553,7 @@ public class SettingsController implements DialogController
     {
         // Open on Startup toggle
         boolean newValue = openOnStartupCheck.isSelected();
-        if (newValue != settings.getOpenOnStartup()) 
+        if (newValue != settings.getOpenOnStartup())
         {
             boolean success = newValue ? StartupManager.addToStartup() : StartupManager.removeFromStartup();
             if (success) 
@@ -553,7 +642,8 @@ public class SettingsController implements DialogController
         tempFolderSaveDebounce           = AppSettings.DEFAULT_FOLDER_SAVE_DELAY_MS;
         tempShowImagePreviewInMetadata   = AppSettings.DEFAULT_SHOW_METADATA_PREVIEW;
         tempMetadataPreviewSize          = AppSettings.DEFAULT_METADATA_PREVIEW_SIZE;        
-        tempCacheSize                    = AppSettings.DEFAULT_IMAGE_CACHE_SIZE;
+        tempImageCacheMemoryEntries      = AppSettings.DEFAULT_IMAGE_CACHE_MEMORY_ENTRIES;
+        tempImageCacheDiskEntries        = AppSettings.DEFAULT_IMAGE_CACHE_DISK_ENTRIES;
         tempZoomSensitivity              = AppSettings.DEFAULT_ZOOM_SENSITIVITY;
         tempImageViewerQuality           = AppSettings.ImageQuality.valueOf(AppSettings.DEFAULT_IMAGE_VIEWER_QUALITY);
         tempDefaultTemplateId            = AppSettings.DEFAULT_FOLDER_TEMPLATE_ID;
@@ -584,7 +674,8 @@ public class SettingsController implements DialogController
         metadataPreviewQualityCombo.setValue(tempMetadataPreviewSize);
 
         // Reset cache size
-        cacheSizeSpinner.getValueFactory().setValue(tempCacheSize);
+        imageCacheMemorySpinner.getValueFactory().setValue(tempImageCacheMemoryEntries);
+        imageCacheDiskSpinner.getValueFactory().setValue(tempImageCacheDiskEntries);
 
         // Reset clear search on project select
         clearSearchOnProjectSelectCheck.setSelected(tempClearSearchOnSelect);
@@ -637,6 +728,11 @@ public class SettingsController implements DialogController
             if (target == projectRootField) tempProjectRoot = selected.getAbsolutePath();
             else if (target == logDirField) tempLogDir = selected.getAbsolutePath();
         }
+    }
+
+    private void updateImageCacheSizeLabel()
+    {
+        imageCacheSizeLabel.setText(ImageCache.getMemorySize() + " in memory, " + ImageCache.getDiskSize() + " on disk");
     }
 
     @FXML

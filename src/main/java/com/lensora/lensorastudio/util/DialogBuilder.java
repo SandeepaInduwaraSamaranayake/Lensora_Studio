@@ -191,7 +191,7 @@ public class DialogBuilder
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setSpacing(8);
-        header.setPadding(new Insets(2, 8, 2, 8));
+        header.setPadding(new Insets(0, 8, 0, 8));
 
         Label iconLabel = new Label(icon);
         iconLabel.setFont(Font.font(25));

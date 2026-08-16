@@ -8,6 +8,7 @@ module com.lensora.lensorastudio
     requires java.sql;
     requires java.prefs;
     requires transitive javafx.graphics;
+    requires transitive javafx.swing;
     requires java.management;
 
     // Logging

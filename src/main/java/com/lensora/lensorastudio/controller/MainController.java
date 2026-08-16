@@ -21,6 +21,7 @@ import com.lensora.lensorastudio.viewmodel.StatusBarViewModel;
 import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
@@ -193,15 +194,15 @@ public class MainController
      */
     private void setupMetadataPanel(FileListingManager fileListing, FileOperationsManager fileOps)
     {
-        // 1. Create the panel content (initially shows placeholder)
+        // Create the panel content (initially shows placeholder)
         StackPane metadataContent = new StackPane();
         Label placeholder = new Label("Select a file to view metadata");
         metadataContent.getChildren().add(placeholder);
 
-        // 2. Register the panel with the docking service
+        // Register the panel with the docking service
         dockingService.register("metadata", metadataContent, "Metadata");
 
-        // 3. Listen to file selection and load metadata
+        // Listen to file selection and load metadata
         fileListing.selectedFileProperty().addListener((obs, oldFile, newFile) -> {
             if (newFile == null) 
             {
@@ -224,7 +225,7 @@ public class MainController
             );
         });
 
-        // 4. Wire the right‑click "Metadata" action to show the panel
+        // Wire the right‑click "Metadata" action to show the panel
         fileOps.setShowMetadataHandler(file -> {
             // Update the selection – this triggers the listener to load metadata
             fileListing.selectedFileProperty().set(file);
@@ -350,15 +351,19 @@ public class MainController
     private void setupBackupSchedular()
     {
         BackupScheduler.getInstance().setOnJobTriggered((scheduleName, job) -> {
-        NotificationUtil.showToast(
-                (Stage) headerBar.getScene().getWindow(),
-                "Scheduled backup \"" + scheduleName + "\" is running…");
-        trackBackgroundTask("Scheduled Backup: " + scheduleName, job);
+            NotificationUtil.showToast(
+                    (Stage) headerBar.getScene().getWindow(),
+                    "Scheduled backup \"" + scheduleName + "\" is running…");
 
-        job.setOnSucceeded(e -> NotificationUtil.showToast(
-                (Stage) headerBar.getScene().getWindow(),
-                "Scheduled backup \"" + scheduleName + "\" completed."));
-        });
+            // submit job to track progress
+            trackBackgroundTask("Scheduled Backup: " + scheduleName, job);
+
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, e -> 
+                NotificationUtil.showToast(
+                    (Stage) headerBar.getScene().getWindow(),
+                    "Scheduled backup \"" + scheduleName + "\" completed.")
+                );
+            });
     }
 
     private void updateSearchDebounce()
@@ -461,7 +466,7 @@ public class MainController
         DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
                 .icon("🛡")
                 .resizable(true)
-                .minSize(750, 500)
+                .minSize(1000, 750)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof BackupRestoreCenterController brcc)
                     {
@@ -484,7 +489,7 @@ public class MainController
     }
 
 
-    /** Builds View → Panels with one CheckMenuItem per dockable panel. */
+    /** Builds View -> Panels with one CheckMenuItem per dockable panel. */
     private void setupPanelsMenu()
     {
         if (mnu_view == null) return;
@@ -496,7 +501,7 @@ public class MainController
             String id = entry.getKey();
             String title = entry.getValue();
 
-            javafx.scene.control.CheckMenuItem item = new javafx.scene.control.CheckMenuItem(title);
+            CheckMenuItem item = new CheckMenuItem(title);
             item.setSelected(dockingService.isVisible(id));
 
             item.setOnAction(e -> {
@@ -509,14 +514,14 @@ public class MainController
         }
 
         mnu_view.getItems().add(0, panelsMenu);
-        mnu_view.getItems().add(1, new javafx.scene.control.SeparatorMenuItem());
+        mnu_view.getItems().add(1, new SeparatorMenuItem());
     }
 
 
     /** Re-syncs checkmarks after an operation that can change multiple panels' visibility at once (e.g. Reset Layout). */
     private void refreshPanelsMenuChecks()
     {
-        for (Map.Entry<String, javafx.scene.control.CheckMenuItem> entry : panelCheckItems.entrySet())
+        for (Map.Entry<String, CheckMenuItem> entry : panelCheckItems.entrySet())
         {
             entry.getValue().setSelected(dockingService.isVisible(entry.getKey()));
         }
@@ -555,7 +560,7 @@ public class MainController
         }
         if (lockLayoutTooltip != null)
         {
-            lockLayoutTooltip.setText(locked ? "Unlock Layout (SHIFT + L)" : "Lock Layout (SHIFT +L)");
+            lockLayoutTooltip.setText(locked ? "Unlock Layout (SHIFT + L)" : "Lock Layout (SHIFT + L)");
         }
     }
 
@@ -623,6 +628,7 @@ public class MainController
      */
     public void trackBackgroundTask(String title, Task<?> task)
     {
+        if(task == null) return;
         if (statusBarController != null)
         {
             statusBarController.trackTask(title, task);

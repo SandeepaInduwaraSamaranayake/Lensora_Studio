@@ -7,6 +7,7 @@ import com.lensora.lensorastudio.repository.ProjectRepository;
 
 import javafx.application.Platform;
 import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ import java.io.File;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -56,7 +58,7 @@ public final class BackupScheduler
         if (executor != null && !executor.isShutdown()) return;
 
         executor = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread t = new Thread(r, "backup-scheduler");
+            Thread t = new Thread(r, "Lensora-backup-scheduler");
             t.setDaemon(true);
             return t;
         });
@@ -112,6 +114,8 @@ public final class BackupScheduler
 
         try
         {
+            advanceSchedule(schedule);   // sets nextRun to the next scheduled time
+
             List<Project> targets = resolveTargetProjects(schedule);
             if (targets.isEmpty())
             {
@@ -129,7 +133,7 @@ public final class BackupScheduler
                 return;
             }
 
-            List<BatchBackupJob.BatchItem> items = new java.util.ArrayList<>();
+            List<BatchBackupJob.BatchItem> items = new ArrayList<>();
             for (Project project : targets)
             {
                 items.add(new BatchBackupJob.BatchItem(project,
@@ -138,9 +142,9 @@ public final class BackupScheduler
 
             BatchBackupJob job = BackupService.createBatchBackupJob(items);
 
-            job.setOnSucceeded(e -> Platform.runLater(() -> advanceSchedule(schedule)));
-            job.setOnFailed(e -> Platform.runLater(() -> advanceSchedule(schedule)));
-            job.setOnCancelled(e -> Platform.runLater(() -> advanceSchedule(schedule)));
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, e -> updateLastRun(schedule));
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, e -> updateLastRun(schedule));
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_CANCELLED, e -> updateLastRun(schedule));
 
             if (onJobTriggered != null)
             {
@@ -150,7 +154,7 @@ public final class BackupScheduler
                 Platform.runLater(() -> onJobTriggered.accept(schedule.getName(), job));
             }
 
-            Thread thread = new Thread(job, "scheduled-backup-" + schedule.getScheduleId());
+            Thread thread = new Thread(job, "Lensora-scheduled-backup: Schedule ID - " + schedule.getScheduleId());
             thread.setDaemon(true);
             thread.start();
         }
@@ -159,6 +163,22 @@ public final class BackupScheduler
             logger.error("[BackupScheduler] Failed to run schedule '{}'", schedule.getName(), e);
             advanceSchedule(schedule);
         }
+    }
+
+    // Helper to update lastRun off the UI thread
+    private void updateLastRun(BackupSchedule schedule) 
+    {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            try
+            {
+                schedule.setLastRun(LocalDateTime.now());
+                BackupScheduleRepository.update(schedule);
+            } 
+            catch (SQLException e)
+            {
+                logger.error("[BackupScheduler] Failed to update lastRun for '{}'", schedule.getName(), e);
+            }
+        });
     }
 
     private void advanceSchedule(BackupSchedule schedule)

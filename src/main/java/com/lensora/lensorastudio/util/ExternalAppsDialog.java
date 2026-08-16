@@ -32,11 +32,11 @@ public final class ExternalAppsDialog
         AppIconUtil.setAppIcon(stage);
 
         ObservableList<ExternalApp> apps = FXCollections.observableArrayList(
-                AppSettings.getInstance().getExternalApps());
+                AppSettings.getInstance().getExternalApps()
+        );
 
         // ---- ListView with custom cell ----
         ListView<ExternalApp> listView = new ListView<>(apps);
-        listView.setPrefSize(400, 250);
         listView.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         VBox.setVgrow(listView, Priority.ALWAYS);
 
@@ -98,7 +98,7 @@ public final class ExternalAppsDialog
         });
 
         // ---- Controls & Form Action ----
-        Button addButton = new Button("Add");
+        Button actionButton = new Button("Add");
         Button clearButton = new Button("Clear");
         Button removeButton = new Button("Remove Selected");
 
@@ -110,17 +110,17 @@ public final class ExternalAppsDialog
             {
                 nameField.setText(selected.getName());
                 pathField.setText(selected.getExecutablePath());
-                addButton.setText("Update");
+                actionButton.setText("Update");
             } 
             else 
             {
                 nameField.clear();
                 pathField.clear();
-                addButton.setText("Add");
+                actionButton.setText("Add");
             }
         });
 
-        addButton.setOnAction(e -> {
+        actionButton.setOnAction(e -> {
             String name = nameField.getText().trim();
             String path = pathField.getText().trim();
 
@@ -196,7 +196,7 @@ public final class ExternalAppsDialog
         VBox formBox = new VBox(6,
                 new Label("Name"), nameField,
                 new Label("Executable Path"), pathRow,
-                new HBox(8, addButton, clearButton, removeButton)
+                new HBox(8, actionButton, clearButton, removeButton)
         );
         formBox.setPadding(new Insets(0, 0, 10, 0));
 
@@ -215,7 +215,7 @@ public final class ExternalAppsDialog
         root.setPadding(new Insets(15));
         root.setFillWidth(true);
 
-        Scene scene = new Scene(root, 460, 420);
+        Scene scene = new Scene(root, 500, 600);
         stage.setScene(scene);
         stage.setMinWidth(400);
         stage.setMinHeight(360);

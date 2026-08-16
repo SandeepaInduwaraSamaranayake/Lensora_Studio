@@ -39,7 +39,8 @@ public class AppSettings
     private static final String     KEY_LAYOUT_LOCKED                               = "layout.locked";
     private static final String     KEY_EXTERNAL_APPS                               = "file.external_apps";
     private static final String     KEY_FOLDER_SAVE_DELAY_MS                        = "folder.save_delay_ms";
-    private static final String     KEY_IMAGE_CACHE_SIZE                            = "image.cache.size";
+    private static final String     KEY_IMAGE_CACHE_MEMORY_ENTRIES                  = "image.cache.memory_entries";
+    private static final String     KEY_IMAGE_CACHE_DISK_ENTRIES                    = "image.cache.disk_entries";
     private static final String     KEY_ZOOM_SENSITIVITY                            = "image.viewer.zoom_sensitivity";
     private static final String     KEY_BACKUP_HISTORY                              = "backup.history.paths";
     private static final String     KEY_IMAGE_VIEWER_QUALITY                        = "image.viewer.quality";
@@ -63,7 +64,8 @@ public class AppSettings
     public static final int         DEFAULT_METADATA_PREVIEW_SIZE                   = 600;
     public static final boolean     DEFAULT_LAYOUT_LOCKED                           = false;
     public static final int         DEFAULT_FOLDER_SAVE_DELAY_MS                    = 400;
-    public static final int         DEFAULT_IMAGE_CACHE_SIZE                        = 200;
+    public static final int         DEFAULT_IMAGE_CACHE_MEMORY_ENTRIES              = 200;
+    public static final int         DEFAULT_IMAGE_CACHE_DISK_ENTRIES                = 1000;
     public static final double      DEFAULT_ZOOM_SENSITIVITY                        = 1.40;
     public static final String      DEFAULT_IMAGE_VIEWER_QUALITY                    = ImageQuality.HIGH.name();
     public static final int         DEFAULT_FOLDER_TEMPLATE_ID                      = -1; // -1 = "(None - empty folder)"
@@ -340,14 +342,24 @@ public class AppSettings
     }
 
     // ------------------------ Cache size  --------------------------------
-    public int getImageCacheSize()
+    public int getImageCacheMemoryEntries()
     {
-        return prefs.getInt(KEY_IMAGE_CACHE_SIZE, DEFAULT_IMAGE_CACHE_SIZE);
+        return prefs.getInt(KEY_IMAGE_CACHE_MEMORY_ENTRIES, DEFAULT_IMAGE_CACHE_MEMORY_ENTRIES);
     }
 
-    public void setImageCacheSize(int size) 
+    public void setImageCacheMemoryEntries(int entries)
     {
-        prefs.putInt(KEY_IMAGE_CACHE_SIZE, size);
+        prefs.putInt(KEY_IMAGE_CACHE_MEMORY_ENTRIES, Math.max(1, entries));
+    }
+
+    public int getImageCacheDiskEntries()
+    {
+        return prefs.getInt(KEY_IMAGE_CACHE_DISK_ENTRIES, DEFAULT_IMAGE_CACHE_DISK_ENTRIES);
+    }
+
+    public void setImageCacheDiskEntries(int entries)
+    {
+        prefs.putInt(KEY_IMAGE_CACHE_DISK_ENTRIES, Math.max(1, entries));
     }
 
     // --------------------- Zoom Sensitivity  ----------------------------
