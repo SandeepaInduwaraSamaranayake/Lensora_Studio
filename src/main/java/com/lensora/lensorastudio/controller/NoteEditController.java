@@ -2,11 +2,14 @@ package com.lensora.lensorastudio.controller;
 
 import com.lensora.lensorastudio.model.ProjectNote;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.util.function.Consumer;
 
@@ -20,6 +23,33 @@ public class NoteEditController implements DialogController
     private ProjectNote existing;
     private Consumer<ProjectNote> onSaved;
 
+
+    @FXML
+    public void initialize()
+    {
+        setupButtonActions();
+        setupBindings();
+    }
+
+    private void setupButtonActions()
+    {
+        btnCancel.setOnAction(e -> closeDialog());
+        btnSave.setOnAction(e -> saveAndClose());
+    }
+
+    // ─── Declarative Bindings ───────────────────────────────────────────────
+
+    private void setupBindings()
+    {
+        // Disables save button automatically whenever content is empty or whitespace-only
+        BooleanBinding isContentBlank = Bindings.createBooleanBinding(
+            () -> contentArea.getText() == null || contentArea.getText().isBlank(),
+            contentArea.textProperty()
+        );
+
+        btnSave.disableProperty().bind(isContentBlank);
+    }
+
     public void setContext(int projectId, ProjectNote existingNote, Consumer<ProjectNote> onSaved)
     {
         this.projectId = projectId;
@@ -31,20 +61,6 @@ public class NoteEditController implements DialogController
             titleField.setText(existingNote.getNoteTitle());
             contentArea.setText(existingNote.getNoteContent());
         }
-        updateSaveEnabled();
-    }
-
-    @FXML
-    public void initialize()
-    {
-        btnCancel.setOnAction(e -> closeDialog());
-        btnSave.setOnAction(e -> saveAndClose());
-        contentArea.textProperty().addListener((obs, old, val) -> updateSaveEnabled());
-    }
-
-    private void updateSaveEnabled()
-    {
-        btnSave.setDisable(contentArea.getText() == null || contentArea.getText().isBlank());
     }
 
     private void saveAndClose()
@@ -61,6 +77,9 @@ public class NoteEditController implements DialogController
     private void closeDialog()
     {
         Stage stage = (Stage) btnCancel.getScene().getWindow();
-        if (stage != null) stage.close();
+        if (stage != null)
+        {
+            stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
+        }
     }
 }

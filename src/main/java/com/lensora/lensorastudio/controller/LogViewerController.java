@@ -5,6 +5,8 @@ import com.lensora.lensorastudio.util.Dialogs;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 import com.lensora.lensorastudio.util.NotificationUtil;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -25,7 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class LogViewerController implements DialogController 
+public class LogViewerController implements DialogController
 {
     private static final Logger logger = LoggerFactory.getLogger(LogViewerController.class);
 
@@ -48,9 +50,26 @@ public class LogViewerController implements DialogController
     public void initialize() 
     {
         logger.info("[LogViewerController] Initializing LogViewerController...");
+        setupBindings();
         loadLogFile();
     }
 
+    // ─── Declarative Bindings ───────────────────────────────────────────────
+
+    private void setupBindings()
+    {
+        // Disables copy and clear buttons when log text is empty or blank
+        BooleanBinding isLogEmpty = Bindings.createBooleanBinding(
+            () -> logTextArea.getText() == null || logTextArea.getText().isBlank(),
+            logTextArea.textProperty()
+        );
+
+        copyButton.disableProperty().bind(isLogEmpty);
+        clearLogsButton.disableProperty().bind(isLogEmpty);
+    }
+
+    // ─── File Operations ───────────────────────────────────────────────────
+    
     private void loadLogFile() 
     {
         String logDir  = AppSettings.getInstance().getDefaultLogDir();
@@ -85,6 +104,8 @@ public class LogViewerController implements DialogController
             logSizeLabel.setText("Error");
         }
     }
+
+    // ─── Actions ────────────────────────────────────────────────────────────
 
     @FXML
     private void handleClearLogs() 

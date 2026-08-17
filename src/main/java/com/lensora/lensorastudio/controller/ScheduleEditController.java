@@ -5,6 +5,8 @@ import com.lensora.lensorastudio.backup.model.BackupSchedule;
 import com.lensora.lensorastudio.backup.ui.ProjectCheckBoxListCell;
 import com.lensora.lensorastudio.model.Project;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableSet;
 import javafx.collections.SetChangeListener;
@@ -12,7 +14,8 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
-import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
@@ -63,11 +66,22 @@ public class ScheduleEditController implements DialogController
     @FXML
     public void initialize()
     {
-        scopeCombo.getItems().addAll(BackupSchedule.Scope.values());
-        scopeCombo.valueProperty().addListener((obs, old, val) -> updateScopeVisibility());
+        setupCombosAndSpinners();
+        setupButtonActions();
+        setupBindings();
 
+        // Sensible defaults for a brand-new schedule.
+        scopeCombo.setValue(BackupSchedule.Scope.ALL);
+        frequencyCombo.setValue(BackupSchedule.Frequency.DAILY);
+        timeField.setText("02:00");
+        dayOfWeekCombo.setValue(1);
+        enabledCheck.setSelected(true);
+    }
+
+    private void setupCombosAndSpinners()
+    {
+        scopeCombo.getItems().addAll(BackupSchedule.Scope.values());
         frequencyCombo.getItems().addAll(BackupSchedule.Frequency.values());
-        frequencyCombo.valueProperty().addListener((obs, old, val) -> updateFrequencyVisibility());
 
         dayOfWeekCombo.getItems().addAll(1, 2, 3, 4, 5, 6, 7);
         dayOfWeekCombo.setConverter(new javafx.util.StringConverter<>() {
@@ -93,20 +107,66 @@ public class ScheduleEditController implements DialogController
             }
             projectListView.refresh();
         });
+    }
 
+    private void setupButtonActions()
+    {
         btnBrowseDestination.setOnAction(e -> browseDestination());
         btnCancel.setOnAction(e -> closeDialog());
         btnSave.setOnAction(e -> saveAndClose());
+    }
 
-        // Sensible defaults for a brand-new schedule.
-        scopeCombo.setValue(BackupSchedule.Scope.ALL);
-        frequencyCombo.setValue(BackupSchedule.Frequency.DAILY);
-        timeField.setText("02:00");
-        dayOfWeekCombo.setValue(1);
-        enabledCheck.setSelected(true);
+// ─── Declarative Bindings ───────────────────────────────────────────────
 
-        updateScopeVisibility();
-        updateFrequencyVisibility();
+    private void setupBindings()
+    {
+        // Scope visibility binding
+        BooleanBinding showProjectList = Bindings.createBooleanBinding(
+            () -> scopeCombo.getValue() != BackupSchedule.Scope.ALL,
+            scopeCombo.valueProperty()
+        );
+
+        projectListContainer.visibleProperty().bind(showProjectList);
+        projectListContainer.managedProperty().bind(showProjectList);
+
+        // Frequency visibility bindings
+        BooleanBinding showTime = Bindings.createBooleanBinding(
+            () -> frequencyCombo.getValue() != BackupSchedule.Frequency.HOURLY,
+            frequencyCombo.valueProperty()
+        );
+
+        timeLabel.visibleProperty().bind(showTime);
+        timeLabel.managedProperty().bind(showTime);
+        timeField.visibleProperty().bind(showTime);
+        timeField.managedProperty().bind(showTime);
+
+        BooleanBinding showDow = Bindings.createBooleanBinding(
+            () -> frequencyCombo.getValue() == BackupSchedule.Frequency.WEEKLY,
+            frequencyCombo.valueProperty()
+        );
+
+        dayOfWeekLabel.visibleProperty().bind(showDow);
+        dayOfWeekLabel.managedProperty().bind(showDow);
+        dayOfWeekCombo.visibleProperty().bind(showDow);
+        dayOfWeekCombo.managedProperty().bind(showDow);
+
+        // Form validation & Save button disable binding
+        BooleanBinding isFormInvalid = Bindings.createBooleanBinding(
+            () -> {
+                boolean isNameEmpty = nameField.getText() == null || nameField.getText().isBlank();
+                boolean isDestEmpty = destinationField.getText() == null || destinationField.getText().isBlank();
+                boolean isScopeSpecific = scopeCombo.getValue() != BackupSchedule.Scope.ALL;
+                boolean noProjectsSelected = checkedProjects.isEmpty();
+
+                return isNameEmpty || isDestEmpty || (isScopeSpecific && noProjectsSelected);
+            },
+            nameField.textProperty(),
+            destinationField.textProperty(),
+            scopeCombo.valueProperty(),
+            checkedProjects
+        );
+
+        btnSave.disableProperty().bind(isFormInvalid);
     }
 
     private void populateFieldsFromExisting()
@@ -134,38 +194,6 @@ public class ScheduleEditController implements DialogController
             }
         }
         projectListView.refresh();
-
-        updateScopeVisibility();
-        updateFrequencyVisibility();
-    }
-
-    /**
-     * Toggles the project list's visible/managed state on a plain VBox
-     * inside a real Stage/Scene — unlike the old Dialog<T>-based version,
-     * this correctly triggers a fresh layout pass, so the list actually
-     * appears/disappears and the dialog resizes around it as expected.
-     */
-    private void updateScopeVisibility()
-    {
-        boolean showList = scopeCombo.getValue() != BackupSchedule.Scope.ALL;
-        projectListContainer.setVisible(showList);
-        projectListContainer.setManaged(showList);
-    }
-
-    private void updateFrequencyVisibility()
-    {
-        BackupSchedule.Frequency freq = frequencyCombo.getValue();
-        boolean showTime = freq != BackupSchedule.Frequency.HOURLY;
-        timeLabel.setVisible(showTime);
-        timeLabel.setManaged(showTime);
-        timeField.setVisible(showTime);
-        timeField.setManaged(showTime);
-
-        boolean showDow = freq == BackupSchedule.Frequency.WEEKLY;
-        dayOfWeekLabel.setVisible(showDow);
-        dayOfWeekLabel.setManaged(showDow);
-        dayOfWeekCombo.setVisible(showDow);
-        dayOfWeekCombo.setManaged(showDow);
     }
 
     private void updateSelectAllCheckboxState()
@@ -190,25 +218,8 @@ public class ScheduleEditController implements DialogController
 
     private void saveAndClose()
     {
-        if (nameField.getText() == null || nameField.getText().isBlank())
-        {
-            com.lensora.lensorastudio.util.Dialogs.showInfo(
-                    destinationField.getScene().getWindow(), "Schedule", null, "Please enter a name.");
-            return;
-        }
-        if (destinationField.getText() == null || destinationField.getText().isBlank())
-        {
-            com.lensora.lensorastudio.util.Dialogs.showInfo(
-                    destinationField.getScene().getWindow(), "Schedule", null, "Please choose a destination folder.");
-            return;
-        }
-        if (scopeCombo.getValue() != BackupSchedule.Scope.ALL && checkedProjects.isEmpty())
-        {
-            com.lensora.lensorastudio.util.Dialogs.showInfo(
-                    destinationField.getScene().getWindow(), "Schedule", null,
-                    "Please check at least one project, or choose \"ALL\".");
-            return;
-        }
+        // Single-line guard using the binding's actual output
+        if (btnSave.isDisabled()) return;
 
         BackupSchedule schedule = existing != null ? existing : new BackupSchedule();
         schedule.setName(nameField.getText().trim());
@@ -229,7 +240,10 @@ public class ScheduleEditController implements DialogController
 
     private void closeDialog()
     {
-        Stage stage = (Stage) btnCancel.getScene().getWindow();
-        if (stage != null) stage.close();
+        Window window = btnCancel.getScene() != null ? btnCancel.getScene().getWindow() : null;
+        if (window != null)
+        {
+            window.fireEvent(new WindowEvent(window, WindowEvent.WINDOW_CLOSE_REQUEST));
+        }
     }
 }
