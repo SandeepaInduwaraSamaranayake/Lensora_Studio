@@ -79,7 +79,18 @@
                         <Label text="Select one or more .lsbak files. Each will be restored into its own subfolder under the chosen destination." wrapText="true" style="-fx-opacity: 0.75;"/>
 
                         <!-- Allow ListView to expand vertically -->
-                        <ListView fx:id="restoreFileListView" VBox.vgrow="ALWAYS" maxHeight="Infinity"/>
+                        <ListView fx:id="restoreFileListView" VBox.vgrow="ALWAYS" maxHeight="Infinity">
+                            <contextMenu>
+                                <ContextMenu>
+                                    <items>
+                                        <MenuItem fx:id="ctxRestoreVerifySelected" text="Verify Selected"/>
+                                        <MenuItem fx:id="ctxRestoreRemove" text="Remove from Queue"/>
+                                        <SeparatorMenuItem/>
+                                        <MenuItem fx:id="ctxRestoreStart" text="Restore Now"/>
+                                    </items>
+                                </ContextMenu>
+                            </contextMenu>
+                        </ListView>
 
                         <HBox spacing="6">
                             <Button fx:id="btnAddRestoreFiles" text="Add Files…"/>
@@ -158,6 +169,17 @@
                             <placeholder>
                                 <Label text="No backup schedules configured yet."/>
                             </placeholder>
+                            <contextMenu>
+                                <ContextMenu>
+                                    <items>
+                                        <MenuItem fx:id="ctxScheduleRunNow" text="Run Now"/>
+                                        <MenuItem fx:id="ctxScheduleEdit" text="Edit…"/>
+                                        <MenuItem fx:id="ctxScheduleToggleEnabled" text="Enable/Disable"/>
+                                        <SeparatorMenuItem/>
+                                        <MenuItem fx:id="ctxScheduleDelete" text="Delete"/>
+                                    </items>
+                                </ContextMenu>
+                            </contextMenu>
                         </TableView>
 
                         <HBox alignment="CENTER_RIGHT" spacing="10">
@@ -198,6 +220,17 @@
                             <placeholder>
                                 <Label text="No backups recorded yet."/>
                             </placeholder>
+                            <contextMenu>
+                                <ContextMenu>
+                                    <items>
+                                        <MenuItem fx:id="ctxHistoryOpenFolder" text="Open Containing Folder"/>
+                                        <MenuItem fx:id="ctxHistoryVerify" text="Verify"/>
+                                        <MenuItem fx:id="ctxHistoryRestore" text="Restore"/>
+                                        <SeparatorMenuItem/>
+                                        <MenuItem fx:id="ctxHistoryDelete" text="Remove from History"/>
+                                    </items>
+                                </ContextMenu>
+                            </contextMenu>
                         </TableView>
 
                         <HBox alignment="CENTER_RIGHT" spacing="10">

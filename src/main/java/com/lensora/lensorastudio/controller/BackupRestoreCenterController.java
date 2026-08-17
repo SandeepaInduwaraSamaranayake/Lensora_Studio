@@ -31,7 +31,6 @@ import javafx.collections.ObservableSet;
 import javafx.collections.SetChangeListener;
 import javafx.concurrent.Task;
 import javafx.concurrent.Worker;
-import javafx.concurrent.WorkerStateEvent;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -79,18 +78,21 @@ public class BackupRestoreCenterController implements DialogController
     @FXML private VBox restoreProgressBox, verifyProgressBox;
     @FXML private Label restoreStatusLabel, verifyStatusLabel;
     @FXML private ProgressBar restoreProgressBar, verifyProgressBar;
+    @FXML private MenuItem ctxRestoreVerifySelected, ctxRestoreRemove, ctxRestoreStart;
 
     // Schedule tab
     @FXML private TableView<BackupSchedule> scheduleTableView;
     @FXML private TableColumn<BackupSchedule, String> colScheduleName, colScheduleScope, colScheduleFrequency, colScheduleDestination, colScheduleNextRun, colScheduleStatus;
     @FXML private TableColumn<BackupSchedule, Boolean> colScheduleEnabled;
     @FXML private Button btnNewSchedule, btnRefresh, btnRunScheduleNow, btnEditSchedule, btnDeleteSchedule;
+    @FXML private MenuItem ctxScheduleRunNow, ctxScheduleEdit, ctxScheduleToggleEnabled, ctxScheduleDelete;
 
     // History tab
     @FXML private Button btnRefreshHistory, btnOpenHistoryFolder, btnVerifyHistoryItem, btnRestoreHistoryItem, btnDeleteHistoryItem;
     @FXML private TableView<BackupHistoryItem> historyTableView;
     @FXML private TableColumn<BackupHistoryItem, String> colHistoryDate, colHistoryProject, colHistorySource, colHistorySize, colHistoryStatus;
     @FXML private TableColumn<BackupHistoryItem, String> colHistoryVerified;
+    @FXML private MenuItem ctxHistoryOpenFolder, ctxHistoryVerify, ctxHistoryRestore, ctxHistoryDelete;
 
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -359,12 +361,28 @@ public class BackupRestoreCenterController implements DialogController
         var noDestination = restoreDestinationField.textProperty().isEmpty();
 
         // Item-specific actions (require a selected row & idle state)
-        btnRemoveRestoreFile.disableProperty().bind(noSelection.or(isRestoreRunning).or(isRestoreVerifying));
-        btnVerifySelected.disableProperty().bind(noSelection.or(isRestoreRunning).or(isRestoreVerifying));
+        btnRemoveRestoreFile.disableProperty().bind(
+            noSelection
+            .or(isRestoreRunning)
+            .or(isRestoreVerifying)
+        );
+        btnVerifySelected.disableProperty().bind(
+            noSelection
+            .or(isRestoreRunning)
+            .or(isRestoreVerifying)
+        );
 
         // Queue-level actions (require items in queue & idle state)
-        btnClearRestoreFiles.disableProperty().bind(isQueueEmpty.or(isRestoreRunning).or(isRestoreVerifying));
-        btnVerifyAll.disableProperty().bind(isQueueEmpty.or(isRestoreRunning).or(isRestoreVerifying));
+        btnClearRestoreFiles.disableProperty().bind(
+            isQueueEmpty
+            .or(isRestoreRunning)
+            .or(isRestoreVerifying)
+        );
+        btnVerifyAll.disableProperty().bind(
+            isQueueEmpty
+            .or(isRestoreRunning)
+            .or(isRestoreVerifying)
+        );
 
         // Primary action (requires items in queue + destination path + idle state)
         btnStartRestore.disableProperty().bind(
@@ -374,9 +392,21 @@ public class BackupRestoreCenterController implements DialogController
         );
 
         // Inputs/controls disabled while actively restoring/verifying
-        btnAddRestoreFiles.disableProperty().bind(isRestoreRunning.or(isRestoreVerifying));
-        btnBrowseRestoreDestination.disableProperty().bind(isRestoreRunning.or(isRestoreVerifying));
-        restoreFileListView.disableProperty().bind(isRestoreRunning.or(isRestoreVerifying));
+        btnAddRestoreFiles.disableProperty().bind(
+            isRestoreRunning
+            .or(isRestoreVerifying)
+        );
+        btnBrowseRestoreDestination.disableProperty().bind(
+            isRestoreRunning
+            .or(isRestoreVerifying)
+        );
+        restoreFileListView.disableProperty().bind(
+            isRestoreRunning
+            .or(isRestoreVerifying)
+        );
+
+        // setup context menu
+        wireRestoreContextMenu();
     }
 
     /** Renders each queued .lsbak with a leading status icon/spinner and a right-aligned filename. */
@@ -591,6 +621,19 @@ public class BackupRestoreCenterController implements DialogController
         return candidate;
     }
 
+    private void wireRestoreContextMenu()
+    {
+        ctxRestoreVerifySelected.setOnAction(e -> verifySelectedItem());
+        ctxRestoreRemove.setOnAction(e -> removeSelectedRestoreItem());
+        ctxRestoreStart.setOnAction(e -> startRestore());
+
+        // Disable menu items when no row is selected
+        var noSelection = restoreFileListView.getSelectionModel().selectedItemProperty().isNull();
+        ctxRestoreVerifySelected.disableProperty().bind(noSelection);
+        ctxRestoreRemove.disableProperty().bind(noSelection);
+        ctxRestoreStart.disableProperty().bind(noSelection);
+    }
+
     // ─── Schedule tab ────────────────────────────────────────────────────────
     private void setupScheduleTab()
     {
@@ -652,6 +695,7 @@ public class BackupRestoreCenterController implements DialogController
         btnRunScheduleNow.disableProperty().bind(noSelection);
 
         refreshScheduleList();
+        wireScheduleContextMenu();
     }
 
     private String statusLabel(BackupSchedule.RunStatus status)
@@ -792,6 +836,45 @@ public class BackupRestoreCenterController implements DialogController
         }
     }
 
+    private void wireScheduleContextMenu()
+    {
+        ctxScheduleRunNow.setOnAction(e -> runSelectedScheduleNow());
+        ctxScheduleEdit.setOnAction(e -> editSelectedSchedule());
+        ctxScheduleDelete.setOnAction(e -> deleteSelectedSchedule());
+        
+        // Dynamically update enable/disable text on right-click
+        scheduleTableView.getContextMenu().setOnShowing(e -> {
+            BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
+            if (selected != null)
+            {
+                ctxScheduleToggleEnabled.setText(selected.isEnabled() ? "Disable Schedule" : "Enable Schedule");
+            }
+        });
+
+        // Action when enable/disable clicked
+        ctxScheduleToggleEnabled.setOnAction(e -> {
+            BackupSchedule selected = scheduleTableView.getSelectionModel().getSelectedItem();
+            if (selected == null) return;
+            try
+            {
+                selected.setEnabled(!selected.isEnabled());
+                BackupScheduleRepository.update(selected);
+                refreshScheduleList();
+            }
+            catch (SQLException ex)
+            {
+                ErrorHandler.show(getStage(), "Failed to update schedule", ex);
+            }
+        });
+
+        // Disable menu items when no row is selected
+        var noSelection = scheduleTableView.getSelectionModel().selectedItemProperty().isNull();
+        ctxScheduleRunNow.disableProperty().bind(noSelection);
+        ctxScheduleEdit.disableProperty().bind(noSelection);
+        ctxScheduleDelete.disableProperty().bind(noSelection);
+        ctxScheduleToggleEnabled.disableProperty().bind(noSelection);
+    }
+
     // ─── History tab ────────────────────────────────────────────────────────
 
     private void setupHistoryTab()
@@ -834,6 +917,7 @@ public class BackupRestoreCenterController implements DialogController
         btnDeleteHistoryItem.disableProperty().bind(noSelection);
 
         refreshHistoryList();
+        wireHistoryContextMenu();
     }
 
     private void refreshHistoryList()
@@ -976,6 +1060,21 @@ public class BackupRestoreCenterController implements DialogController
                 ErrorHandler.show(getStage(), "Failed to delete history entry", e);
             }
         });
+    }
+
+    private void wireHistoryContextMenu()
+    {
+        ctxHistoryOpenFolder.setOnAction(e -> openSelectedHistoryFolder());
+        ctxHistoryVerify.setOnAction(e -> verifySelectedHistoryItem());
+        ctxHistoryRestore.setOnAction(e -> restoreSelectedHistoryItem());
+        ctxHistoryDelete.setOnAction(e -> deleteSelectedHistoryItem());
+
+        // Disable menu items when no row is selected
+        var noSelection = historyTableView.getSelectionModel().selectedItemProperty().isNull();
+        ctxHistoryOpenFolder.disableProperty().bind(noSelection);
+        ctxHistoryVerify.disableProperty().bind(noSelection);
+        ctxHistoryRestore.disableProperty().bind(noSelection);
+        ctxHistoryDelete.disableProperty().bind(noSelection);
     }
 
     // ─── Shared task-running helper ─────────────────────────────────────────
