@@ -5,6 +5,8 @@ import com.lensora.lensorastudio.repository.FolderTemplateRepository.FolderTempl
 import com.lensora.lensorastudio.util.ErrorHandler;
 import com.lensora.lensorastudio.util.NotificationUtil;
 
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -60,6 +62,7 @@ public class FolderTemplateManagerController implements DialogController
         setupTemplateList();
         setupFolderList();
         setupButtonActions();
+        setupBindings();
 
         reloadTemplates();
     }
@@ -102,6 +105,57 @@ public class FolderTemplateManagerController implements DialogController
 
         newFolderField.setOnAction(e -> onAddFolder()); // Enter key adds too
         btnClose.setOnAction(e -> closeDialog());
+    }
+
+    // ─── Declarative Bindings ───────────────────────────────────────────────
+
+    private void setupBindings()
+    {
+        // Selection state bindings
+        BooleanBinding noTemplateSelected = templateListView.getSelectionModel().selectedItemProperty().isNull();
+        BooleanBinding noFolderSelected = folderListView.getSelectionModel().selectedItemProperty().isNull();
+
+        // Input validation bindings
+        BooleanBinding nameIsBlank = Bindings.createBooleanBinding(
+                () -> nameField.getText() == null || nameField.getText().isBlank(),
+                nameField.textProperty()
+        );
+
+        BooleanBinding newFolderIsBlank = Bindings.createBooleanBinding(
+                () -> newFolderField.getText() == null || newFolderField.getText().isBlank(),
+                newFolderField.textProperty()
+        );
+
+        // Movement capability bindings
+        var folderSelection = folderListView.getSelectionModel();
+        BooleanBinding cannotMoveUp = Bindings.createBooleanBinding(
+                () -> folderSelection.getSelectedIndex() <= 0,
+                folderSelection.selectedIndexProperty()
+        );
+
+        BooleanBinding cannotMoveDown = Bindings.createBooleanBinding(
+                () -> {
+                    int idx = folderSelection.getSelectedIndex();
+                    return idx < 0 || idx >= folderNames.size() - 1;
+                },
+                folderSelection.selectedIndexProperty(),
+                Bindings.size(folderNames)
+        );
+
+        // Input control disable states (disable editor controls if no template is selected)
+        nameField.disableProperty().bind(noTemplateSelected);
+        descriptionField.disableProperty().bind(noTemplateSelected);
+        folderListView.disableProperty().bind(noTemplateSelected);
+        newFolderField.disableProperty().bind(noTemplateSelected);
+
+        // Action button disable states
+        btnDeleteTemplate.disableProperty().bind(noTemplateSelected);
+        btnSaveTemplate.disableProperty().bind(noTemplateSelected.or(nameIsBlank));
+
+        btnAddFolder.disableProperty().bind(noTemplateSelected.or(newFolderIsBlank));
+        btnRemoveFolder.disableProperty().bind(noTemplateSelected.or(noFolderSelected));
+        btnMoveFolderUp.disableProperty().bind(noTemplateSelected.or(cannotMoveUp));
+        btnMoveFolderDown.disableProperty().bind(noTemplateSelected.or(cannotMoveDown));
     }
 
     // ─── Loading ─────────────────────────────────────────────────────────────
