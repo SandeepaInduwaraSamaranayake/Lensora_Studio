@@ -18,7 +18,7 @@ import java.util.List;
 public class BatchBackupJob extends Task<List<File>>
 {
     public record BatchItem(Project project, File destinationFile) {}
-    public record BatchItemResult(Project project, File file, boolean succeeded, String errorMessage) {}
+    public record BatchItemResult(Project project, File destinationFile, File file, boolean succeeded, String errorMessage) {}
 
     private final List<BatchItem> items;
     private final List<BatchItemResult> results = new ArrayList<>();
@@ -70,11 +70,11 @@ public class BatchBackupJob extends Task<List<File>>
                 // strictly sequential without extra thread management.
                 File result = singleJob.runSynchronously();
                 completedFiles.add(result);
-                results.add(new BatchItemResult(item.project(), result, true, null));
+                results.add(new BatchItemResult(item.project(), item.destinationFile(), result, true, null));
             }
             catch (Exception e)
             {
-                results.add(new BatchItemResult(item.project(), item.destinationFile(), false, e.getMessage()));
+                results.add(new BatchItemResult(item.project(), item.destinationFile(), null, false, e.getMessage()));
                 // Continue with remaining projects rather than aborting
                 // the whole batch on one failure.
             }

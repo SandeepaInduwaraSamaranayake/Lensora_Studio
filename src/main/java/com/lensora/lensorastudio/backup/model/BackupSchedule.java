@@ -5,8 +5,9 @@ import java.util.List;
 
 public class BackupSchedule
 {
-    public enum Scope { SINGLE, MULTIPLE, ALL }
-    public enum Frequency { HOURLY, DAILY, WEEKLY }
+    public enum Scope           { SINGLE, MULTIPLE, ALL }
+    public enum Frequency       { HOURLY, DAILY, WEEKLY }
+    public enum RunStatus       { IDLE, SCHEDULED, RUNNING, SUCCEEDED, FAILED }
 
     private int scheduleId;
     private String name;
@@ -21,6 +22,9 @@ public class BackupSchedule
     private LocalDateTime lastRun;
     private LocalDateTime nextRun;
     private LocalDateTime createdAt;
+    // Transient-not persisted, purely for live UI display.
+    private transient RunStatus runStatus = RunStatus.IDLE;
+    private transient String runStatusMessage = "";
 
     // getters/setters
     public int getScheduleId()                      { return scheduleId; }
@@ -49,6 +53,10 @@ public class BackupSchedule
     public void setNextRun(LocalDateTime v)         { nextRun = v; }
     public LocalDateTime getCreatedAt()             { return createdAt; }
     public void setCreatedAt(LocalDateTime v)       { createdAt = v; }
+    public RunStatus getRunStatus()                 { return runStatus; }
+    public void setRunStatus(RunStatus v)           { runStatus = v; }
+    public String getRunStatusMessage()             { return runStatusMessage; }
+    public void setRunStatusMessage(String v)       { runStatusMessage = v; }
 
     public String describeFrequency()
     {

@@ -199,6 +199,7 @@ CREATE TABLE IF NOT EXISTS project_last_folder (
                                                 REFERENCES project (project_id)
 );
 
+-- backup schedule
 CREATE TABLE IF NOT EXISTS backup_schedule (
                                                 schedule_id       INTEGER       PRIMARY KEY AUTOINCREMENT,
                                                 name              VARCHAR(200)  NOT NULL,
@@ -217,6 +218,28 @@ CREATE TABLE IF NOT EXISTS backup_schedule (
 
 CREATE INDEX IF NOT EXISTS idx_backup_schedule_enabled ON backup_schedule(enabled);
 
+-- backup history
+CREATE TABLE IF NOT EXISTS backup_history (
+                                                history_id        INTEGER        PRIMARY KEY AUTOINCREMENT,
+                                                schedule_id       INTEGER,                     -- null for manual (non-scheduled) backups
+                                                schedule_name     VARCHAR(200),
+                                                project_id        INTEGER,
+                                                project_number    VARCHAR(30),
+                                                client_name       VARCHAR(200),
+                                                file_path         VARCHAR(2000)  NOT NULL,
+                                                file_size         BIGINT,
+                                                total_files       INTEGER,
+                                                status            VARCHAR(20)    NOT NULL,      -- SUCCEEDED, FAILED
+                                                error_message     TEXT,
+                                                verified          BOOLEAN        NOT NULL DEFAULT 0,
+                                                started_at        TIMESTAMP      NOT NULL,
+                                                completed_at      TIMESTAMP,
+                                                FOREIGN KEY (project_id) REFERENCES project (project_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_backup_history_project  ON backup_history(project_id);
+CREATE INDEX IF NOT EXISTS idx_backup_history_schedule ON backup_history(schedule_id);
+CREATE INDEX IF NOT EXISTS idx_backup_history_started  ON backup_history(started_at);
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Seed default folder templates (skipped if already present)

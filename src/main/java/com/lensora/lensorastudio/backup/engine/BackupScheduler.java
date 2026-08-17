@@ -1,7 +1,9 @@
 package com.lensora.lensorastudio.backup.engine;
 
+import com.lensora.lensorastudio.backup.model.BackupHistoryItem;
 import com.lensora.lensorastudio.backup.model.BackupSchedule;
 import com.lensora.lensorastudio.model.Project;
+import com.lensora.lensorastudio.repository.BackupHistoryRepository;
 import com.lensora.lensorastudio.repository.BackupScheduleRepository;
 import com.lensora.lensorastudio.repository.ProjectRepository;
 
@@ -18,6 +20,9 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +44,11 @@ public final class BackupScheduler
 
     /** Set by MainController once the UI exists, so triggered jobs can surface a toast + status-bar progress. */
     private BiConsumer<String, Task<?>> onJobTriggered;
+
+    /** For live schedule status in the Schedule table  */
+    private final Map<Integer, BackupSchedule.RunStatus> liveStatus = new ConcurrentHashMap<>();
+    private final List<Runnable> statusChangeListeners = new CopyOnWriteArrayList<>();
+
 
     private BackupScheduler() {}
 
@@ -63,7 +73,7 @@ public final class BackupScheduler
             return t;
         });
 
-        // Check every minute — coarse enough to be cheap, fine enough
+        // Check every minute - coarse enough to be cheap, fine enough
         // that hourly/daily/weekly schedules trigger within a minute of
         // their target time.
         executor.scheduleAtFixedRate(this::checkDueSchedules, 0, 1, TimeUnit.MINUTES);
@@ -100,6 +110,14 @@ public final class BackupScheduler
                 {
                     runSchedule(schedule);
                 }
+                else
+                {
+                    // Not due yet but enabled - reflect as "Scheduled" if not already running.
+                    if (getLiveStatus(schedule.getScheduleId()) != BackupSchedule.RunStatus.RUNNING)
+                    {
+                        setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.SCHEDULED);
+                    }
+                }
             }
         }
         catch (SQLException e)
@@ -111,6 +129,7 @@ public final class BackupScheduler
     private void runSchedule(BackupSchedule schedule)
     {
         logger.info("[BackupScheduler] Triggering schedule: {}", schedule.getName());
+        setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.RUNNING);
 
         try
         {
@@ -120,6 +139,7 @@ public final class BackupScheduler
             if (targets.isEmpty())
             {
                 logger.warn("[BackupScheduler] Schedule '{}' has no matching projects - skipping.", schedule.getName());
+                setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.IDLE);
                 advanceSchedule(schedule);
                 return;
             }
@@ -129,6 +149,7 @@ public final class BackupScheduler
             {
                 logger.error("[BackupScheduler] Could not create/access destination for '{}': {}",
                         schedule.getName(), schedule.getDestinationPath());
+                setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.FAILED);
                 advanceSchedule(schedule);
                 return;
             }
@@ -142,9 +163,26 @@ public final class BackupScheduler
 
             BatchBackupJob job = BackupService.createBatchBackupJob(items);
 
-            job.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, e -> updateLastRun(schedule));
-            job.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, e -> updateLastRun(schedule));
-            job.addEventHandler(WorkerStateEvent.WORKER_STATE_CANCELLED, e -> updateLastRun(schedule));
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, e -> 
+                {
+                    long failed = job.getResults().stream().filter(r -> !r.succeeded()).count();
+                    setLiveStatus(schedule.getScheduleId(),
+                            failed == 0 ? BackupSchedule.RunStatus.SUCCEEDED : BackupSchedule.RunStatus.FAILED);
+                    recordHistoryForSchedule(schedule, job);
+                    updateLastRun(schedule);
+                });
+
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_FAILED, e -> 
+                {
+                    setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.FAILED);
+                    updateLastRun(schedule);
+                });
+
+            job.addEventHandler(WorkerStateEvent.WORKER_STATE_CANCELLED, e -> 
+                {
+                    setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.IDLE);
+                    updateLastRun(schedule);
+                });
 
             if (onJobTriggered != null)
             {
@@ -161,11 +199,12 @@ public final class BackupScheduler
         catch (Exception e)
         {
             logger.error("[BackupScheduler] Failed to run schedule '{}'", schedule.getName(), e);
+            setLiveStatus(schedule.getScheduleId(), BackupSchedule.RunStatus.FAILED);
             advanceSchedule(schedule);
         }
     }
 
-    // Helper to update lastRun off the UI thread
+    // Helper to update lastRun
     private void updateLastRun(BackupSchedule schedule) 
     {
         Executors.newSingleThreadExecutor().submit(() -> {
@@ -250,6 +289,58 @@ public final class BackupScheduler
         catch (Exception e)
         {
             return LocalTime.of(2, 0);
+        }
+    }
+
+    // ------------------------- Live schedule status ----------------------------
+    public void addStatusChangeListener(Runnable listener)
+    {
+        statusChangeListeners.add(listener);
+    }
+
+    public void removeStatusChangeListener(Runnable listener)
+    {
+        statusChangeListeners.remove(listener);
+    }
+
+    public BackupSchedule.RunStatus getLiveStatus(int scheduleId)
+    {
+        return liveStatus.getOrDefault(scheduleId, BackupSchedule.RunStatus.IDLE);
+    }
+
+    private void setLiveStatus(int scheduleId, BackupSchedule.RunStatus status)
+    {
+        liveStatus.put(scheduleId, status);
+        Platform.runLater(() -> {
+            for (Runnable listener : statusChangeListeners) listener.run();
+        });
+    }
+
+    // ------------------------ Record Backup History ----------------------------
+    private void recordHistoryForSchedule(BackupSchedule schedule, BatchBackupJob job)
+    {
+        for (var result : job.getResults())
+        {
+            try
+            {
+                BackupHistoryItem item = new BackupHistoryItem();
+                item.setScheduleId(schedule.getScheduleId());
+                item.setScheduleName(schedule.getName());
+                item.setProjectId(result.project().getProjectId());
+                item.setProjectNumber(result.project().getProjectNumber());
+                item.setClientName(result.project().getClientName());
+                item.setFilePath(result.file() != null ? result.file().getAbsolutePath() : result.destinationFile().getAbsolutePath());
+                item.setFileSize(result.file() != null && result.file().exists() ? result.file().length() : 0);
+                item.setStatus(result.succeeded() ? "SUCCEEDED" : "FAILED");
+                item.setErrorMessage(result.errorMessage());
+                item.setStartedAt(LocalDateTime.now());
+                item.setCompletedAt(LocalDateTime.now());
+                BackupHistoryRepository.insert(item);
+            }
+            catch (SQLException e)
+            {
+                logger.error("[BackupScheduler] Failed to record backup history", e);
+            }
         }
     }
 }
