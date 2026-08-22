@@ -6,7 +6,7 @@
 <?import javafx.scene.text.Font?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.FolderTemplateManagerController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.explorer.controller.FolderTemplateManagerController">
 
     <!-- Body: template list (left) + editor (right) -->
     <center>

@@ -1,9 +1,92 @@
+/* ════════════════════════════════════════════════════════════════════════
+    GLOBAL STYLES – applied to ALL themes
+   ════════════════════════════════════════════════════════════════════════ */
+
 /* Default (dark-icon) case - used under light/Modena/Caspian themes */
 .ikonli-font-icon 
 {
     -fx-icon-size: 16px;
     -fx-icon-color: #2d3436;
 }
+
+.icon-size-6  { -fx-icon-size: 6px;  }
+.icon-size-10 { -fx-icon-size: 10px; }
+.icon-size-12 { -fx-icon-size: 12px; }
+.icon-size-14 { -fx-icon-size: 14px; }
+.icon-size-16 { -fx-icon-size: 16px; }
+.icon-size-25 { -fx-icon-size: 25px; }
+.icon-size-60 { -fx-icon-size: 60px; }
+
+/* MenuBar/Menu text color - Caspian's default menu text can render
+ * invisible against a transparent MenuBar background (our custom title
+ * bar has no theme-provided background of its own), since only its
+ * hover/showing pseudo-classes carry an explicit contrasting fill. Pin
+ * both states explicitly so text is always visible regardless of theme. */
+.menu-bar,
+.menu-bar .menu,
+.menu-bar .menu .label 
+{
+    -fx-text-fill: #2d3436;
+}
+
+/* Toast notification icon - accent-colored, same literal-color pattern as
+ * everything else (no -color-* variable lookups). */
+.toast-icon 
+{
+    -fx-icon-color: #3574f0;
+}
+
+/* Thumbnail Styles*/
+.thumbnail-card 
+{
+    -fx-background-radius: 4;
+}
+
+/* Thumbnail card base */
+.thumbnail-card:selected 
+{
+    -fx-background-color: derive(-color-accent-emphasis, 60%);
+}
+
+/* ─── Thumbnail Grid: hide the ListView container ────────────────────── */
+
+/* Make the ListView itself invisible – no background, no border */
+.list-view.thumbnail-grid 
+{
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-control-inner-background: transparent; /* Caspian/Modena fix */
+}
+
+/* Make each cell invisible – no background, no borders, no padding */
+.list-view.thumbnail-grid .list-cell 
+{
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+}
+
+/* Override Caspian/Modena hover/selection effects on cells */
+.list-view.thumbnail-grid .list-cell:filled:hover,
+.list-view.thumbnail-grid .list-cell:filled:selected,
+.list-view.thumbnail-grid .list-cell:filled:selected:hover 
+{
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+    LIGHT THEME OVERRIDES (Modena, Caspian, Cupertino Light, Primer Light)
+   ════════════════════════════════════════════════════════════════════════ */
+
+
+
+/* ════════════════════════════════════════════════════════════════════════
+    DARK THEME FALLBACK (any theme with .dark-theme)
+   ════════════════════════════════════════════════════════════════════════ */
 
 /* Overridden when the scene root carries the "dark-theme" marker class,
  * applied/removed by ThemeManager whenever an AtlantaFX dark theme
@@ -13,34 +96,38 @@
     -fx-icon-color: #dcdcdc;
 }
 
-.icon-size-6  { -fx-icon-size: 6px; }
-.icon-size-10 { -fx-icon-size: 10px; }
-.icon-size-12 { -fx-icon-size: 12px; }
-.icon-size-14 { -fx-icon-size: 14px; }
-.icon-size-16 { -fx-icon-size: 16px; }
-.icon-size-25 { -fx-icon-size: 25px; }
-.icon-size-60 { -fx-icon-size: 60px; }
-
-
-/* MenuBar/Menu text color - Caspian's default menu text can render
- * invisible against a transparent MenuBar background (our custom title
- * bar has no theme-provided background of its own), since only its
- * hover/showing pseudo-classes carry an explicit contrasting fill. Pin
- * both states explicitly so text is always visible regardless of theme. */
-.menu-bar,
-.menu-bar .menu,
-.menu-bar .menu .label {
-    -fx-text-fill: #2d3436;
-}
-
 .root.dark-theme .menu-bar,
 .root.dark-theme .menu-bar .menu,
-.root.dark-theme .menu-bar .menu .label {
+.root.dark-theme .menu-bar .menu .label 
+{
     -fx-text-fill: #dcdcdc;
 }
 
-/* Toast notification icon - accent-colored, same literal-color pattern as
- * everything else (no -color-* variable lookups). */
-.toast-icon {
-    -fx-icon-color: #3574f0;
+/* ════════════════════════════════════════════════════════════════════════
+    PER‑THEME OVERRIDES (fine‑tune specific themes)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Nord Dark – use its accent color for selection ───────── */
+.root.theme-nord-dark .thumbnail-card:selected 
+{
+    -fx-background-color: derive(-color-accent-emphasis, 40%);
+}
+
+/* ─── Modena – use a slightly different blue to match its palette ────── */
+.root.theme-modena .thumbnail-card:selected 
+{
+    -fx-background-color: #0078d4; /* Windows‑style blue */
+}
+
+/* ─── Caspian – same as Modena, or anything you prefer ──────────────── */
+.root.theme-caspian .thumbnail-card:selected 
+{
+    -fx-background-color: #0078d4;
+}
+
+/* ─── Thumbnail card label text color ────────────────────────────── */
+/* Light themes: dark text */
+.root.theme-modena .thumbnail-card .label 
+{
+    -fx-text-fill: #2d3436;
 }

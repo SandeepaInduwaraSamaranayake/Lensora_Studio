@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.ScheduleEditController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.backup.ui.ScheduleEditController">
 
     <center>
         <ScrollPane fitToWidth="true" prefViewportHeight="500">

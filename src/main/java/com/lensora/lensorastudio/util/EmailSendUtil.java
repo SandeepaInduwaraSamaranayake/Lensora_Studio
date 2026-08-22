@@ -11,6 +11,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
+import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
+
 public final class EmailSendUtil
 {
     private static final Logger logger = LoggerFactory.getLogger(EmailSendUtil.class);

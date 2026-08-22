@@ -32,18 +32,20 @@ module com.lensora.lensorastudio
     requires com.google.gson;
     requires ch.qos.logback.core;
 
-    exports com.lensora.lensorastudio;
-    exports com.lensora.lensorastudio.controller;
+    exports com.lensora.lensorastudio.app;
+    exports com.lensora.lensorastudio.feature.backup.model;
 
-    exports com.lensora.lensorastudio.model;
-    exports com.lensora.lensorastudio.viewmodel;
-    exports com.lensora.lensorastudio.docking;
+    // Opens for JavaFX FXML (controllers)
+    opens com.lensora.lensorastudio.app to javafx.fxml;
+    opens com.lensora.lensorastudio.ui.controller to javafx.fxml;
+    opens com.lensora.lensorastudio.feature.backup.ui to javafx.fxml;
+    opens com.lensora.lensorastudio.feature.explorer.controller to javafx.fxml;
+    opens com.lensora.lensorastudio.feature.project.controller to javafx.fxml;
+    opens com.lensora.lensorastudio.feature.settings.controller to javafx.fxml;
 
-    exports com.lensora.lensorastudio.managers;
-    exports com.lensora.lensorastudio.backup.model;
-
-    opens com.lensora.lensorastudio to javafx.fxml;
-    opens com.lensora.lensorastudio.controller to javafx.fxml;
-    opens com.lensora.lensorastudio.model to com.google.gson;
-    opens com.lensora.lensorastudio.backup.model to com.google.gson;
+    // Opens for Gson serialization (models / settings)
+    opens com.lensora.lensorastudio.core.config to com.google.gson;
+    opens com.lensora.lensorastudio.feature.backup.model to com.google.gson;
+    opens com.lensora.lensorastudio.feature.project.model to com.google.gson;
+    opens com.lensora.lensorastudio.feature.settings.model to com.google.gson;
 }

@@ -6,123 +6,154 @@
 
 <SplitPane fx:id="fileSplitPane" dividerPositions="0.2"
     xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.FileExplorerController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.explorer.controller.FileExplorerController">
 
-    <VBox spacing="0">
-        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
-            <Button fx:id="btnFolderBack">
-                <graphic>
-                    <FontIcon iconLiteral="fas-chevron-left" styleClass="icon-size-10"/>
-                </graphic>
-            </Button>
-            <Button fx:id="btnFolderForward">
-                <graphic>
-                    <FontIcon iconLiteral="fas-chevron-right" styleClass="icon-size-10"/>
-                </graphic>
-            </Button>
+    <!-- LEFT: Folders / Collections tabs -->
+    <TabPane fx:id="leftPanelTabs" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+            <Tab fx:id="tabFolders" text="Folders">
+                <content>
+                    <VBox spacing="0">
+                        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
+                            <Button fx:id="btnFolderBack">
+                                <graphic>
+                                    <FontIcon iconLiteral="fas-chevron-left" styleClass="icon-size-10"/>
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Go backward"/>
+                                </tooltip>
+                            </Button>
+                            <Button fx:id="btnFolderForward">
+                                <graphic>
+                                    <FontIcon iconLiteral="fas-chevron-right" styleClass="icon-size-10"/>
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Go forward"/>
+                                </tooltip>
+                            </Button>
 
-            <FontIcon iconLiteral="fas-folder" styleClass="icon-size-12"/>
-            <Label fx:id="lblFolderHeader" text="Folders [" style="-fx-font-weight: bold;"/>
-            <HBox fx:id="breadcrumbContainer" spacing="2" alignment="CENTER_LEFT" style="-fx-font-weight: bold;"/>
-            <Label text="]" style="-fx-font-weight: bold;"/>
-        </HBox>
-        <Separator/>
-        <TreeView fx:id="folderTree" VBox.vgrow="ALWAYS" showRoot="false"/>
-    </VBox>
+                            <FontIcon iconLiteral="fas-folder" styleClass="icon-size-12"/>
+                            <Label fx:id="lblFolderHeader" text="Folders [" style="-fx-font-weight: bold;"/>
+                            <HBox fx:id="breadcrumbContainer" spacing="2" alignment="CENTER_LEFT" style="-fx-font-weight: bold;"/>
+                            <Label text="]" style="-fx-font-weight: bold;"/>
+                        </HBox>
+                        <Separator/>
+                        <TreeView fx:id="folderTree" VBox.vgrow="ALWAYS" showRoot="false"/>
+                    </VBox>
+                </content>
+            </Tab>
+            <Tab fx:id="tabCollections" text="Collections">
+                <content>
+                    <VBox spacing="0">
+                        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
+                            <Label text="Collections" style="-fx-font-weight: bold;"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnNewCollection">
+                                <graphic>
+                                    <FontIcon iconLiteral="fas-plus" styleClass="icon-size-10"/>
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="New Collection"/>
+                                </tooltip>
+                            </Button>
+                        </HBox>
+                        <Separator/>
+                        <ListView fx:id="collectionsListView" VBox.vgrow="ALWAYS">
+                            <contextMenu>
+                                <ContextMenu>
+                                    <items>
+                                        <MenuItem fx:id="ctxRenameCollection" text="Rename…"/>
+                                        <MenuItem fx:id="ctxDeleteCollection" text="Delete"/>
+                                    </items>
+                                </ContextMenu>
+                            </contextMenu>
+                        </ListView>
+                    </VBox>
+                </content>
+            </Tab>
+        </tabs>
+    </TabPane>
 
-    <VBox spacing="0">
-        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
-            <FontIcon iconLiteral="fas-images" styleClass="icon-size-12"/>
-            <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;"/>
-            <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
-            <Pane HBox.hgrow="ALWAYS"/>
-            <TextField fx:id="fileSearchField" promptText="Search (ALT + F)" />
-            <Separator orientation="VERTICAL"/>
-            <HBox spacing="2">
-                <ToggleButton fx:id="btnDetails" selected="true">
-                    <graphic>
-                        <FontIcon iconLiteral="fas-table" styleClass="icon-size-12"/>
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Details View"/>
-                    </tooltip>
-                </ToggleButton>
-                <ToggleButton fx:id="btnList">
-                    <graphic>
-                        <FontIcon iconLiteral="fas-list" styleClass="icon-size-12"/>
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="List View"/>
-                    </tooltip>
-                </ToggleButton>
-                <ToggleButton fx:id="btnIcons">
-                    <graphic>
-                        <FontIcon iconLiteral="fas-th-large" styleClass="icon-size-12"/>
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Icons View"/>
-                    </tooltip>
-                </ToggleButton>
-                <ToggleButton fx:id="btnThumbnails">
-                    <graphic>
-                        <FontIcon iconLiteral="fas-images" styleClass="icon-size-12"/>
-                    </graphic>
-                    <tooltip>
-                        <Tooltip text="Thumbnails View"/>
-                    </tooltip>
-                </ToggleButton>
-            </HBox>
-            <Separator orientation="VERTICAL"/>
-            <Button fx:id="btnRefreshFileList">
-                <graphic>
-                    <FontIcon iconLiteral="fas-redo-alt" styleClass="icon-size-12"/>
-                </graphic>
-                <tooltip>
-                    <Tooltip text="Refresh (F5)"/>
-                </tooltip>
-            </Button>
-        </HBox>
-        <Separator/>
-        <StackPane VBox.vgrow="ALWAYS">
-            <TableView fx:id="fileTable" visible="true" managed="true" VBox.vgrow="ALWAYS">
-                <columns>
-                    <TableColumn fx:id="colFileName" text="Name" prefWidth="240"/>
-                    <TableColumn fx:id="colFileType" text="Type" prefWidth="60"/>
-                    <TableColumn fx:id="colFileSize" text="Size" prefWidth="80"/>
-                    <TableColumn fx:id="colFileDimensions" text="Dimensions" prefWidth="100"/>
-                    <TableColumn fx:id="colFileModified" text="Modified" prefWidth="130"/>
-                </columns>
-                <columnResizePolicy>
-                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
-                </columnResizePolicy>
-                <placeholder>
-                    <Label text="Select a folder to view files."/>
-                </placeholder>
-                <contextMenu>
-                    <ContextMenu>
-                        <items>
-                            <MenuItem fx:id="ctxFileOpen" text="Open"/>
-                            <Menu     fx:id="ctxOpenWithMenu" text="Open With"/>
-                            <MenuItem fx:id="ctxOpenInImageViewer" text="Open in Lensora Image Viewer"/>
-                            <SeparatorMenuItem/>
-                            <MenuItem fx:id="ctxFileRename" text="Rename…"/>
-                            <MenuItem fx:id="ctxFileCopy" text="Copy"/>
-                            <MenuItem fx:id="ctxFileCut" text="Cut"/>
-                            <MenuItem fx:id="ctxFileMove" text="Move to…"/>
-                            <Menu     fx:id="ctxSendToMenu" text="Send To"/>
-                            <SeparatorMenuItem/>
-                            <MenuItem fx:id="ctxFileDelete" text="Delete"/>
-                            <SeparatorMenuItem/>
-                            <MenuItem fx:id="ctxFileShowInExplorer" text="Show in Explorer"/>
-                            <MenuItem fx:id="ctxFileProperties" text="Metadata"/>
-                        </items>
-                    </ContextMenu>
-                </contextMenu>
-            </TableView>
-            <ListView fx:id="fileListView" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
-            <ScrollPane fx:id="iconScrollPane" visible="false" managed="false" fitToWidth="true" VBox.vgrow="ALWAYS">
-                <FlowPane fx:id="iconFlowPane" hgap="10" vgap="10" style="-fx-padding: 10;"/>
-            </ScrollPane>
-        </StackPane>
-    </VBox>
+    <!-- RIGHT: file listing -->
+    <TabPane fx:id="rightPanelTabs" tabClosingPolicy="UNAVAILABLE">
+        <tabs>
+            <Tab fx:id="tabFileBrowser" text="File Browser">
+                <content>
+                    <VBox spacing="0">
+                        <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
+                            <FontIcon iconLiteral="fas-images" styleClass="icon-size-12"/>
+                            <Label fx:id="lblCurrentFolder" text="Files" style="-fx-font-weight: bold;"/>
+                            <Label fx:id="lblFileCount" text="" style="-fx-padding: 0 0 0 8;"/>
+                            <Pane HBox.hgrow="ALWAYS"/>
+                            <TextField fx:id="fileSearchField" promptText="Search (ALT + F)" />
+                            <Separator orientation="VERTICAL"/>
+                            <HBox spacing="2">
+                                <ToggleButton fx:id="btnDetails" selected="true">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-table" styleClass="icon-size-12"/>
+                                    </graphic>
+                                    <tooltip>
+                                        <Tooltip text="Details View"/>
+                                    </tooltip>
+                                </ToggleButton>
+                                <ToggleButton fx:id="btnList">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-list" styleClass="icon-size-12"/>
+                                    </graphic>
+                                    <tooltip>
+                                        <Tooltip text="List View"/>
+                                    </tooltip>
+                                </ToggleButton>
+                                <ToggleButton fx:id="btnIcons">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-th-large" styleClass="icon-size-12"/>
+                                    </graphic>
+                                    <tooltip>
+                                        <Tooltip text="Icons View"/>
+                                    </tooltip>
+                                </ToggleButton>
+                                <ToggleButton fx:id="btnThumbnails">
+                                    <graphic>
+                                        <FontIcon iconLiteral="fas-images" styleClass="icon-size-12"/>
+                                    </graphic>
+                                    <tooltip>
+                                        <Tooltip text="Thumbnails View"/>
+                                    </tooltip>
+                                </ToggleButton>
+                            </HBox>
+                            <Separator orientation="VERTICAL"/>
+                            <Button fx:id="btnRefreshFileList">
+                                <graphic>
+                                    <FontIcon iconLiteral="fas-redo-alt" styleClass="icon-size-12"/>
+                                </graphic>
+                                <tooltip>
+                                    <Tooltip text="Refresh (F5)"/>
+                                </tooltip>
+                            </Button>
+                        </HBox>
+                        <Separator/>
+                        <StackPane VBox.vgrow="ALWAYS">
+                            <TableView fx:id="fileTable" visible="true" managed="true" VBox.vgrow="ALWAYS">
+                                <columns>
+                                    <TableColumn fx:id="colFileName" text="Name" prefWidth="240"/>
+                                    <TableColumn fx:id="colFileType" text="Type" prefWidth="60"/>
+                                    <TableColumn fx:id="colFileSize" text="Size" prefWidth="80"/>
+                                    <TableColumn fx:id="colFileDimensions" text="Dimensions" prefWidth="100"/>
+                                    <TableColumn fx:id="colFileModified" text="Modified" prefWidth="130"/>
+                                </columns>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                </columnResizePolicy>
+                                <placeholder>
+                                    <Label text="Select a folder/collection to view files."/>
+                                </placeholder>
+                            </TableView>
+                            <ListView fx:id="fileListView" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
+                            <StackPane fx:id="iconGridHost" visible="false" managed="false" VBox.vgrow="ALWAYS"/>
+                        </StackPane>
+                    </VBox>
+                </content>
+            </Tab>
+        </tabs>
+    </TabPane>
 </SplitPane>

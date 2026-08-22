@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.lensora.lensorastudio.controller.NoteEditController">
+            fx:controller="com.lensora.lensorastudio.feature.project.controller.NoteEditController">
 
     <center>
         <VBox spacing="10" prefWidth="420">

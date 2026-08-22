@@ -18,7 +18,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.NewProjectController">
+<AnchorPane xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.project.controller.NewProjectController">
 
     <!-- BODY - Scrollable form -->
     <VBox prefHeight="750.0" prefWidth="650.0">

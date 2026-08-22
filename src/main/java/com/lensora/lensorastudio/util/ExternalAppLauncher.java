@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.util;
 
-import com.lensora.lensorastudio.model.ExternalApp;
+import com.lensora.lensorastudio.feature.settings.model.ExternalApp;
+import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 
 import javafx.application.Platform;
 

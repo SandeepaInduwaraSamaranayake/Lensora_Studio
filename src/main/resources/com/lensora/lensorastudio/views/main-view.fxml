@@ -7,7 +7,7 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.MainController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.ui.controller.MainController">  
     <top>
         <VBox>
             <HBox fx:id="headerBar">

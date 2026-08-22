@@ -3,7 +3,7 @@
 <?import javafx.scene.layout.*?>
 
 <HBox xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.StatusBarController" spacing="0" alignment="CENTER_LEFT" style="-fx-padding: 3 5 3 5;">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.ui.controller.StatusBarController" spacing="0" alignment="CENTER_LEFT" style="-fx-padding: 3 5 3 5;">
     <Label fx:id="lblStatusText" text="Ready"/>
     <Separator orientation="VERTICAL" style="-fx-padding: 0 10;"/>
     <Label fx:id="lblStatusProjects" text="Projects: 0"/>

@@ -1,0 +1,188 @@
+package com.lensora.lensorastudio.feature.explorer.control;
+
+import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
+import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
+import com.lensora.lensorastudio.util.FileSizeFormatter;
+
+import javafx.beans.binding.Bindings;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.List;
+
+/**
+ * Handles the transfer (copy/move) of files and folders, including progress
+ * display and recursive cleanup for moves.
+ */
+public class FileTransferService 
+{
+
+    private static final Logger logger = LoggerFactory.getLogger(FileTransferService.class);
+
+    private final HBox progressContainer;
+    private final ProgressBar progressBar;
+    private final Label progressLabel;
+    private final Label progressSpeedLabel;
+    private final Label progressEtaLabel;
+    private Stage ownerStage;
+    private final Runnable refreshCallback;
+    private final FileClipboardService clipboardService;
+
+    private FileCopyTask currentCopyTask;
+
+    public FileTransferService(HBox progressContainer,
+                                ProgressBar progressBar,
+                                Label progressLabel,
+                                Label progressSpeedLabel,
+                                Label progressEtaLabel,
+                                Runnable refreshCallback,
+                                FileClipboardService clipboardService) 
+    {
+        this.progressContainer = progressContainer;
+        this.progressBar = progressBar;
+        this.progressLabel = progressLabel;
+        this.progressSpeedLabel = progressSpeedLabel;
+        this.progressEtaLabel = progressEtaLabel;
+        this.refreshCallback = refreshCallback;
+        this.clipboardService = clipboardService;
+    }
+
+    /** Pastes files from the clipboard into the target folder. */
+    public void pasteInto(File targetFolder, List<File> sourceFiles, boolean isCut) 
+    {
+        if (targetFolder == null || !targetFolder.isDirectory()) 
+        {
+            NotificationUtil.showToast(ownerStage, "Please select a valid folder", "fas-exclamation-circle");
+            return;
+        }
+        if (sourceFiles.isEmpty()) 
+        {
+            NotificationUtil.showToast(ownerStage, "Clipboard does not contain any files/folders", "fas-exclamation-circle");
+            return;
+        }
+
+        for (File src : sourceFiles) 
+        {
+            if (clipboardService.isRecursivePaste(src, targetFolder)) 
+            {
+                NotificationUtil.showToast(ownerStage, "Cannot paste a folder into itself or its subfolder", "fas-exclamation-circle");
+                return;
+            }
+        }
+
+        startTransfer(sourceFiles, targetFolder, isCut);
+    }
+
+    /** Handles drop (from drag-and-drop) of files into a target folder, optionally moving. */
+    public void dropFilesInto(List<File> files, File targetFolder, boolean move) 
+    {
+        if (files == null || files.isEmpty()) return;
+
+        if (targetFolder == null || !targetFolder.isDirectory() || !targetFolder.exists()) 
+        {
+            NotificationUtil.showToast(ownerStage, "Please drop onto a valid folder", "fas-exclamation-circle");
+            return;
+        }
+
+        for (File src : files) 
+        {
+            if (clipboardService.isRecursivePaste(src, targetFolder)) 
+            {
+                NotificationUtil.showToast(ownerStage, "Cannot move/copy a folder into itself or its subfolder", "fas-exclamation-circle");
+                return;
+            }
+            if (src.getParentFile() != null && src.getParentFile().equals(targetFolder)) 
+            {
+                continue; // Already in the target, skip silently
+            }
+        }
+
+        startTransfer(files, targetFolder, move);
+    }
+
+    private void startTransfer(List<File> sourceFiles, File targetFolder, boolean isCut) 
+    {
+        currentCopyTask = new FileCopyTask(sourceFiles, targetFolder);
+        bindProgress(currentCopyTask);
+
+        currentCopyTask.setOnSucceeded(e -> {
+            hideProgress();
+            if (isCut) 
+            {
+                for (File src : sourceFiles) { deleteRecursive(src); }
+                clipboardService.clearCutFlag();
+            }
+            refreshCallback.run();
+        });
+
+        currentCopyTask.setOnFailed(e -> {
+            hideProgress();
+            ErrorHandler.show(null, "Transfer failed", currentCopyTask.getException());
+        });
+
+        currentCopyTask.setOnCancelled(e -> hideProgress());
+
+        showProgress();
+        Thread thread = new Thread(currentCopyTask, "Lensora-file-transfer-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void bindProgress(FileCopyTask task) 
+    {
+        progressBar.progressProperty().bind(task.progressProperty());
+        progressLabel.textProperty().bind(Bindings.createStringBinding(
+                () -> task.getProgress() < 0 ? "…" : String.format("%.0f%%", task.getProgress() * 100),
+                task.progressProperty()));
+        progressSpeedLabel.textProperty().bind(Bindings.createStringBinding(
+                () -> FileSizeFormatter.formatSpeed(task.speedProperty().get()),
+                task.speedProperty()));
+        progressEtaLabel.textProperty().bind(Bindings.createStringBinding(
+                () -> FileSizeFormatter.formatEta(task.etaProperty().get()),
+                task.etaProperty()));
+    }
+
+    private void deleteRecursive(File file) 
+    {
+        if (file.isDirectory()) 
+        {
+            File[] children = file.listFiles();
+            if (children != null) 
+            {
+                for (File child : children) deleteRecursive(child);
+            }
+        }
+        if (!file.delete()) 
+        {
+            logger.warn("Failed to delete: {}", file.getAbsolutePath());
+        }
+    }
+
+    private void showProgress() 
+    {
+        progressContainer.setVisible(true);
+        progressContainer.setManaged(true);
+    }
+
+    private void hideProgress() 
+    {
+        progressContainer.setVisible(false);
+        progressContainer.setManaged(false);
+        progressBar.progressProperty().unbind();
+        progressLabel.textProperty().unbind();
+        progressSpeedLabel.textProperty().unbind();
+        progressEtaLabel.textProperty().unbind();
+        progressBar.setProgress(0);
+        progressLabel.setText("0%");
+        progressSpeedLabel.setText("0 B/s");
+        progressEtaLabel.setText("ETA: --");
+    }
+
+    public void setOwnerStage(Stage stage) { this.ownerStage = stage; }
+}

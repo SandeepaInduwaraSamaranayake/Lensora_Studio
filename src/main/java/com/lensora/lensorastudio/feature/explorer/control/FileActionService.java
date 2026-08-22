@@ -1,0 +1,242 @@
+package com.lensora.lensorastudio.feature.explorer.control;
+
+import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
+import com.lensora.lensorastudio.media.service.ImageValidator;
+import com.lensora.lensorastudio.media.service.MetadataExtractionService;
+import com.lensora.lensorastudio.ui.components.MetadataPanel;
+import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
+import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
+
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.TextInputDialog;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
+
+import org.snapfx.SnapFX;
+
+import java.awt.Desktop;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+/**
+ * Executes core file actions (Open, Rename, Move, Delete, Show in Explorer,
+ * Show Metadata) in the background or via UI dialogs.
+ */
+public class FileActionService 
+{
+
+    private final Supplier<File> selectedFileSupplier;
+    private final Supplier<List<File>> selectedFilesSupplier;
+    private final Runnable refreshCallback;
+    private Stage ownerStage;
+    private SnapFX snapFX;
+    private Consumer<File> showMetadataHandler;
+
+    public FileActionService(Supplier<File> selectedFileSupplier,
+                                Supplier<List<File>> selectedFilesSupplier,
+                                Runnable refreshCallback) 
+    {
+        this.selectedFileSupplier = selectedFileSupplier;
+        this.selectedFilesSupplier = selectedFilesSupplier;
+        this.refreshCallback = refreshCallback;
+    }
+
+    public void setSnapFX(SnapFX snapFX) { this.snapFX = snapFX; }
+    public void setShowMetadataHandler(Consumer<File> handler) { this.showMetadataHandler = handler; }
+    public void setOwnerStage(Stage stage) { this.ownerStage = stage; }
+
+    /** Opens selected files with the system default application. */
+    public void openSelectedFiles() 
+    {
+        List<File> files = selectedFilesSupplier.get();
+        if (files == null || files.isEmpty()) return;
+
+        CompletableFuture.runAsync(() -> {
+            for (File file : files) 
+            {
+                try 
+                {
+                    Desktop.getDesktop().open(file);
+                } 
+                catch (IOException ex) 
+                {
+                    Platform.runLater(() -> ErrorHandler.show(null, "Could not open file", ex));
+                }
+            }
+        });
+    }
+
+    /** Opens supported images in the internal image viewer. */
+    public void openInImageViewer() 
+    {
+        List<File> selected = selectedFilesSupplier.get();
+        if (selected == null || selected.isEmpty()) return;
+
+        List<File> images = selected.stream()
+                .filter(ImageValidator::isJavaFXLoadable)
+                .toList();
+
+        if (images.isEmpty()) 
+        {
+            NotificationUtil.showToast(ownerStage, "No supported image files in selection", "fas-exclamation-circle");
+            return;
+        }
+
+        ImageViewerWindowService.getInstance().openImages(images);
+    }
+
+    /** Renames a single selected file. */
+    public void renameSelectedFile() 
+    {
+        File file = selectedFileSupplier.get();
+        if (file == null) return;
+
+        TextInputDialog dialog = new TextInputDialog(file.getName());
+        dialog.setTitle("Rename File");
+        dialog.setHeaderText(null);
+        dialog.setContentText("New name:");
+        dialog.showAndWait().ifPresent(newName -> {
+            if (newName == null || newName.trim().isEmpty()) return;
+            File newFile = new File(file.getParentFile(), newName.trim());
+            if (newFile.exists()) 
+            {
+                NotificationUtil.showToast(ownerStage, "File already exists", "fas-exclamation-circle");
+                return;
+            }
+            if (file.renameTo(newFile)) refreshCallback.run();
+            else NotificationUtil.showToast(ownerStage, "Failed to rename file", "fas-exclamation-circle");
+        });
+    }
+
+    /** Moves selected files to a user-chosen directory. */
+    public void moveSelectedFiles() 
+    {
+        List<File> files = selectedFilesSupplier.get();
+        if (files == null || files.isEmpty()) return;
+
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle("Select Destination Folder");
+        File initialDir = files.get(0).getParentFile();
+        if (initialDir != null && initialDir.isDirectory()) chooser.setInitialDirectory(initialDir);
+        File destDir = chooser.showDialog(ownerStage);
+        if (destDir == null) return;
+
+        int movedCount = 0;
+        for (File file : files) 
+        {
+            try 
+            {
+                if (file.getParentFile().equals(destDir)) continue;
+                Files.move(
+                            file.toPath(), 
+                            destDir.toPath().resolve(file.getName()), 
+                            StandardCopyOption.REPLACE_EXISTING
+                );
+                movedCount++;
+            } 
+            catch (IOException ex) 
+            {
+                ErrorHandler.show(null, "Move failed for " + file.getName(), ex);
+                return;
+            }
+        }
+        if (movedCount > 0) 
+        {
+            refreshCallback.run();
+            String message = movedCount == 1 ? "File moved successfully" : movedCount + " files moved successfully";
+            NotificationUtil.showToast(ownerStage, message);
+        }
+    }
+
+    /** Deletes selected files after confirmation. */
+    public void deleteSelectedFiles() 
+    {
+        List<File> files = selectedFilesSupplier.get();
+        if (files == null || files.isEmpty()) return;
+
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        String fileList = files.stream()
+                            .map(File::getName)
+                            .collect(Collectors.joining("\n• ", "• ", ""));
+        confirm.setTitle("Delete File");
+        confirm.setHeaderText("Are you sure you want to delete the following " + files.size() + " file(s)?");
+        confirm.setContentText(fileList);
+        confirm.showAndWait().ifPresent(response -> {
+            if (response != ButtonType.OK) return;
+            for (File file : files) 
+            {
+                if (!file.delete())
+                {
+                    NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
+                }
+            }
+            refreshCallback.run();
+        });
+    }
+
+    /** Reveals the selected file in the system file explorer (browse file directory). */
+    public void showInExplorer() 
+    {
+        File file = selectedFileSupplier.get();
+        if (file == null || !file.exists()) return;
+
+        CompletableFuture.runAsync(() -> {
+            if (!Desktop.isDesktopSupported()) 
+            {
+                Platform.runLater(() -> NotificationUtil.showToast(ownerStage, "Desktop API is not supported", "fas-exclamation-circle"));
+                return;
+            }
+
+            try 
+            {
+                Desktop desktop = Desktop.getDesktop();
+                if (desktop.isSupported(Desktop.Action.BROWSE_FILE_DIR)) 
+                {
+                    desktop.browseFileDirectory(file);
+                    return;
+                }
+
+                File parent = file.getParentFile();
+                if (parent != null && parent.exists() && desktop.isSupported(Desktop.Action.OPEN)) 
+                {
+                    desktop.open(parent);
+                    return;
+                }
+                Platform.runLater(() -> NotificationUtil.showToast(ownerStage, "Not supported. Cannot open file browser", "fas-exclamation-circle"));
+            } 
+            catch (Exception e) 
+            {
+                Platform.runLater(() -> ErrorHandler.show(null, "Could not open in explorer", e));
+            }
+        });
+    }
+
+    /** Shows metadata for the selected file, either via a custom handler or the default floating panel. */
+    public void showMetadata() 
+    {
+        File file = selectedFileSupplier.get();
+        if (file == null) return;
+
+        if (showMetadataHandler != null) 
+        {
+            showMetadataHandler.accept(file);
+        } 
+        else 
+        {
+            MetadataExtractionService.extractAsync(
+                file,
+                metadata -> MetadataPanel.showFloating(metadata, snapFX),
+                error -> ErrorHandler.show(ownerStage, "Failed to read metadata", error)
+            );
+        }
+    }
+}

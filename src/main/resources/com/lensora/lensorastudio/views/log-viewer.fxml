@@ -12,7 +12,7 @@
 
 <BorderPane prefWidth="800" prefHeight="600"
     xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.LogViewerController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.explorer.controller.LogViewerController">
 
     <!-- Center: Log content -->
     <center>

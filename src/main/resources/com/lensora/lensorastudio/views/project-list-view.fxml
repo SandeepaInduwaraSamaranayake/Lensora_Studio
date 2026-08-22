@@ -4,13 +4,13 @@
 <?import javafx.scene.layout.*?>
 
 <TabPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-        fx:controller="com.lensora.lensorastudio.controller.ProjectListController"
+        fx:controller="com.lensora.lensorastudio.feature.project.controller.ProjectListController"
         tabClosingPolicy="UNAVAILABLE">
     <tabs>
         <Tab text="Projects">
             <content>
                 <VBox spacing="0">
-                    <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8 4 8;">
+                    <HBox alignment="CENTER_LEFT" spacing="6" style="-fx-padding: 6 8;">
                         <Label fx:id="lblProjectCount" text="0 projects"/>
                         <Pane HBox.hgrow="ALWAYS"/>
                         <ComboBox fx:id="cmbStatusFilter" promptText="All Statuses" prefWidth="130"/>

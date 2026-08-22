@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS folder_template_item (
 CREATE INDEX IF NOT EXISTS idx_template_item ON folder_template_item(template_id, sequence_no);
 
 
--- image cache
+-- image_cache stays, add what a dimension cache needs
 CREATE TABLE IF NOT EXISTS image_cache (
                                                 image_id            INTEGER        PRIMARY KEY AUTOINCREMENT,
                                                 project_id          INTEGER,
@@ -149,20 +149,17 @@ CREATE TABLE IF NOT EXISTS image_cache (
                                                 file_name           VARCHAR (500),
                                                 extension           VARCHAR (20),
                                                 file_size           BIGINT,
+                                                last_modified        BIGINT,
                                                 width               INTEGER,
                                                 height              INTEGER,
                                                 capture_date        TIMESTAMP,
                                                 camera_model        VARCHAR (255),
                                                 thumbnail_generated BOOLEAN        DEFAULT 0,
-                                                FOREIGN KEY (
-                                                        project_id
-                                                )
-                                                REFERENCES project (project_id)
+                                                FOREIGN KEY (project_id) REFERENCES project (project_id)
 );
 
--- image cache indexes
+CREATE UNIQUE INDEX IF NOT EXISTS idx_image_path_unique ON image_cache(file_path);
 CREATE INDEX IF NOT EXISTS idx_image_project ON image_cache(project_id);
-CREATE INDEX IF NOT EXISTS idx_image_path    ON image_cache(file_path);
 
 -- payment
 CREATE TABLE IF NOT EXISTS payment (
@@ -241,6 +238,41 @@ CREATE INDEX IF NOT EXISTS idx_backup_history_project  ON backup_history(project
 CREATE INDEX IF NOT EXISTS idx_backup_history_schedule ON backup_history(schedule_id);
 CREATE INDEX IF NOT EXISTS idx_backup_history_started  ON backup_history(started_at);
 
+CREATE TABLE IF NOT EXISTS file_rating (
+                                                file_path    VARCHAR(2000) PRIMARY KEY,
+                                                project_id   INTEGER,
+                                                rating       INTEGER NOT NULL DEFAULT 0,   -- 0-5
+                                                flag         VARCHAR(10) NOT NULL DEFAULT 'NONE', -- NONE, FAVORITE, REJECTED
+                                                updated_at   TIMESTAMP NOT NULL,
+                                                FOREIGN KEY (project_id) REFERENCES project (project_id)
+);
+
+CREATE TABLE IF NOT EXISTS file_tag (
+                                                file_path VARCHAR(2000) NOT NULL,
+                                                tag_name  VARCHAR(100)  NOT NULL,
+                                                PRIMARY KEY (file_path, tag_name)
+);
+CREATE INDEX IF NOT EXISTS idx_file_tag_name ON file_tag(tag_name);
+
+CREATE TABLE IF NOT EXISTS collection (
+                                                collection_id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                                                name            VARCHAR(200) NOT NULL,
+                                                icon            VARCHAR(10),          -- emoji glyph
+                                                type            VARCHAR(10) NOT NULL, -- MANUAL, SMART
+                                                smart_criteria  TEXT,                 -- JSON, only for SMART
+                                                is_builtin      BOOLEAN NOT NULL DEFAULT 0,
+                                                created_at      TIMESTAMP NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS collection_item (
+                                                collection_id INTEGER NOT NULL,
+                                                file_path     VARCHAR(2000) NOT NULL,
+                                                added_at      TIMESTAMP NOT NULL,
+                                                PRIMARY KEY (collection_id, file_path),
+                                                FOREIGN KEY (collection_id) REFERENCES collection (collection_id)
+);
+
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- Seed default folder templates (skipped if already present)
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -284,3 +316,11 @@ WHERE t.template_name = 'Graduation Standard';
 -- Add unique constraint to prevent duplicate folders per template
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_template_folder 
         ON folder_template_item(template_id, folder_name);
+
+-- Seed the standard smart collections.
+INSERT OR IGNORE INTO collection (collection_id, name, icon, type, smart_criteria, is_builtin, created_at) VALUES
+        (1, '5 Star',              'fas-star', 'SMART', '{"rating":5}',              1, datetime('now')),
+        (2, 'Favorites',           'fas-heart', 'SMART', '{"flag":"FAVORITE"}',       1, datetime('now')),
+        (3, 'Rejected',            'fas-ban', 'SMART', '{"flag":"REJECTED"}',       1, datetime('now')),
+        (4, 'Ready for Printing',  'fas-print', 'SMART', '{"tag":"ready-for-printing"}', 1, datetime('now')),
+        (5, 'Ready for Delivery',  'fas-box', 'SMART', '{"tag":"ready-for-delivery"}', 1, datetime('now'));

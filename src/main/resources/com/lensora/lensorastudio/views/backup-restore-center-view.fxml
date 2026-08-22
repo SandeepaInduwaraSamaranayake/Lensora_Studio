@@ -4,7 +4,7 @@
 <?import javafx.scene.layout.*?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.controller.BackupRestoreCenterController">
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.feature.backup.ui.BackupRestoreCenterController">
 
     <center>
         <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE" prefWidth="1000" prefHeight="600">
