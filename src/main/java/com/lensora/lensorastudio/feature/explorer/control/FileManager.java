@@ -76,7 +76,7 @@ public class FileManager
                 progressContainer, progressBar, progressLabel, progressSpeedLabel, progressEtaLabel,
                 fileListingManager::getSelectedFile,
                 fileListingManager::getSelectedFiles,
-                folderTreeManager::refreshSelected,
+                this::handleRefreshCallback,
                 fileListingManager.moreThanOneSelectedBinding()
         );
 
@@ -113,6 +113,25 @@ public class FileManager
         else
         {
             ExternalAppLauncher.openWithSystemDefault(file);
+        }
+    }
+
+    private void handleRefreshCallback(File target)
+    {
+        if (target != null) 
+        {
+            // Refresh the specific folder in the tree
+            folderTreeManager.refreshFolder(target);
+            // If the target is the currently visible folder, refresh the file listing too
+            if (target.equals(folderTreeManager.getCurrentFolder())) 
+            {
+                fileListingManager.refresh();
+            }
+        } 
+        else
+        {
+            // No specific target - refresh the currently selected folder (triggers file listing refresh)
+            folderTreeManager.refreshSelected();
         }
     }
 

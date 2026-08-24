@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Handles the transfer (copy/move) of files and folders, including progress
@@ -31,7 +32,7 @@ public class FileTransferService
     private final Label progressSpeedLabel;
     private final Label progressEtaLabel;
     private Stage ownerStage;
-    private final Runnable refreshCallback;
+    private final Consumer<File> refreshCallback;
     private final FileClipboardService clipboardService;
 
     private FileCopyTask currentCopyTask;
@@ -41,7 +42,7 @@ public class FileTransferService
                                 Label progressLabel,
                                 Label progressSpeedLabel,
                                 Label progressEtaLabel,
-                                Runnable refreshCallback,
+                                Consumer<File> refreshCallback,
                                 FileClipboardService clipboardService) 
     {
         this.progressContainer = progressContainer;
@@ -118,7 +119,7 @@ public class FileTransferService
                 for (File src : sourceFiles) { deleteRecursive(src); }
                 clipboardService.clearCutFlag();
             }
-            refreshCallback.run();
+            refreshCallback.accept(targetFolder);
         });
 
         currentCopyTask.setOnFailed(e -> {

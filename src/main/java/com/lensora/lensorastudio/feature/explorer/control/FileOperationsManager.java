@@ -37,7 +37,7 @@ public class FileOperationsManager
                                     Label progressEtaLabel,
                                     Supplier<File> selectedFileSupplier,
                                     Supplier<List<File>> selectedFilesSupplier,
-                                    Runnable refreshCallback,
+                                    Consumer<File> refreshCallback,
                                     BooleanBinding multiSelectBinding
                                 ) 
     {

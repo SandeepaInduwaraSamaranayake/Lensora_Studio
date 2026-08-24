@@ -768,6 +768,8 @@ public class VirtualizedThumbnailGrid
 
             // ── Drag detection ────────────────────────────────────────────
             card.setOnDragDetected(event -> {
+                // Select only this file before dragging (clears any other selection)
+                selectFile(file, false, false);
                 Dragboard db = card.startDragAndDrop(TransferMode.MOVE);
                 ClipboardContent content = new ClipboardContent();
                 List<File> filesToDrag = selectedFiles.isEmpty() 

@@ -36,14 +36,14 @@ public class FileActionService
 
     private final Supplier<File> selectedFileSupplier;
     private final Supplier<List<File>> selectedFilesSupplier;
-    private final Runnable refreshCallback;
+    private final Consumer<File> refreshCallback;
     private Stage ownerStage;
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
 
     public FileActionService(Supplier<File> selectedFileSupplier,
                                 Supplier<List<File>> selectedFilesSupplier,
-                                Runnable refreshCallback) 
+                                Consumer<File> refreshCallback) 
     {
         this.selectedFileSupplier = selectedFileSupplier;
         this.selectedFilesSupplier = selectedFilesSupplier;
@@ -112,7 +112,7 @@ public class FileActionService
                 NotificationUtil.showToast(ownerStage, "File already exists", "fas-exclamation-circle");
                 return;
             }
-            if (file.renameTo(newFile)) refreshCallback.run();
+            if (file.renameTo(newFile)) refreshCallback.accept(null);
             else NotificationUtil.showToast(ownerStage, "Failed to rename file", "fas-exclamation-circle");
         });
     }
@@ -149,9 +149,9 @@ public class FileActionService
                 return;
             }
         }
-        if (movedCount > 0) 
+        if (movedCount > 0)
         {
-            refreshCallback.run();
+            refreshCallback.accept(destDir);
             String message = movedCount == 1 ? "File moved successfully" : movedCount + " files moved successfully";
             NotificationUtil.showToast(ownerStage, message);
         }
@@ -179,7 +179,7 @@ public class FileActionService
                     NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
                 }
             }
-            refreshCallback.run();
+            refreshCallback.accept(null);
         });
     }
 
