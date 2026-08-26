@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import com.lensora.lensorastudio.core.context.ProjectContext;
-import com.lensora.lensorastudio.core.io.FileSystemOperations;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 
 /**
  * Folder-tree subsystem. Delegates to:
@@ -23,7 +23,8 @@ public class FolderTreeManager
     private final FolderTreeViewManager treeViewManager;
     private final FolderNavigationManager navigationManager;
     private final FolderContextMenuManager contextMenuManager;
-    private final FileSystemOperations fsOps;
+    private final InstrumentedFileIO fileIO;
+    private final ProjectContext projectContext;
     
     private Runnable onRefreshRequested;
 
@@ -32,12 +33,15 @@ public class FolderTreeManager
                                 Button btnBack, 
                                 Button btnForward,
                                 Label lblFolderHeader,
-                                Consumer<File> refreshCallback)
+                                ProjectContext projectContext,
+                                InstrumentedFileIO fileIO)
     {
+        this.projectContext = projectContext;
+        this.fileIO = fileIO;
+
         this.treeViewManager = new FolderTreeViewManager(folderTree);
         this.navigationManager = new FolderNavigationManager(breadcrumbContainer, btnBack, btnForward, lblFolderHeader, treeViewManager);
-        fsOps = new FileSystemOperations(refreshCallback, treeViewManager::getProjectRoot);
-        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager, fsOps);
+        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager, fileIO);
 
         // Tree selection -> navigation, with the same re-entry guard the
         // original single-class implementation had (don't navigate again
@@ -65,7 +69,8 @@ public class FolderTreeManager
     public void setOnNavigationPersisted(Consumer<File> callback) { navigationManager.setOnNavigationPersisted(callback); }
 
     public File getCurrentFolder() { return navigationManager.getCurrentFolder(); }
-    public File getProjectRoot() { return treeViewManager.getProjectRoot(); }
+    public File getProjectRoot() { return projectContext.getProjectRoot(); }
+
 
     // ─── Loading ────────────────────────────────────────────────────────────
 
@@ -73,6 +78,9 @@ public class FolderTreeManager
     {
         File root = treeViewManager.loadProjectPath(path);
         if (root == null) return;
+
+        // Update the single source of truth context
+        projectContext.setProjectRoot(root);
 
         navigationManager.resetHistory();
         navigationManager.navigateTo(root);

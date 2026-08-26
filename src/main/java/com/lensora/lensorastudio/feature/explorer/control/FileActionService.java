@@ -1,6 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
-import com.lensora.lensorastudio.core.io.FileChangeCoordinator;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
 import com.lensora.lensorastudio.media.service.ImageValidator;
 import com.lensora.lensorastudio.media.service.MetadataExtractionService;
@@ -20,8 +20,7 @@ import org.snapfx.SnapFX;
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -34,7 +33,6 @@ import java.util.stream.Collectors;
  */
 public class FileActionService 
 {
-
     private final Supplier<File> selectedFileSupplier;
     private final Supplier<List<File>> selectedFilesSupplier;
     private final Consumer<File> refreshCallback;
@@ -42,16 +40,19 @@ public class FileActionService
     private Stage ownerStage;
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
+    private final InstrumentedFileIO fileIO;
 
-    public FileActionService(Supplier<File> selectedFileSupplier,
+    public FileActionService(   Supplier<File> selectedFileSupplier,
                                 Supplier<List<File>> selectedFilesSupplier,
                                 Consumer<File> refreshCallback,
-                                Supplier<File> watchRootSupplier) 
+                                Supplier<File> watchRootSupplier,
+                                InstrumentedFileIO fileIO) 
     {
         this.selectedFileSupplier = selectedFileSupplier;
         this.selectedFilesSupplier = selectedFilesSupplier;
         this.refreshCallback = refreshCallback;
         this.watchRootSupplier = watchRootSupplier;
+        this.fileIO = fileIO;
     }
 
     public void setSnapFX(SnapFX snapFX) { this.snapFX = snapFX; }
@@ -59,7 +60,7 @@ public class FileActionService
     public void setOwnerStage(Stage stage) { this.ownerStage = stage; }
 
     /** Opens selected files with the system default application. */
-    public void openSelectedFiles() 
+    public void openSelectedFiles()
     {
         List<File> files = selectedFilesSupplier.get();
         if (files == null || files.isEmpty()) return;
@@ -67,29 +68,29 @@ public class FileActionService
         CompletableFuture.runAsync(() -> {
             for (File file : files) 
             {
-                try 
+                try
                 {
                     Desktop.getDesktop().open(file);
                 } 
                 catch (IOException ex) 
                 {
-                    Platform.runLater(() -> ErrorHandler.show(null, "Could not open file", ex));
+                    Platform.runLater(() -> ErrorHandler.show(ownerStage, "Could not open file", ex));
                 }
             }
         });
     }
 
     /** Opens supported images in the internal image viewer. */
-    public void openInImageViewer() 
+    public void openInImageViewer()
     {
         List<File> selected = selectedFilesSupplier.get();
         if (selected == null || selected.isEmpty()) return;
 
         List<File> images = selected.stream()
-                .filter(ImageValidator::isJavaFXLoadable)
-                .toList();
+                                .filter(ImageValidator::isJavaFXLoadable)
+                                .toList();
 
-        if (images.isEmpty()) 
+        if (images.isEmpty())
         {
             NotificationUtil.showToast(ownerStage, "No supported image files in selection", "fas-exclamation-circle");
             return;
@@ -99,7 +100,7 @@ public class FileActionService
     }
 
     /** Renames a single selected file. */
-    public void renameSelectedFile() 
+    public void renameSelectedFile()
     {
         File file = selectedFileSupplier.get();
         if (file == null) return;
@@ -110,19 +111,23 @@ public class FileActionService
         dialog.setContentText("New name:");
         dialog.showAndWait().ifPresent(newName -> {
             if (newName == null || newName.trim().isEmpty()) return;
-            File newFile = new File(file.getParentFile(), newName.trim());
-            if (newFile.exists()) 
+
+            try
             {
-                NotificationUtil.showToast(ownerStage, "File already exists", "fas-exclamation-circle");
-                return;
+                fileIO.rename(file, newName);
             }
-            if (file.renameTo(newFile)) 
+            catch (FileAlreadyExistsException ex)
             {
-                expectChange(file);     // old path (parent will see ENTRY_DELETE for old name)
-                expectChange(newFile);  // new path (parent will see ENTRY_CREATE for new name)
-                refreshCallback.accept(null);
+                NotificationUtil.showToast(ownerStage, ex.getMessage(), "fas-exclamation-circle");
             }
-            else NotificationUtil.showToast(ownerStage, "Failed to rename file", "fas-exclamation-circle");
+            catch (IllegalArgumentException ex)
+            {
+                NotificationUtil.showToast(ownerStage, ex.getMessage(), "fas-exclamation-circle");
+            }
+            catch (IOException ex)
+            {
+                ErrorHandler.show(ownerStage, "Failed to rename file", ex);
+            }
         });
     }
 
@@ -139,34 +144,16 @@ public class FileActionService
         File destDir = chooser.showDialog(ownerStage);
         if (destDir == null) return;
 
-        int movedCount = 0;
-        for (File file : files)
+        InstrumentedFileIO.BatchResult result = fileIO.moveBatch(files, destDir);
+        if (result.succeeded() > 0)
         {
-            try 
-            {
-                if (file.getParentFile() != null && file.getParentFile().equals(destDir)) continue;
-
-                expectChange(file);                                 // source path
-                expectChange(new File(destDir, file.getName()));    // destination path
-
-                Files.move(
-                            file.toPath(), 
-                            destDir.toPath().resolve(file.getName()), 
-                            StandardCopyOption.REPLACE_EXISTING
-                );
-                movedCount++;
-            } 
-            catch (IOException ex) 
-            {
-                ErrorHandler.show(null, "Move failed for " + file.getName(), ex);
-                return;
-            }
-        }
-        if (movedCount > 0)
-        {
-            refreshCallback.accept(destDir);
-            String message = movedCount == 1 ? "File moved successfully" : movedCount + " files moved successfully";
+            String message = result.succeeded() == 1 ? "File moved successfully" : result.succeeded() + " files moved successfully";
             NotificationUtil.showToast(ownerStage, message);
+        }
+
+        if (!result.failedFiles().isEmpty())
+        {
+            NotificationUtil.showToast(ownerStage, "Failed to move " + result.failedFiles().size() + " file(s)", "fas-exclamation-circle");
         }
     }
 
@@ -187,11 +174,11 @@ public class FileActionService
             if (response != ButtonType.OK) return;
             for (File file : files) 
             {
-                if (file.delete())
+                try
                 {
-                    expectChange(file);  // mark EACH file/folder actually being deleted
+                    fileIO.deleteRecursive(file, true, false);
                 }
-                else
+                catch (IOException ex)
                 {
                     NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
                 }
@@ -247,7 +234,7 @@ public class FileActionService
         {
             showMetadataHandler.accept(file);
         } 
-        else 
+        else
         {
             MetadataExtractionService.extractAsync(
                 file,
@@ -255,13 +242,5 @@ public class FileActionService
                 error -> ErrorHandler.show(ownerStage, "Failed to read metadata", error)
             );
         }
-    }
-
-    private void expectChange(File file)
-    {
-        File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
-        FileChangeCoordinator.getInstance().expect(
-                file.toPath(),
-                root != null ? root.toPath() : null);
     }
 }

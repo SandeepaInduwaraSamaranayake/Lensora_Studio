@@ -8,7 +8,7 @@ import javafx.scene.input.DataFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.lensora.lensorastudio.core.io.FileSystemOperations;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 
@@ -29,18 +29,18 @@ public class FolderContextMenuManager
     private final TreeView<File> folderTree;
     private final FolderTreeViewManager treeViewManager;
     private final FolderNavigationManager navigationManager;
-    private final FileSystemOperations fsOps;
+    private final InstrumentedFileIO fileIO;
 
     /** Paste is delegated out - FileOperationsManager owns the actual copy-with-progress logic. */
     private Runnable pasteRequested = () -> {};
 
     public FolderContextMenuManager(TreeView<File> folderTree, FolderTreeViewManager treeViewManager,
-                                    FolderNavigationManager navigationManager, FileSystemOperations fsOps)
+                                    FolderNavigationManager navigationManager, InstrumentedFileIO fileIO)
     {
         this.folderTree = folderTree;
         this.treeViewManager = treeViewManager;
         this.navigationManager = navigationManager;
-        this.fsOps = fsOps;
+        this.fileIO = fileIO;
 
         setupContextMenu();
     }
@@ -152,7 +152,7 @@ public class FolderContextMenuManager
         dialog.showAndWait().ifPresent(name -> {
             if (name == null || name.isBlank()) return;
 
-            String sanitized = fsOps.sanitizeFolderName(name.trim());
+            String sanitized = fileIO.sanitizeFolderName(name.trim());
             if (sanitized.isEmpty())
             {
                 NotificationUtil.showToast(folderTree, "Invalid folder name", "fas-exclamation-circle");
@@ -170,7 +170,7 @@ public class FolderContextMenuManager
             {
                 // Marks the change (suppresses the watch-service echo) and
                 // triggers the SAME unified refresh path file operations use
-                newFolder = fsOps.createDirectory(finalParent, sanitized);
+                newFolder = fileIO.createDirectory(finalParent, sanitized);
                 navigationManager.navigateTo(newFolder);
                 NotificationUtil.showToast(folderTree, "Folder created");
             }
@@ -198,7 +198,7 @@ public class FolderContextMenuManager
             return;
         }
 
-        long fileCount = fsOps.countFilesRecursive(folder);
+        long fileCount = fileIO.countFilesRecursive(folder);
         String message = fileCount > 0
                 ? "Move \"" + folder.getName() + "\" and all " + fileCount + " file(s) inside it to the Trash?"
                 : "Move \"" + folder.getName() + "\" to the Trash?";
@@ -223,7 +223,7 @@ public class FolderContextMenuManager
                             NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
                             return;
                         }
-                        moved = folder.exists() && fsOps.moveToTrash(folder);
+                        moved = folder.exists() && fileIO.moveToTrash(folder);
                     }
                     catch (Exception ex)
                     {
@@ -249,7 +249,7 @@ public class FolderContextMenuManager
                     {
                         try
                         {
-                            fsOps.deleteRecursive(folder);
+                            fileIO.deleteRecursive(folder);
                             navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
                             NotificationUtil.showToast(folderTree, "Folder permanently deleted");
                         }

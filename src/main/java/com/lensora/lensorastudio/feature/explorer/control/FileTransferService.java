@@ -1,6 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
-import com.lensora.lensorastudio.core.io.FileChangeCoordinator;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
@@ -15,7 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -36,6 +39,7 @@ public class FileTransferService
     private final Consumer<File> refreshCallback;
     private final FileClipboardService clipboardService;
     private final Supplier<File> watchRootSupplier;
+    private final InstrumentedFileIO fileIO;
 
     private FileCopyTask currentCopyTask;
 
@@ -46,7 +50,8 @@ public class FileTransferService
                                 Label progressEtaLabel,
                                 Consumer<File> refreshCallback,
                                 FileClipboardService clipboardService,
-                                Supplier<File> watchRootSupplier) 
+                                Supplier<File> watchRootSupplier,
+                                InstrumentedFileIO fileIO)
     {
         this.progressContainer = progressContainer;
         this.progressBar = progressBar;
@@ -56,6 +61,7 @@ public class FileTransferService
         this.refreshCallback = refreshCallback;
         this.clipboardService = clipboardService;
         this.watchRootSupplier = watchRootSupplier;
+        this.fileIO = fileIO;
     }
 
     /** Pastes files from the clipboard into the target folder. */
@@ -111,17 +117,17 @@ public class FileTransferService
         startTransfer(files, targetFolder, move);
     }
 
-    private void startTransfer(List<File> sourceFiles, File targetFolder, boolean isCut) 
+    private void startTransfer(List<File> sourceFiles, File targetFolder, boolean isCut)
     {
         // Register expectations BEFORE disk operations begin
         for (File src : sourceFiles) 
         {
             File destItem = new File(targetFolder, src.getName());
-            expectChange(destItem); // Marks targetFolder/item + targetFolder + all ancestors to root
+            fileIO.expectChange(destItem); // Marks targetFolder/item + targetFolder + all ancestors to root
 
-            if (isCut) 
+            if (isCut)
             {
-                expectChange(src);  // Marks source item + source directory + all ancestors to root
+                fileIO.expectChange(src);  // Marks source item + source directory + all ancestors to root
             }
         }
 
@@ -130,25 +136,77 @@ public class FileTransferService
 
         currentCopyTask.setOnSucceeded(e -> {
             hideProgress();
-            if (isCut) 
+            if (isCut)
             {
-                for (File src : sourceFiles) { deleteRecursive(src); }
+                Set<File> sourceParents = new HashSet<>();
+
+                for (File src : sourceFiles)
+                {
+                    File parent = src.getParentFile();
+                    if (parent != null)
+                    {
+                        sourceParents.add(parent);
+                    }
+
+                    try
+                    {
+                        fileIO.deleteRecursive(src, false, false);
+                    }
+                    catch (IOException ex)
+                    {
+                        logger.warn("Failed to delete source file after cut operation: {}", src.getAbsolutePath(), ex);
+                    }
+                }
                 clipboardService.clearCutFlag();
+                // Refresh all source directories that lost files
+                for (File sourceParent : sourceParents)
+                {
+                    refreshCallback.accept(sourceParent);
+                }
             }
+            // Refresh destination directory that gained files
             refreshCallback.accept(targetFolder);
         });
 
         currentCopyTask.setOnFailed(e -> {
             hideProgress();
+            clearAllExpectations(sourceFiles, targetFolder, isCut);
             ErrorHandler.show(null, "Transfer failed", currentCopyTask.getException());
         });
 
-        currentCopyTask.setOnCancelled(e -> hideProgress());
+        currentCopyTask.setOnCancelled(e -> {
+            hideProgress();
+            clearAllExpectations(sourceFiles, targetFolder, isCut);
+        });
 
         showProgress();
         Thread thread = new Thread(currentCopyTask, "Lensora-file-transfer-task");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    /**
+     * Clears watcher change expectations for all destination and source paths associated 
+     * with a failed or cancelled file transfer.
+     * <p>
+     * Unwinds the expectations registered at the start of {@link #startTransfer} to ensure 
+     * that future external change notifications for these paths are not mistakenly suppressed.
+     *
+     * @param sourceFiles  the original files or directories included in the transfer
+     * @param targetFolder the destination directory of the transfer
+     * @param isCut        {@code true} if the transfer was a move operation (where source paths 
+     *                     were also registered); {@code false} if a copy operation
+     */
+    private void clearAllExpectations(List<File> sourceFiles, File targetFolder, boolean isCut)
+    {
+        for (File src : sourceFiles)
+        {
+            fileIO.clearExpectation(new File(targetFolder, src.getName()));
+            if (isCut)
+            {
+                fileIO.clearExpectation(src);
+            }
+        }
     }
 
     private void bindProgress(FileCopyTask task) 
@@ -163,22 +221,6 @@ public class FileTransferService
         progressEtaLabel.textProperty().bind(Bindings.createStringBinding(
                 () -> FileSizeFormatter.formatEta(task.etaProperty().get()),
                 task.etaProperty()));
-    }
-
-    private void deleteRecursive(File file) 
-    {
-        if (file.isDirectory()) 
-        {
-            File[] children = file.listFiles();
-            if (children != null) 
-            {
-                for (File child : children) deleteRecursive(child);
-            }
-        }
-        if (!file.delete()) 
-        {
-            logger.warn("Failed to delete: {}", file.getAbsolutePath());
-        }
     }
 
     private void showProgress() 
@@ -199,14 +241,6 @@ public class FileTransferService
         progressLabel.setText("0%");
         progressSpeedLabel.setText("0 B/s");
         progressEtaLabel.setText("ETA: --");
-    }
-
-    private void expectChange(File file)
-    {
-        File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
-        FileChangeCoordinator.getInstance().expect(
-                file.toPath(),
-                root != null ? root.toPath() : null);
     }
 
     public void setOwnerStage(Stage stage) { this.ownerStage = stage; }

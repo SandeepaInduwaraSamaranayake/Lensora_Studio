@@ -1,5 +1,7 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import com.lensora.lensorastudio.core.context.ProjectContext;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.core.watch.FolderWatchService;
 import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
 import com.lensora.lensorastudio.media.service.ImageValidator;
@@ -32,6 +34,8 @@ public class FileManager
     private final FileOperationsManager fileOperationsManager;
     private Integer currentProjectId;
     private final FolderWatchService folderWatchService;
+    private final ProjectContext projectContext;
+    private final InstrumentedFileIO fileIO;
 
     public FileManager( TreeView<File> folderTree,
                         TableView<File> fileTable,
@@ -61,9 +65,14 @@ public class FileManager
                         StackPane iconGridHost
                         )
     {
+        // Single source of truth context created first
+        this.projectContext = new ProjectContext();
+
+        // I/O layer binds directly to context (Zero UI coupling)
+        this.fileIO = new InstrumentedFileIO(this::handleRefreshCallback, projectContext::getProjectRoot);
 
         this.folderTreeManager = new FolderTreeManager(
-                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader, this::handleRefreshCallback
+                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader, projectContext, fileIO
         );
 
         this.fileListingManager = new FileListingManager(
@@ -81,7 +90,8 @@ public class FileManager
                 fileListingManager::getSelectedFiles,
                 this::handleRefreshCallback,
                 fileListingManager.moreThanOneSelectedBinding(),
-                folderTreeManager::getProjectRoot
+                projectContext::getProjectRoot,
+                fileIO
         );
 
         this.folderWatchService = new FolderWatchService();
@@ -110,6 +120,11 @@ public class FileManager
         // External-change auto-refresh: supplements (does not replace) the
         // app's own explicit refresh-after-operation calls above.
         folderWatchService.setOnExternalChange(this::handleExternalChange);
+
+        // Listen to root changes automatically if needed by other services
+        projectContext.projectRootProperty().addListener((obs, oldRoot, newRoot) -> {
+            if (newRoot != null) folderWatchService.watch(newRoot);
+        });
     }
 
     private void handleDoubleClickOpen(File file)
@@ -160,7 +175,7 @@ public class FileManager
     public FileOperationsManager getFileOperationsManager() { return fileOperationsManager; }
     public FolderTreeManager getFolderTreeManager() { return folderTreeManager; }
 
-    public void loadProjectPath(String path) { folderTreeManager.loadProjectPath(path); folderWatchService.watch(folderTreeManager.getProjectRoot());}
+    public void loadProjectPath(String path) { folderTreeManager.loadProjectPath(path); }
     public void goBack() { folderTreeManager.goBack(); }
     public void goForward() { folderTreeManager.goForward(); }
 

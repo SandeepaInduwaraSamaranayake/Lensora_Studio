@@ -1,6 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
-import com.lensora.lensorastudio.core.io.FileSystemOperations;
+import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.ui.util.ContextMenuFactory;
 
 import javafx.beans.binding.BooleanBinding;
@@ -40,7 +40,8 @@ public class FileOperationsManager
                                     Supplier<List<File>> selectedFilesSupplier,
                                     Consumer<File> refreshCallback,
                                     BooleanBinding multiSelectBinding,
-                                    Supplier<File> watchRootSupplier
+                                    Supplier<File> watchRootSupplier,
+                                    InstrumentedFileIO fileIO
                                 )
     {
         this.ctx = ContextMenuFactory.build();
@@ -53,17 +54,19 @@ public class FileOperationsManager
                                                         progressBar, 
                                                         progressLabel,
                                                         progressSpeedLabel, 
-                                                        progressEtaLabel, 
+                                                        progressEtaLabel,
                                                         refreshCallback, 
                                                         clipboardService,
-                                                        watchRootSupplier
+                                                        watchRootSupplier,
+                                                        fileIO
         );
         
         this.actionService = new FileActionService(
                                                         selectedFileSupplier, 
                                                         selectedFilesSupplier, 
                                                         refreshCallback,
-                                                        watchRootSupplier
+                                                        watchRootSupplier,
+                                                        fileIO
         );
 
         this.menuBuilder = new FileMenuBuilder(
