@@ -34,6 +34,7 @@ module com.lensora.lensorastudio
 
     exports com.lensora.lensorastudio.app;
     exports com.lensora.lensorastudio.feature.backup.model;
+    exports com.lensora.lensorastudio.core.context;
 
     // Opens for JavaFX FXML (controllers)
     opens com.lensora.lensorastudio.app to javafx.fxml;

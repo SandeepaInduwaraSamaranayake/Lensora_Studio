@@ -9,6 +9,9 @@ import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.lensora.lensorastudio.core.context.ProjectContext;
+import com.lensora.lensorastudio.core.io.FileSystemOperations;
+
 /**
  * Folder-tree subsystem. Delegates to:
  *  - FolderTreeViewManager    (TreeView rendering, cell drag&drop, tree structure)
@@ -20,18 +23,21 @@ public class FolderTreeManager
     private final FolderTreeViewManager treeViewManager;
     private final FolderNavigationManager navigationManager;
     private final FolderContextMenuManager contextMenuManager;
-
+    private final FileSystemOperations fsOps;
+    
     private Runnable onRefreshRequested;
 
-    public FolderTreeManager(   TreeView<File> folderTree, 
+    public FolderTreeManager(   TreeView<File> folderTree,
                                 HBox breadcrumbContainer,
                                 Button btnBack, 
                                 Button btnForward,
-                                Label lblFolderHeader)
+                                Label lblFolderHeader,
+                                Consumer<File> refreshCallback)
     {
         this.treeViewManager = new FolderTreeViewManager(folderTree);
         this.navigationManager = new FolderNavigationManager(breadcrumbContainer, btnBack, btnForward, lblFolderHeader, treeViewManager);
-        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager);
+        fsOps = new FileSystemOperations(refreshCallback, treeViewManager::getProjectRoot);
+        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager, fsOps);
 
         // Tree selection -> navigation, with the same re-entry guard the
         // original single-class implementation had (don't navigate again
@@ -77,7 +83,7 @@ public class FolderTreeManager
         treeViewManager.refreshSelected(onRefreshRequested);
     }
 
-    public void refreshFolder(File folder) 
+    public void refreshFolder(File folder)
     {
         treeViewManager.refreshFolder(folder);
     }

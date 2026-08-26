@@ -7,6 +7,7 @@ import javafx.collections.ObservableList;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.input.*;
 
 import java.io.File;
@@ -25,6 +26,7 @@ public class FileListViewManager
     public FileListViewManager(ListView<File> fileListView)
     {
         this.fileListView = fileListView;
+        this.fileListView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     public void setItems(ObservableList<File> files)

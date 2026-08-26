@@ -91,14 +91,23 @@ public class FolderTreeViewManager
 
     public void refreshFolder(File folder) 
     {
+        System.out.println("refreshFolder(File folder)  called on folder : " + folder.getAbsolutePath() );
         TreeItem<File> root = folderTree.getRoot();
-        if (root == null) return;
+        if (root == null || folder == null) return;
+
         TreeItem<File> item = findTreeItem(root, folder);
         if (item != null) 
         {
+            File previouslySelected = getSelectedFolder(); // capture before rebuild
+
             item.getChildren().clear();
             addChildren(item);
             item.setExpanded(true);
+
+            if (previouslySelected != null)
+            {
+                selectFolderInTree(previouslySelected); // re-locate & reselect if it still exists
+            }
         }
     }
 

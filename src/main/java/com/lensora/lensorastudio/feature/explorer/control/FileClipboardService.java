@@ -17,7 +17,7 @@ import java.util.function.Supplier;
  * Manages file/folder clipboard operations: Copy, Cut, Paste source reading,
  * and Cut flag management.
  */
-public class FileClipboardService 
+public class FileClipboardService
 {
 
     private final Supplier<List<File>> selectedFilesSupplier;

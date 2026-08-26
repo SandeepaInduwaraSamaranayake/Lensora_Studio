@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import com.lensora.lensorastudio.core.watch.FolderWatchService;
 import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
 import com.lensora.lensorastudio.media.service.ImageValidator;
 import com.lensora.lensorastudio.util.ExternalAppLauncher;
@@ -30,6 +31,7 @@ public class FileManager
     private final FileListingManager fileListingManager;
     private final FileOperationsManager fileOperationsManager;
     private Integer currentProjectId;
+    private final FolderWatchService folderWatchService;
 
     public FileManager( TreeView<File> folderTree,
                         TableView<File> fileTable,
@@ -59,8 +61,9 @@ public class FileManager
                         StackPane iconGridHost
                         )
     {
+
         this.folderTreeManager = new FolderTreeManager(
-                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader
+                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader, this::handleRefreshCallback
         );
 
         this.fileListingManager = new FileListingManager(
@@ -77,8 +80,11 @@ public class FileManager
                 fileListingManager::getSelectedFile,
                 fileListingManager::getSelectedFiles,
                 this::handleRefreshCallback,
-                fileListingManager.moreThanOneSelectedBinding()
+                fileListingManager.moreThanOneSelectedBinding(),
+                folderTreeManager::getProjectRoot
         );
+
+        this.folderWatchService = new FolderWatchService();
 
         // Attach context menu across all listing views
         fileListingManager.attachSharedContextMenu(fileOperationsManager.getContextMenu());
@@ -100,6 +106,10 @@ public class FileManager
 
         // Handle double-click / enter navigation
         fileListingManager.setOnDoubleClick(this::handleDoubleClickOpen);
+
+        // External-change auto-refresh: supplements (does not replace) the
+        // app's own explicit refresh-after-operation calls above.
+        folderWatchService.setOnExternalChange(this::handleExternalChange);
     }
 
     private void handleDoubleClickOpen(File file)
@@ -116,22 +126,27 @@ public class FileManager
         }
     }
 
+    /** In-app operations call this. Declares the change as expected, then refreshes. */
     private void handleRefreshCallback(File target)
     {
-        if (target != null) 
+        File folderToRefresh = (target != null) ? target : folderTreeManager.getCurrentFolder();
+        if (folderToRefresh == null) return;
+
+        refreshFolderAndListing(folderToRefresh);
+    }
+
+    /** FolderWatchService calls this - already confirmed genuinely external by the coordinator upstream. */
+    private void handleExternalChange(File folder)
+    {
+        refreshFolderAndListing(folder);
+    }
+
+    private void refreshFolderAndListing(File folder)
+    {
+        folderTreeManager.refreshFolder(folder);
+        if (folder.equals(folderTreeManager.getCurrentFolder()))
         {
-            // Refresh the specific folder in the tree
-            folderTreeManager.refreshFolder(target);
-            // If the target is the currently visible folder, refresh the file listing too
-            if (target.equals(folderTreeManager.getCurrentFolder())) 
-            {
-                fileListingManager.refresh();
-            }
-        } 
-        else
-        {
-            // No specific target - refresh the currently selected folder (triggers file listing refresh)
-            folderTreeManager.refreshSelected();
+            fileListingManager.refresh();
         }
     }
 
@@ -143,8 +158,9 @@ public class FileManager
 
     public FileListingManager getFileListingManager() { return fileListingManager; }
     public FileOperationsManager getFileOperationsManager() { return fileOperationsManager; }
+    public FolderTreeManager getFolderTreeManager() { return folderTreeManager; }
 
-    public void loadProjectPath(String path) { folderTreeManager.loadProjectPath(path); }
+    public void loadProjectPath(String path) { folderTreeManager.loadProjectPath(path); folderWatchService.watch(folderTreeManager.getProjectRoot());}
     public void goBack() { folderTreeManager.goBack(); }
     public void goForward() { folderTreeManager.goForward(); }
 
@@ -161,6 +177,7 @@ public class FileManager
     public void shutdown()
     {
         fileListingManager.shutdownDimensionExecutor();
+        folderWatchService.stop();
     }
 
     public void setupCopyPasteShortcuts(Scene scene)

@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import com.lensora.lensorastudio.core.io.FileChangeCoordinator;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Handles the transfer (copy/move) of files and folders, including progress
@@ -23,7 +25,6 @@ import java.util.function.Consumer;
  */
 public class FileTransferService 
 {
-
     private static final Logger logger = LoggerFactory.getLogger(FileTransferService.class);
 
     private final HBox progressContainer;
@@ -34,6 +35,7 @@ public class FileTransferService
     private Stage ownerStage;
     private final Consumer<File> refreshCallback;
     private final FileClipboardService clipboardService;
+    private final Supplier<File> watchRootSupplier;
 
     private FileCopyTask currentCopyTask;
 
@@ -43,7 +45,8 @@ public class FileTransferService
                                 Label progressSpeedLabel,
                                 Label progressEtaLabel,
                                 Consumer<File> refreshCallback,
-                                FileClipboardService clipboardService) 
+                                FileClipboardService clipboardService,
+                                Supplier<File> watchRootSupplier) 
     {
         this.progressContainer = progressContainer;
         this.progressBar = progressBar;
@@ -52,6 +55,7 @@ public class FileTransferService
         this.progressEtaLabel = progressEtaLabel;
         this.refreshCallback = refreshCallback;
         this.clipboardService = clipboardService;
+        this.watchRootSupplier = watchRootSupplier;
     }
 
     /** Pastes files from the clipboard into the target folder. */
@@ -109,6 +113,18 @@ public class FileTransferService
 
     private void startTransfer(List<File> sourceFiles, File targetFolder, boolean isCut) 
     {
+        // Register expectations BEFORE disk operations begin
+        for (File src : sourceFiles) 
+        {
+            File destItem = new File(targetFolder, src.getName());
+            expectChange(destItem); // Marks targetFolder/item + targetFolder + all ancestors to root
+
+            if (isCut) 
+            {
+                expectChange(src);  // Marks source item + source directory + all ancestors to root
+            }
+        }
+
         currentCopyTask = new FileCopyTask(sourceFiles, targetFolder);
         bindProgress(currentCopyTask);
 
@@ -183,6 +199,14 @@ public class FileTransferService
         progressLabel.setText("0%");
         progressSpeedLabel.setText("0 B/s");
         progressEtaLabel.setText("ETA: --");
+    }
+
+    private void expectChange(File file)
+    {
+        File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
+        FileChangeCoordinator.getInstance().expect(
+                file.toPath(),
+                root != null ? root.toPath() : null);
     }
 
     public void setOwnerStage(Stage stage) { this.ownerStage = stage; }

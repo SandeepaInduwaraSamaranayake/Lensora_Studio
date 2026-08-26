@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import com.lensora.lensorastudio.core.io.FileChangeCoordinator;
 import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
 import com.lensora.lensorastudio.media.service.ImageValidator;
 import com.lensora.lensorastudio.media.service.MetadataExtractionService;
@@ -37,17 +38,20 @@ public class FileActionService
     private final Supplier<File> selectedFileSupplier;
     private final Supplier<List<File>> selectedFilesSupplier;
     private final Consumer<File> refreshCallback;
+    private final Supplier<File> watchRootSupplier;
     private Stage ownerStage;
     private SnapFX snapFX;
     private Consumer<File> showMetadataHandler;
 
     public FileActionService(Supplier<File> selectedFileSupplier,
                                 Supplier<List<File>> selectedFilesSupplier,
-                                Consumer<File> refreshCallback) 
+                                Consumer<File> refreshCallback,
+                                Supplier<File> watchRootSupplier) 
     {
         this.selectedFileSupplier = selectedFileSupplier;
         this.selectedFilesSupplier = selectedFilesSupplier;
         this.refreshCallback = refreshCallback;
+        this.watchRootSupplier = watchRootSupplier;
     }
 
     public void setSnapFX(SnapFX snapFX) { this.snapFX = snapFX; }
@@ -112,7 +116,12 @@ public class FileActionService
                 NotificationUtil.showToast(ownerStage, "File already exists", "fas-exclamation-circle");
                 return;
             }
-            if (file.renameTo(newFile)) refreshCallback.accept(null);
+            if (file.renameTo(newFile)) 
+            {
+                expectChange(file);     // old path (parent will see ENTRY_DELETE for old name)
+                expectChange(newFile);  // new path (parent will see ENTRY_CREATE for new name)
+                refreshCallback.accept(null);
+            }
             else NotificationUtil.showToast(ownerStage, "Failed to rename file", "fas-exclamation-circle");
         });
     }
@@ -131,11 +140,15 @@ public class FileActionService
         if (destDir == null) return;
 
         int movedCount = 0;
-        for (File file : files) 
+        for (File file : files)
         {
             try 
             {
-                if (file.getParentFile().equals(destDir)) continue;
+                if (file.getParentFile() != null && file.getParentFile().equals(destDir)) continue;
+
+                expectChange(file);                                 // source path
+                expectChange(new File(destDir, file.getName()));    // destination path
+
                 Files.move(
                             file.toPath(), 
                             destDir.toPath().resolve(file.getName()), 
@@ -158,7 +171,7 @@ public class FileActionService
     }
 
     /** Deletes selected files after confirmation. */
-    public void deleteSelectedFiles() 
+    public void deleteSelectedFiles()
     {
         List<File> files = selectedFilesSupplier.get();
         if (files == null || files.isEmpty()) return;
@@ -174,7 +187,11 @@ public class FileActionService
             if (response != ButtonType.OK) return;
             for (File file : files) 
             {
-                if (!file.delete())
+                if (file.delete())
+                {
+                    expectChange(file);  // mark EACH file/folder actually being deleted
+                }
+                else
                 {
                     NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
                 }
@@ -238,5 +255,13 @@ public class FileActionService
                 error -> ErrorHandler.show(ownerStage, "Failed to read metadata", error)
             );
         }
+    }
+
+    private void expectChange(File file)
+    {
+        File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
+        FileChangeCoordinator.getInstance().expect(
+                file.toPath(),
+                root != null ? root.toPath() : null);
     }
 }

@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import com.lensora.lensorastudio.core.io.FileSystemOperations;
 import com.lensora.lensorastudio.ui.util.ContextMenuFactory;
 
 import javafx.beans.binding.BooleanBinding;
@@ -38,8 +39,9 @@ public class FileOperationsManager
                                     Supplier<File> selectedFileSupplier,
                                     Supplier<List<File>> selectedFilesSupplier,
                                     Consumer<File> refreshCallback,
-                                    BooleanBinding multiSelectBinding
-                                ) 
+                                    BooleanBinding multiSelectBinding,
+                                    Supplier<File> watchRootSupplier
+                                )
     {
         this.ctx = ContextMenuFactory.build();
 
@@ -53,13 +55,15 @@ public class FileOperationsManager
                                                         progressSpeedLabel, 
                                                         progressEtaLabel, 
                                                         refreshCallback, 
-                                                        clipboardService
+                                                        clipboardService,
+                                                        watchRootSupplier
         );
         
         this.actionService = new FileActionService(
                                                         selectedFileSupplier, 
                                                         selectedFilesSupplier, 
-                                                        refreshCallback
+                                                        refreshCallback,
+                                                        watchRootSupplier
         );
 
         this.menuBuilder = new FileMenuBuilder(

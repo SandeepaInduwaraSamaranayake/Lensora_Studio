@@ -8,13 +8,13 @@ import javafx.scene.input.DataFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.lensora.lensorastudio.core.io.FileSystemOperations;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,16 +29,18 @@ public class FolderContextMenuManager
     private final TreeView<File> folderTree;
     private final FolderTreeViewManager treeViewManager;
     private final FolderNavigationManager navigationManager;
+    private final FileSystemOperations fsOps;
 
     /** Paste is delegated out - FileOperationsManager owns the actual copy-with-progress logic. */
     private Runnable pasteRequested = () -> {};
 
     public FolderContextMenuManager(TreeView<File> folderTree, FolderTreeViewManager treeViewManager,
-                                    FolderNavigationManager navigationManager)
+                                    FolderNavigationManager navigationManager, FileSystemOperations fsOps)
     {
         this.folderTree = folderTree;
         this.treeViewManager = treeViewManager;
         this.navigationManager = navigationManager;
+        this.fsOps = fsOps;
 
         setupContextMenu();
     }
@@ -150,7 +152,7 @@ public class FolderContextMenuManager
         dialog.showAndWait().ifPresent(name -> {
             if (name == null || name.isBlank()) return;
 
-            String sanitized = sanitizeFolderName(name.trim());
+            String sanitized = fsOps.sanitizeFolderName(name.trim());
             if (sanitized.isEmpty())
             {
                 NotificationUtil.showToast(folderTree, "Invalid folder name", "fas-exclamation-circle");
@@ -166,8 +168,9 @@ public class FolderContextMenuManager
 
             try
             {
-                Files.createDirectory(newFolder.toPath());
-                treeViewManager.refreshTreeAfterFolderCreation(finalParent, newFolder);
+                // Marks the change (suppresses the watch-service echo) and
+                // triggers the SAME unified refresh path file operations use
+                newFolder = fsOps.createDirectory(finalParent, sanitized);
                 navigationManager.navigateTo(newFolder);
                 NotificationUtil.showToast(folderTree, "Folder created");
             }
@@ -195,7 +198,7 @@ public class FolderContextMenuManager
             return;
         }
 
-        long fileCount = countFilesRecursive(folder);
+        long fileCount = fsOps.countFilesRecursive(folder);
         String message = fileCount > 0
                 ? "Move \"" + folder.getName() + "\" and all " + fileCount + " file(s) inside it to the Trash?"
                 : "Move \"" + folder.getName() + "\" to the Trash?";
@@ -215,18 +218,17 @@ public class FolderContextMenuManager
                 {
                     try
                     {
-                        if (folder.exists())
-                        {
-                            moved = desktop.moveToTrash(folder);
-                        }
-                        else
+                        if (!folder.exists())
                         {
                             NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
+                            return;
                         }
+                        moved = folder.exists() && fsOps.moveToTrash(folder);
                     }
                     catch (Exception ex)
                     {
                         logger.warn("Move to Trash failed", ex);
+                        moved = false;
                         NotificationUtil.showToast(folderTree, "Cannot move folder to trash", "fas-exclamation-circle");
                     }
                 }
@@ -247,14 +249,8 @@ public class FolderContextMenuManager
                     {
                         try
                         {
-                            deleteRecursive(folder);
-                            treeViewManager.refreshTreeAfterFolderDeletion(folder.getParentFile());
-                            if (folder.equals(navigationManager.getCurrentFolder()))
-                            {
-                                File fallback = (folder.getParentFile() != null && folder.getParentFile().exists())
-                                        ? folder.getParentFile() : projectRoot;
-                                if (fallback != null) navigationManager.navigateTo(fallback);
-                            }
+                            fsOps.deleteRecursive(folder);
+                            navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
                             NotificationUtil.showToast(folderTree, "Folder permanently deleted");
                         }
                         catch (IOException ex)
@@ -266,48 +262,18 @@ public class FolderContextMenuManager
                 return;
             }
 
-            // Successfully moved to trash
-            treeViewManager.refreshTreeAfterFolderDeletion(folder.getParentFile());
-            if (folder.equals(navigationManager.getCurrentFolder()))
-            {
-                File fallback = (folder.getParentFile() != null && folder.getParentFile().exists())
-                                    ? folder.getParentFile() : projectRoot;
-                if (fallback != null) navigationManager.navigateTo(fallback);
-            }
-
+            navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
             NotificationUtil.showToast(folderTree, "Folder moved to Trash");
         });
     }
 
-    private long countFilesRecursive(File folder)
+    private void navigateAwayIfCurrentFolderDeleted(File deletedFolder, File projectRoot)
     {
-        File[] children = folder.listFiles();
-        if (children == null) return 0;
-
-        long count = 0;
-        for (File child : children)
+        if (deletedFolder.equals(navigationManager.getCurrentFolder()))
         {
-            count += child.isDirectory() ? countFilesRecursive(child) : 1;
+            File parent = deletedFolder.getParentFile();
+            File fallback = (parent != null && parent.exists()) ? parent : projectRoot;
+            if (fallback != null) navigationManager.navigateTo(fallback);
         }
-        return count;
-    }
-
-    private void deleteRecursive(File file) throws IOException
-    {
-        File[] children = file.listFiles();
-        if (children != null)
-        {
-            for (File child : children)
-            {
-                deleteRecursive(child);
-            }
-        }
-        Files.delete(file.toPath());
-    }
-
-    /** Strips characters that are invalid in folder names on Windows/macOS/Linux. */
-    private String sanitizeFolderName(String name)
-    {
-        return name.replaceAll("[\\\\/:*?\"<>|]", "").trim();
     }
 }
