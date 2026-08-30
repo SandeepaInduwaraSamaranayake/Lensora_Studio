@@ -82,6 +82,7 @@ public class FileIO
         if (!Desktop.isDesktopSupported()) return false;
         Desktop desktop = Desktop.getDesktop();
         if (!desktop.isSupported(Desktop.Action.MOVE_TO_TRASH)) return false;
+        if(!file.exists()) return false;
 
         return desktop.moveToTrash(file);
     }

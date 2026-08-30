@@ -5,6 +5,9 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,7 +20,6 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Owns the folder-tree context menu (new folder / copy / paste / delete /
@@ -44,6 +46,7 @@ public class FolderContextMenuManager
         this.fileIO = fileIO;
 
         setupContextMenu();
+        setupKeyboardShortcuts();
     }
 
     public void setOnPasteRequested(Runnable callback) { this.pasteRequested = callback; }
@@ -56,7 +59,7 @@ public class FolderContextMenuManager
         MenuItem newFolderItem = new MenuItem("New Folder");
         MenuItem copyItem = new MenuItem("Copy");
         MenuItem pasteItem = new MenuItem("Paste");
-        MenuItem deleteFolderItem = new MenuItem("Delete Folder");
+        MenuItem deleteFolderItem = new MenuItem("Delete Folder\tDelete");
         MenuItem openItem = new MenuItem("Open in Explorer");
         MenuItem copyPathItem = new MenuItem("Copy Directory Path");
 
@@ -76,6 +79,21 @@ public class FolderContextMenuManager
                                         copyPathItem
                                     );
         folderTree.setContextMenu(contextMenu);
+    }
+
+    private void setupKeyboardShortcuts()
+    {
+        folderTree.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            // Only act if the tree is focused
+            if (!folderTree.isFocused()) return;
+
+            if (event.getCode() == KeyCode.DELETE)
+            {
+                deleteSelectedFolder();
+                event.consume();
+            }
+            // Additional shortcuts can be added here.
+        });
     }
 
     public void copySelectedFolder()
@@ -183,23 +201,42 @@ public class FolderContextMenuManager
     }
 
     // ============================== Delete Folder ==============================
-    private void deleteSelectedFolder()
+
+    private void deleteSelectedFolder() 
     {
         File folder = treeViewManager.getSelectedFolder();
         File projectRoot = treeViewManager.getProjectRoot();
 
-        if (folder == null)
+        if (folder == null) 
         {
-            NotificationUtil.showToast(folderTree, "Please select a folder move to trash", "fas-exclamation-circle");
+            NotificationUtil.showToast(folderTree, "Please select a folder to move to trash", "fas-exclamation-circle");
             return;
         }
-        if (projectRoot != null && folder.equals(projectRoot))
+        if (projectRoot != null && folder.equals(projectRoot)) 
         {
             NotificationUtil.showToast(folderTree, "Cannot move the project root folder to trash", "fas-exclamation-circle");
             return;
         }
 
-        long fileCount = fileIO.countFilesRecursive(folder);
+        // Count files in the background
+        BackgroundExecutor.getInstance().executeIO(() -> {
+            long fileCount = fileIO.countFilesRecursive(folder);
+            Platform.runLater(() -> showDeleteConfirmation(folder, projectRoot, fileCount));
+        });
+    }
+
+    /**
+     * Shows the confirmation dialog for moving to trash.
+     * Called on the JavaFX Application Thread.
+     */
+    private void showDeleteConfirmation(File folder, File projectRoot, long fileCount) 
+    {
+        if (!folder.exists()) 
+        {
+            NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
+            return;
+        }
+
         String message = fileCount > 0
                 ? "Move \"" + folder.getName() + "\" and all " + fileCount + " file(s) inside it to the Trash?"
                 : "Move \"" + folder.getName() + "\" to the Trash?";
@@ -209,67 +246,101 @@ public class FolderContextMenuManager
         confirm.setHeaderText(null);
         confirm.setContentText(message);
         confirm.showAndWait().ifPresent(response -> {
-            if (response != ButtonType.OK) return;
-
-            boolean moved = false;
-            if (Desktop.isDesktopSupported())
+            if (response == ButtonType.OK) 
             {
-                Desktop desktop = Desktop.getDesktop();
-                if (desktop.isSupported(Desktop.Action.MOVE_TO_TRASH))
-                {
-                    try
-                    {
-                        if (!folder.exists())
-                        {
-                            NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
-                            return;
-                        }
-                        moved = folder.exists() && fileIO.moveToTrash(folder);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.warn("Move to Trash failed", ex);
-                        moved = false;
-                        NotificationUtil.showToast(folderTree, "Cannot move folder to trash", "fas-exclamation-circle");
-                    }
-                }
+                // Attempt trash in the background
+                attemptTrashInBackground(folder, projectRoot);
             }
-            if (!moved)
-            {
-                // Fallback: ask user if they want to permanently delete instead
-                Alert fallbackConfirm = new Alert(Alert.AlertType.CONFIRMATION);
-                fallbackConfirm.setTitle("Move to Trash Failed");
-                fallbackConfirm.setHeaderText(null);
-                fallbackConfirm.setContentText(
-                    "Moving to Trash is not supported on this system.\n" +
-                    "The folder will be permanently deleted and cannot be recovered."+
-                    "Do you want to continue?"
-                );
-                fallbackConfirm.showAndWait().ifPresent(res -> {
-                    if (res == ButtonType.OK)
-                    {
-                        BackgroundExecutor.getInstance().executeIO(() -> {
-                            try
-                            {
-                                fileIO.deleteRecursive(folder);
-                                navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
-                                NotificationUtil.showToast(folderTree, "Folder permanently deleted");
-                            }
-                            catch (IOException ex)
-                            {
-                                ErrorHandler.show(null, "Failed to delete folder", ex);
-                            }
-                        });
-                    }
-                });
-                return;
-            }
-
-            navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
-            NotificationUtil.showToast(folderTree, "Folder moved to Trash");
         });
     }
 
+    /**
+     * Attempts to move the folder to the OS trash in the background.
+     * On success, updates UI. On failure, shows the fallback dialog.
+     */
+    private void attemptTrashInBackground(File folder, File projectRoot) 
+    {
+        BackgroundExecutor.getInstance().executeIO(() -> {
+            if (!folder.exists()) 
+            {
+                Platform.runLater(() ->
+                    NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle")
+                );
+                return;
+            }
+            boolean moved = fileIO.moveToTrash(folder);
+            Platform.runLater(() -> {
+                if (moved) 
+                {
+                    navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
+                    NotificationUtil.showToast(folderTree, "Folder moved to Trash");
+                } 
+                else 
+                {
+                    // Show fallback dialog (trash not supported or failed)
+                    showTrashFailedFallback(folder, projectRoot);
+                }
+            });
+        });
+    }
+
+    /**
+     * Shows a dialog informing the user that trash is not supported and offers
+     * a permanent deletion. Called on the JavaFX Application Thread.
+     */
+    private void showTrashFailedFallback(File folder, File projectRoot) 
+    {
+        if (!folder.exists()) 
+        {
+            NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
+            return;
+        }
+
+        Alert fallbackConfirm = new Alert(Alert.AlertType.CONFIRMATION);
+        fallbackConfirm.setTitle("Move to Trash Failed. Asking permission for permenent deletion");
+        fallbackConfirm.setHeaderText(null);
+        fallbackConfirm.setContentText(
+            "Moving to Trash is not supported on this system.\n" +
+            "The folder will be permanently deleted and cannot be recovered.\n" +
+            "Do you want to continue?"
+        );
+        fallbackConfirm.showAndWait().ifPresent(res -> {
+            if (res == ButtonType.OK) 
+            {
+                // Permanent delete in the background
+                performPermanentDeleteInBackground(folder, projectRoot);
+            }
+        });
+    }
+
+    /**
+     * Permanently deletes the folder in the background.
+     * Updates UI on success or failure.
+     */
+    private void performPermanentDeleteInBackground(File folder, File projectRoot) 
+    {
+        BackgroundExecutor.getInstance().executeIO(() -> {
+            try 
+            {
+                fileIO.deleteRecursive(folder);
+                Platform.runLater(() -> {
+                    navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
+                    NotificationUtil.showToast(folderTree, "Folder permanently deleted");
+                });
+            } 
+            catch (IOException ex) 
+            {
+                Platform.runLater(() ->
+                    ErrorHandler.show(null, "Failed to delete folder", ex)
+                );
+            }
+        });
+    }
+
+/**
+ * Navigates away from the deleted folder if it was the current one.
+ * Called on the JavaFX Application Thread.
+ */
     private void navigateAwayIfCurrentFolderDeleted(File deletedFolder, File projectRoot)
     {
         if (deletedFolder.equals(navigationManager.getCurrentFolder()))

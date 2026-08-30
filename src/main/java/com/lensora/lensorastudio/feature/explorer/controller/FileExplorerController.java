@@ -9,6 +9,7 @@ import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
@@ -315,7 +316,7 @@ public class FileExplorerController
         if (fileManager != null) fileManager.expandAndSelectRelativePath(relativePath);
     }
 
-    public void setupCopyPasteShortcuts(javafx.scene.Scene scene)
+    public void setupCopyPasteShortcuts(Scene scene)
     {
         if (fileManager != null) fileManager.setupCopyPasteShortcuts(scene);
     }

@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import javafx.application.Platform;
+
 /**
  * <p>High-level filesystem operation wrapper that adds <b>expectation tracking</b>
  * and <b>UI refresh notifications</b> around raw I/O execution.</p>
@@ -149,7 +151,7 @@ public class InstrumentedFileIO
         try
         {
             File created = fileIO.createDirectory(parent, name);
-            refreshCallback.accept(parent);
+            refreshUI(parent);
             return created;
         }
         catch (IOException e)
@@ -177,7 +179,7 @@ public class InstrumentedFileIO
         boolean moved = fileIO.moveToTrash(file);
         if (moved)
         {
-            refreshCallback.accept(file.getParentFile());
+            refreshUI(file.getParentFile());
         }
         else
         {
@@ -229,7 +231,7 @@ public class InstrumentedFileIO
             fileIO.deleteRecursive(file);
             if (triggerRefresh && file.getParentFile() != null)
             {
-                refreshCallback.accept(file.getParentFile());
+                refreshUI(file.getParentFile());
             }
         }
         catch (IOException e)
@@ -292,7 +294,7 @@ public class InstrumentedFileIO
         try
         {
             File renamed = fileIO.rename(file, newName);
-            refreshCallback.accept(file.getParentFile());
+            refreshUI(file.getParentFile());
             return renamed;
         }
         catch (IOException e)
@@ -397,11 +399,11 @@ public class InstrumentedFileIO
             // Refresh source locations that lost files
             for (File parent : updatedSourceParents)
             {
-                refreshCallback.accept(parent);
+                refreshUI(parent);
             }
 
             // Refresh target location that gained files
-            refreshCallback.accept(destDir);
+            refreshUI(destDir);
         }
         return new BatchResult(movedCount, failedFiles);
     }
@@ -418,5 +420,20 @@ public class InstrumentedFileIO
     public String sanitizeFolderName(String name)
     {
         return fileIO.sanitizeFolderName(name);
+    }
+
+    /**
+     * Safely triggers the refresh callback on the JavaFX Application Thread.
+     * This ensures all UI updates happen on the correct thread, regardless of
+     * where the filesystem operation was executed.
+     * 
+     * @param folder the folder need to be refreshed
+     */
+    private void refreshUI(File folder)
+    {
+        if (folder != null)
+        {
+            Platform.runLater(() -> refreshCallback.accept(folder));
+        }
     }
 }
