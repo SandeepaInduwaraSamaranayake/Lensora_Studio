@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
 import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
+import com.lensora.lensorastudio.core.threading.BackgroundExecutor;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
@@ -43,7 +44,7 @@ public class FileTransferService
 
     private FileCopyTask currentCopyTask;
 
-    public FileTransferService(HBox progressContainer,
+    public FileTransferService( HBox progressContainer,
                                 ProgressBar progressBar,
                                 Label progressLabel,
                                 Label progressSpeedLabel,
@@ -65,7 +66,7 @@ public class FileTransferService
     }
 
     /** Pastes files from the clipboard into the target folder. */
-    public void pasteInto(File targetFolder, List<File> sourceFiles, boolean isCut) 
+    public void pasteInto(File targetFolder, List<File> sourceFiles, boolean isCut)
     {
         if (targetFolder == null || !targetFolder.isDirectory()) 
         {
@@ -171,7 +172,7 @@ public class FileTransferService
         currentCopyTask.setOnFailed(e -> {
             hideProgress();
             clearAllExpectations(sourceFiles, targetFolder, isCut);
-            ErrorHandler.show(null, "Transfer failed", currentCopyTask.getException());
+            ErrorHandler.show(ownerStage, "Transfer failed", currentCopyTask.getException());
         });
 
         currentCopyTask.setOnCancelled(e -> {
@@ -180,9 +181,7 @@ public class FileTransferService
         });
 
         showProgress();
-        Thread thread = new Thread(currentCopyTask, "Lensora-file-transfer-task");
-        thread.setDaemon(true);
-        thread.start();
+        BackgroundExecutor.getInstance().submitIO(currentCopyTask);
     }
 
     /**

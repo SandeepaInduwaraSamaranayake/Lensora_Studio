@@ -13,12 +13,38 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
 /**
- * Rarely used directly. Use InstrumentedFileIO instead.
- * Pure filesystem and OS-level operations.
- * Free of application event-tracking, watchers, or UI dependencies.
+ * <p>Pure filesystem and OS-level operations.</p>
+ *
+ * <p>This class is completely free of application‑specific concerns such as
+ * event tracking, watch services, or UI callbacks. It is intended to be used
+ * <b>only</b> as a low‑level delegate by {@link InstrumentedFileIO}, which
+ * adds expectation management and refresh notifications.</p>
+ *
+ * <p>All methods are self‑contained and throw standard Java I/O exceptions
+ * on failure. They are <b>not</b> thread‑safe by themselves - callers must
+ * manage concurrency externally.</p>
+ * 
+ * Rarely used directly. Use InstrumentedFileIO APIs instead.
  */
 public class FileIO
 {
+    /**
+     * Creates a new directory under the given parent.
+     *
+     * <p>The directory name is automatically sanitised to remove characters
+     * that are invalid on Windows, macOS, and Linux. If the sanitised name
+     * becomes empty, an {@link IllegalArgumentException} is thrown.</p>
+     *
+     * @param parent the parent directory in which to create the new folder
+     * @param name   the desired folder name (may contain invalid characters,
+     *               which will be stripped)
+     * @return the newly created {@link File} object
+     * @throws IllegalArgumentException      if the sanitised name is empty
+     * @throws FileAlreadyExistsException   if a file or folder with the
+     *                                       sanitised name already exists
+     * @throws IOException                   if an I/O error occurs during
+     *                                       directory creation
+     */
     public File createDirectory(File parent, String name) throws IOException
     {
         String sanitized = sanitizeFolderName(name);
@@ -37,6 +63,20 @@ public class FileIO
         return newFolder;
     }
 
+    /**
+     * Attempts to move the given file or folder to the operating system's
+     * trash/recycle bin.
+     *
+     * <p>This method uses {@link Desktop#moveToTrash(File)} which is
+     * supported only on certain platforms (e.g., Windows, macOS).
+     * If the platform does not support trash, this method returns
+     * {@code false} without throwing an exception.</p>
+     *
+     * @param file the file or directory to trash
+     * @return {@code true} if the file was successfully moved to the trash,
+     *         {@code false} if trash is not supported or the operation failed
+     * @see Desktop#moveToTrash(File)
+     */
     public boolean moveToTrash(File file)
     {
         if (!Desktop.isDesktopSupported()) return false;
@@ -46,6 +86,20 @@ public class FileIO
         return desktop.moveToTrash(file);
     }
 
+    /**
+     * Recursively deletes a file or directory.
+     *
+     * <p>If the given file is a directory, all its contents (files and
+     * subdirectories) are deleted first. If deletion fails at any point,
+     * an exception is thrown and the file system may be left in a
+     * partially‑deleted state.</p>
+     *
+     * <p>This method does <b>not</b> use the trash - the deletion is
+     * permanent and irreversible.</p>
+     *
+     * @param file the file or directory to delete
+     * @throws IOException if an I/O error occurs during deletion
+     */
     public void deleteRecursive(File file) throws IOException
     {
         Path path = file.toPath();
@@ -70,6 +124,18 @@ public class FileIO
         });
     }
 
+    /**
+     * Recursively counts the total number of files (not directories) inside
+     * the given folder.
+     *
+     * <p>Subdirectories are traversed recursively; directories themselves
+     * are not counted. If the folder does not exist or is not a directory,
+     * this method returns 0.</p>
+     *
+     * @param folder the folder to count files inside
+     * @return the total number of regular files in the folder and all its
+     *         subdirectories
+     */
     public long countFilesRecursive(File folder)
     {
         File[] children = folder.listFiles();
@@ -83,6 +149,23 @@ public class FileIO
         return count;
     }
 
+    /**
+     * Renames a file or directory within its parent folder.
+     *
+     * <p>The new name is automatically sanitised to remove invalid characters.
+     * If the sanitised name is empty, an exception is thrown. The operation
+     * fails if a file or folder with the new name already exists.</p>
+     *
+     * @param file    the file or directory to rename
+     * @param newName the desired new name (may contain invalid characters,
+     *                which will be stripped)
+     * @return the renamed {@link File} object
+     * @throws IllegalArgumentException      if the sanitised name is empty
+     * @throws FileAlreadyExistsException    if the destination already exists
+     * @throws IOException                   if the rename fails for any other
+     *                                       reason (e.g., cross‑device move
+     *                                       not supported)
+     */
     public File rename(File file, String newName) throws IOException
     {
         String sanitized = sanitizeFolderName(newName.trim());
@@ -100,6 +183,33 @@ public class FileIO
         return newFile;
     }
 
+    /**
+     * Moves a single file or directory to another folder.
+     *
+     * <p>This method handles both same‑volume (atomic) and cross‑volume moves.
+     * For cross‑volume moves, it transparently falls back to a copy‑then‑delete
+     * approach. If the copy fails, any partially copied destination is
+     * cleaned up. The operation fails if the destination already contains an
+     * entry with the same name.</p>
+     *
+     * <p><b>Note:</b> This method does <b>not</b> refresh any UI or trigger
+     * watch expectations - it is a pure I/O operation. Use
+     * {@link InstrumentedFileIO#moveBatch} for coordinated moves that also
+     * update the application state.</p>
+     *
+     * @param  file    the source file or directory to move
+     * @param  destDir the destination folder (must be a directory)
+     * @return the moved file (now located inside {@code destDir})
+     * @throws IllegalArgumentException      if the source or destination is
+     *                                       invalid, or the source is a
+     *                                       directory that contains the
+     *                                       destination
+     * @throws FileAlreadyExistsException   if a file or folder with the same
+     *                                       name already exists in
+     *                                       {@code destDir}
+     * @throws IOException                   if the move operation fails for
+     *                                       any other reason
+     */
     public File move(File file, File destDir) throws IOException
     {
         if (file == null || destDir == null || !file.exists())
@@ -109,9 +219,10 @@ public class FileIO
 
         if (file.getParentFile() != null && file.getParentFile().equals(destDir))
         {
-            return file;
+            return file; // Already in target directory
         }
 
+        // Prevent moving a directory into itself or its own subdirectory
         if (file.isDirectory() && destDir.toPath().startsWith(file.toPath()))
         {
             throw new IllegalArgumentException("Cannot move a folder into itself or a subfolder of itself.");
@@ -137,6 +248,7 @@ public class FileIO
         }
         else
         {
+            // Cross-device fallback: Copy source first
             try
             {
                 copyRecursiveInternal(file, destFile);
@@ -150,12 +262,28 @@ public class FileIO
                 throw copyEx;
             }
 
+            // Delete source after verified copy; failure preserves destination
             deleteRecursive(file);
         }
 
         return destFile;
     }
 
+    /**
+     * Recursively copies a source file or directory to a destination.
+     *
+     * <p>This method preserves file attributes and creates any necessary
+     * parent directories. It is used internally as the copy step in
+     * cross‑volume moves.</p>
+     *
+     * <p><b>Note:</b> This method is intentionally public to allow testing,
+     * but it is considered internal and should not be called directly by
+     * application code - use {@link InstrumentedFileIO} instead.</p>
+     *
+     * @param src  the source file or directory to copy
+     * @param dest the destination path (will be created if it does not exist)
+     * @throws IOException if an I/O error occurs during copying
+     */
     public void copyRecursiveInternal(File src, File dest) throws IOException
     {
         Path srcPath = src.toPath();
@@ -184,11 +312,35 @@ public class FileIO
         });
     }
 
+    /**
+     * Sanitises a folder or file name by removing characters that are invalid
+     * on Windows, macOS, and Linux.
+     *
+     * <p>The following characters are removed: {@code \ / : * ? " < > |}.
+     * Leading and trailing whitespace is also trimmed.</p>
+     *
+     * @param  name the raw name to sanitise
+     * @return the sanitised name, possibly empty if the original contained
+     *         only invalid characters or whitespace
+     */
     public String sanitizeFolderName(String name)
     {
         return name.replaceAll("[\\\\/:*?\"<>|]", "").trim();
     }
 
+    /**
+     * Checks whether the given source file and destination directory reside
+     * on the same filesystem (file store).
+     *
+     * <p>This is used internally to decide whether a move can be performed
+     * atomically or requires a copy‑then‑delete fallback.</p>
+     *
+     * @param src     the source file
+     * @param destDir the destination directory
+     * @return {@code true} if both paths are on the same file store,
+     *         {@code false} otherwise
+     * @throws IOException if the file store cannot be determined
+     */
     public boolean isSameFileStore(File src, File destDir) throws IOException
     {
         return Files.getFileStore(src.toPath()).equals(Files.getFileStore(destDir.toPath()));

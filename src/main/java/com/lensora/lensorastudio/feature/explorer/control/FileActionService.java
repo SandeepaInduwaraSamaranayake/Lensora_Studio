@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
 import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
+import com.lensora.lensorastudio.core.threading.BackgroundExecutor;
 import com.lensora.lensorastudio.feature.viewer.ImageViewerWindowService;
 import com.lensora.lensorastudio.media.service.ImageValidator;
 import com.lensora.lensorastudio.media.service.MetadataExtractionService;
@@ -22,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -65,8 +65,8 @@ public class FileActionService
         List<File> files = selectedFilesSupplier.get();
         if (files == null || files.isEmpty()) return;
 
-        CompletableFuture.runAsync(() -> {
-            for (File file : files) 
+        BackgroundExecutor.getInstance().executeIO(() -> {
+            for (File file : files)
             {
                 try
                 {
@@ -144,17 +144,21 @@ public class FileActionService
         File destDir = chooser.showDialog(ownerStage);
         if (destDir == null) return;
 
-        InstrumentedFileIO.BatchResult result = fileIO.moveBatch(files, destDir);
-        if (result.succeeded() > 0)
-        {
-            String message = result.succeeded() == 1 ? "File moved successfully" : result.succeeded() + " files moved successfully";
-            NotificationUtil.showToast(ownerStage, message);
-        }
+        BackgroundExecutor.getInstance().executeIO(() -> {
+            InstrumentedFileIO.BatchResult result = fileIO.moveBatch(files, destDir);
+            Platform.runLater(() -> {
+                if (result.succeeded() > 0)
+                {
+                    String message = result.succeeded() == 1 ? "File moved successfully" : result.succeeded() + " files moved successfully";
+                    NotificationUtil.showToast(ownerStage, message);
+                }
 
-        if (!result.failedFiles().isEmpty())
-        {
-            NotificationUtil.showToast(ownerStage, "Failed to move " + result.failedFiles().size() + " file(s)", "fas-exclamation-circle");
-        }
+                if (!result.failedFiles().isEmpty())
+                {
+                    NotificationUtil.showToast(ownerStage, "Failed to move " + result.failedFiles().size() + " file(s)", "fas-exclamation-circle");
+                }
+            });
+        });
     }
 
     /** Deletes selected files after confirmation. */
@@ -172,18 +176,21 @@ public class FileActionService
         confirm.setContentText(fileList);
         confirm.showAndWait().ifPresent(response -> {
             if (response != ButtonType.OK) return;
-            for (File file : files) 
-            {
-                try
+
+            BackgroundExecutor.getInstance().executeIO(() -> {
+                for (File file : files) 
                 {
-                    fileIO.deleteRecursive(file, true, false);
+                    try
+                    {
+                        fileIO.deleteRecursive(file, true, false);
+                    }
+                    catch (IOException ex)
+                    {
+                        NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
+                    }
                 }
-                catch (IOException ex)
-                {
-                    NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
-                }
-            }
-            refreshCallback.accept(null);
+                Platform.runLater(() -> refreshCallback.accept(null));
+            });
         });
     }
 
@@ -193,7 +200,7 @@ public class FileActionService
         File file = selectedFileSupplier.get();
         if (file == null || !file.exists()) return;
 
-        CompletableFuture.runAsync(() -> {
+        BackgroundExecutor.getInstance().executeIO(() -> {
             if (!Desktop.isDesktopSupported()) 
             {
                 Platform.runLater(() -> NotificationUtil.showToast(ownerStage, "Desktop API is not supported", "fas-exclamation-circle"));

@@ -3,7 +3,6 @@ package com.lensora.lensorastudio.core.io;
 import com.lensora.lensorastudio.core.threading.BackgroundExecutor;
 
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -39,7 +38,7 @@ public final class FileChangeCoordinator
 {
     private static final FileChangeCoordinator INSTANCE = new FileChangeCoordinator();
 
-    /** Fallback‑only leak guard — not part of the suppression logic itself. */
+    /** Fallback‑only leak guard - not part of the suppression logic itself. */
     private static final long EXPIRY_MS = 30_000;
 
     private final ConcurrentHashMap<Path, Long> expectedChanges = new ConcurrentHashMap<>();

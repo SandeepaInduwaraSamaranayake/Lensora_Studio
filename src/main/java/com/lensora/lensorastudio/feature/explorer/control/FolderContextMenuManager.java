@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
+import com.lensora.lensorastudio.core.threading.BackgroundExecutor;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 
@@ -97,7 +98,7 @@ public class FolderContextMenuManager
         File folder = treeViewManager.getSelectedFolder();
         if (folder == null || !folder.isDirectory()) return;
         // Runs in the background
-        CompletableFuture.runAsync(() -> {
+        BackgroundExecutor.getInstance().executeIO(() -> {
             try
             {
                 if (Desktop.isDesktopSupported())
@@ -247,16 +248,18 @@ public class FolderContextMenuManager
                 fallbackConfirm.showAndWait().ifPresent(res -> {
                     if (res == ButtonType.OK)
                     {
-                        try
-                        {
-                            fileIO.deleteRecursive(folder);
-                            navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
-                            NotificationUtil.showToast(folderTree, "Folder permanently deleted");
-                        }
-                        catch (IOException ex)
-                        {
-                            ErrorHandler.show(null, "Failed to delete folder", ex);
-                        }
+                        BackgroundExecutor.getInstance().executeIO(() -> {
+                            try
+                            {
+                                fileIO.deleteRecursive(folder);
+                                navigateAwayIfCurrentFolderDeleted(folder, projectRoot);
+                                NotificationUtil.showToast(folderTree, "Folder permanently deleted");
+                            }
+                            catch (IOException ex)
+                            {
+                                ErrorHandler.show(null, "Failed to delete folder", ex);
+                            }
+                        });
                     }
                 });
                 return;

@@ -1,358 +1,8 @@
-// package com.lensora.lensorastudio.core.io;
-
-// import java.awt.Desktop;
-// import java.io.File;
-// import java.io.IOException;
-// import java.nio.file.AtomicMoveNotSupportedException;
-// import java.nio.file.FileAlreadyExistsException;
-// import java.nio.file.FileVisitResult;
-// import java.nio.file.Files;
-// import java.nio.file.Path;
-// import java.nio.file.SimpleFileVisitor;
-// import java.nio.file.StandardCopyOption;
-// import java.nio.file.attribute.BasicFileAttributes;
-// import java.util.ArrayList;
-// import java.util.List;
-// import java.util.function.Consumer;
-// import java.util.function.Supplier;
-
-// /**
-//  * Shared low-level filesystem mutation logic: create/delete/trash/rename/move a
-//  * file or folder, mark the change as self-caused via
-//  * FileChangeCoordinator (so FolderWatchService doesn't double-refresh
-//  * for it), and trigger the app's single unified refresh callback.
-//  *
-//  * Used by BOTH file-listing operations (FileActionService) and
-//  * folder-tree operations (FolderContextMenuManager) so there is exactly
-//  * one path for "a filesystem change happened, here's how the UI finds
-//  * out about it" no separate tree-only refresh mechanism.
-//  */
-// public class FileSystemOperations
-// {
-//     public record BatchResult(int succeeded, List<File> failedFiles) {}
-
-//     private final Consumer<File> refreshCallback;
-//     private final Supplier<File> watchRootSupplier;
-
-//     public FileSystemOperations(Consumer<File> refreshCallback, Supplier<File> watchRootSupplier)
-//     {
-//         this.refreshCallback = refreshCallback;
-//         this.watchRootSupplier = watchRootSupplier;
-//     }
-
-//     public void expectChange(File file)
-//     {
-//         File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
-//         FileChangeCoordinator.getInstance().expect(
-//                 file.toPath(),
-//                 root != null ? root.toPath() : null);
-//     }
-
-//     public void clearExpectation(File file)
-//     {
-//         if (file != null)
-//         {
-//             FileChangeCoordinator.getInstance().clearExpectation(file.toPath());
-//         }
-//     }
-
-//     /** Creates a new folder under parent. Returns the created File. Marks the change and triggers refresh. */
-//     public File createDirectory(File parent, String name) throws IOException
-//     {
-//         String sanitized = sanitizeFolderName(name);
-//         if (sanitized.isEmpty())
-//         {
-//             throw new IllegalArgumentException("Invalid directory name");
-//         }
-
-//         File newFolder = new File(parent, sanitized);
-//         if (newFolder.exists())
-//         {
-//             throw new FileAlreadyExistsException(newFolder.getAbsolutePath());
-//         }
-
-//         expectChange(newFolder);
-//         try
-//         {
-//             Files.createDirectory(newFolder.toPath());
-//             refreshCallback.accept(parent);
-//             return newFolder;
-//         }
-//         catch (IOException e)
-//         {
-//             clearExpectation(newFolder);
-//             throw e;
-//         }
-//     }
-
-//     /** Attempts to move a file/folder to the OS trash. Marks the change and triggers refresh on success. */
-//     public boolean moveToTrash(File file)
-//     {
-//         if (!Desktop.isDesktopSupported()) return false;
-//         Desktop desktop = Desktop.getDesktop();
-//         if (!desktop.isSupported(Desktop.Action.MOVE_TO_TRASH)) return false;
-
-//         expectChange(file);
-//         boolean moved = desktop.moveToTrash(file);
-//         if (moved)
-//         {
-//             refreshCallback.accept(file.getParentFile());
-//         }
-//         else
-//         {
-//             clearExpectation(file);
-//         }
-//         return moved;
-//     }
-
-//     /** Permanently deletes a file/folder (recursively for directories). Marks the change and triggers refresh. */
-//     public void deleteRecursive(File file) throws IOException
-//     {
-//         deleteRecursive(file, true, true);
-//     }
-
-//     /** 
-//      * Deletes a file/folder with explicit control over watcher expectations and refresh notifications.
-//      */
-//     public void deleteRecursive(File file, boolean registerExpectation, boolean triggerRefresh) throws IOException
-//     {
-//         if (registerExpectation) { expectChange(file); }
-//         try
-//         {
-//             deleteRecursiveInternal(file);
-//             if (triggerRefresh && file.getParentFile() != null) 
-//             { 
-//                 refreshCallback.accept(file.getParentFile()); 
-//             }
-//         }
-//         catch(IOException e)
-//         {
-//             if (registerExpectation) { clearExpectation(file); }
-//             throw e;
-//         }
-//     }
-
-//     /** Internal Method: Do not use directly */
-//     private void deleteRecursiveInternal(File file) throws IOException
-//     {
-//         Path path = file.toPath();
-//         if (!Files.exists(path)) return;
-
-//         Files.walkFileTree(path, new SimpleFileVisitor<Path>()
-//         {
-//             @Override
-//             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-//             {
-//                 Files.delete(file);
-//                 return FileVisitResult.CONTINUE;
-//             }
-
-//             @Override
-//             public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException
-//             {
-//                 if (exc != null) throw exc;
-//                 Files.delete(dir);
-//                 return FileVisitResult.CONTINUE;
-//             }
-//         });
-//     }
-
-//     public long countFilesRecursive(File folder)
-//     {
-//         File[] children = folder.listFiles();
-//         if (children == null) return 0;
-
-//         long count = 0;
-//         for (File child : children)
-//         {
-//             count += child.isDirectory() ? countFilesRecursive(child) : 1;
-//         }
-//         return count;
-//     }
-
-//     public File rename(File file, String newName) throws IOException
-//     {
-//         String sanitized = sanitizeFolderName(newName.trim());
-//         if (sanitized.isEmpty()) 
-//         {
-//             throw new IllegalArgumentException("Invalid file name");
-//         }
-//         File newFile = new File(file.getParentFile(), sanitized);
-//         if (newFile.exists())
-//         {
-//             throw new FileAlreadyExistsException("File already exists in :" + newFile.getAbsolutePath());
-//         }
-
-//         expectChange(file);    // old path (ENTRY_DELETE)
-//         expectChange(newFile); // new path (ENTRY_CREATE)
-
-//         try
-//         {
-//             Files.move(file.toPath(), newFile.toPath());
-//             refreshCallback.accept(file.getParentFile());
-//             return newFile;
-//         }
-//         catch (IOException e)
-//         {
-//             clearExpectation(file);
-//             clearExpectation(newFile);
-//             throw e;
-//         }
-//     }
-
-//     /** Moves a single file or directory into the destination folder. */
-//     private File move(File file, File destDir) throws IOException
-//     {
-//         if (file == null || destDir == null || !file.exists())
-//         {
-//             throw new IllegalArgumentException("Source file or destination directory does not exist.");
-//         }
-
-//         if (file.getParentFile() != null && file.getParentFile().equals(destDir))
-//         {
-//             return file; // Already in target directory
-//         }
-
-//         // Prevent moving a directory into itself or its own subdirectory
-//         if (file.isDirectory() && destDir.toPath().startsWith(file.toPath()))
-//         {
-//             throw new IllegalArgumentException("Cannot move a folder into itself or a subfolder of itself.");
-//         }
-
-//         File destFile = new File(destDir, file.getName());
-
-//         if (destFile.exists())
-//         {
-//             throw new FileAlreadyExistsException(destFile.getAbsolutePath());
-//         }
-
-//         expectChange(file);     // source path
-//         expectChange(destFile); // destination path
-
-//         try
-//         {
-//             if (isSameFileStore(file, destDir))
-//             {
-//                 try
-//                 {
-//                     Files.move(file.toPath(), destFile.toPath(), StandardCopyOption.ATOMIC_MOVE);
-//                 }
-//                 catch (AtomicMoveNotSupportedException e)
-//                 {
-//                     Files.move(file.toPath(), destFile.toPath());
-//                 }
-//             }
-//             else
-//             {
-//                 // Cross-device fallback: Copy source first
-//                 try
-//                 {
-//                     copyRecursiveInternal(file, destFile);
-//                 }
-//                 catch (IOException copyEx)
-//                 {
-//                     if (destFile.exists())
-//                     {
-//                         try { deleteRecursiveInternal(destFile); } catch (Exception ignored) {}
-//                     }
-//                     throw copyEx;
-//                 }
-
-//                 // Delete source after verified copy; failure preserves destination
-//                 deleteRecursiveInternal(file);
-//             }
-//         }
-//         catch (IOException e)
-//         {
-//             clearExpectation(file);
-//             clearExpectation(destFile);
-//             throw e;
-//         }
-
-//         return destFile;
-//     }
-
-//     /** Moves a batch of files or directories into the destination folder. */
-//     public BatchResult moveBatch(List<File> files, File destDir)
-//     {
-//         int movedCount = 0;
-//         List<File> failedFiles = new ArrayList<>();
-
-//         for (File file : files)
-//         {
-//             if (file.getParentFile() != null && file.getParentFile().equals(destDir))
-//             {
-//                 continue;
-//             }
-//             try
-//             {
-//                 move(file, destDir);
-//                 movedCount++;
-//             }
-//             catch (IOException ex)
-//             {
-//                 failedFiles.add(file);
-//             }
-//         }
-
-//         if (movedCount > 0)
-//         {
-//             refreshCallback.accept(destDir);
-//         }
-//         return new BatchResult(movedCount, failedFiles);
-//     }
-
-//     /** Internal Method: Do not use directly. 
-//      *  Robust cross-drive recursive copy using NIO Path API and attribute preservation. */
-//     private void copyRecursiveInternal(File src, File dest) throws IOException
-//     {
-//         Path srcPath = src.toPath();
-//         Path destPath = dest.toPath();
-
-//         Files.walkFileTree(srcPath, new SimpleFileVisitor<Path>()
-//         {
-//             @Override
-//             public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
-//             {
-//                 Path targetDir = destPath.resolve(srcPath.relativize(dir));
-//                 if (!Files.exists(targetDir))
-//                 {
-//                     Files.createDirectories(targetDir);
-//                 }
-//                 return FileVisitResult.CONTINUE;
-//             }
-
-//             @Override
-//             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-//             {
-//                 Path targetFile = destPath.resolve(srcPath.relativize(file));
-//                 Files.copy(file, targetFile, StandardCopyOption.COPY_ATTRIBUTES);
-//                 return FileVisitResult.CONTINUE;
-//             }
-//         });
-//     }
-
-//     /** Strips characters that are invalid in folder names on Windows/macOS/Linux. */
-//     public String sanitizeFolderName(String name)
-//     {
-//         return name.replaceAll("[\\\\/:*?\"<>|]", "").trim();
-//     }
-
-//     private boolean isSameFileStore(File src, File destDir) throws IOException
-//     {
-//         return Files.getFileStore(src.toPath()).equals(Files.getFileStore(destDir.toPath()));
-//     }
-// }
-
-
-
-
-
-
 package com.lensora.lensorastudio.core.io;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -361,22 +11,67 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * Shared high-level filesystem operation wrapper: handles expectation tracking 
- * via FileChangeCoordinator and triggers app refresh callbacks around raw I/O execution.
+ * <p>High-level filesystem operation wrapper that adds <b>expectation tracking</b>
+ * and <b>UI refresh notifications</b> around raw I/O execution.</p>
+ *
+ * <p>This is the <b>primary API</b> that should be used by all UI and business
+ * logic for file/folder mutations. It delegates the actual disk operations to
+ * a pure {@link FileIO} instance, but before each operation it registers the
+ * expected change with {@link FileChangeCoordinator} so that the watch service
+ * does not double‑fire redundant refresh events. After a successful operation,
+ * it triggers a single unified refresh callback to update the UI tree and
+ * file listings.</p>
+ *
+ * <p>If an operation fails, the expectations are automatically cleared so that
+ * a later, genuinely external change to the same path is not incorrectly
+ * suppressed.</p>
+ *
+ * <p>All methods that perform I/O are <b>synchronous</b> and will block the
+ * calling thread. Callers should offload them to background threads (e.g.,
+ * using {@code CompletableFuture}) to avoid freezing the UI.</p>
+ *
+ * @see FileIO
+ * @see FileChangeCoordinator
  */
 public class InstrumentedFileIO
 {
+    /**
+     * Result of a batch move operation.
+     *
+     * @param succeeded   number of files successfully moved
+     * @param failedFiles list of files that could not be moved (with exceptions
+     *                    already logged/handled)
+     */
     public record BatchResult(int succeeded, List<File> failedFiles) {}
 
     private final Consumer<File> refreshCallback;
     private final Supplier<File> watchRootSupplier;
     private final FileIO fileIO;
 
+    /**
+     * Creates a new instance using a default {@link FileIO} backend.
+     *
+     * @param refreshCallback    callback to notify the UI that a folder's
+     *                           content has changed; receives the affected
+     *                           folder as argument
+     * @param watchRootSupplier  supplies the root of the currently watched
+     *                           project; used to scope expectation marking
+     *                           to the project tree (may be {@code null})
+     */
     public InstrumentedFileIO (Consumer<File> refreshCallback, Supplier<File> watchRootSupplier)
     {
         this(refreshCallback, watchRootSupplier, new FileIO());
     }
 
+    /**
+     * Creates a new instance with a custom {@link FileIO} backend.
+     *
+     * @param refreshCallback    callback to notify the UI that a folder's
+     *                           content has changed
+     * @param watchRootSupplier  supplies the root of the currently watched
+     *                           project (may be {@code null})
+     * @param fileIO             the raw I/O implementation to delegate to
+     */
     public InstrumentedFileIO (Consumer<File> refreshCallback, Supplier<File> watchRootSupplier, FileIO fileIO)
     {
         this.refreshCallback = refreshCallback;
@@ -384,6 +79,17 @@ public class InstrumentedFileIO
         this.fileIO = fileIO;
     }
 
+    /**
+     * Registers an expectation that the given file will be changed by the app.
+     * The expectation is marked for the file itself and all its ancestors up
+     * to the project root (if known).
+     *
+     * <p>This is called <b>before</b> every mutation. The expectation will be
+     * consumed by the {@code FolderWatchService} when the corresponding OS
+     * event arrives, preventing a double refresh.</p>
+     *
+     * @param file the file that is about to be changed
+     */
     public void expectChange(File file)
     {
         File root = watchRootSupplier != null ? watchRootSupplier.get() : null;
@@ -392,6 +98,13 @@ public class InstrumentedFileIO
                 root != null ? root.toPath() : null);
     }
 
+    /**
+     * Manually removes an expectation for the given file.
+     * Used primarily when an operation fails after registering an expectation,
+     * to ensure that a later external change is not suppressed.
+     *
+     * @param file the file whose expectation should be removed
+     */
     public void clearExpectation(File file)
     {
         if (file != null)
@@ -400,7 +113,28 @@ public class InstrumentedFileIO
         }
     }
 
-    /** Creates a new folder under parent. Returns the created File. Marks the change and triggers refresh. */
+    /**
+     * Creates a new directory under the given parent directory.
+     *
+     * <p>The folder name is sanitised to remove invalid characters. If the
+     * sanitised name is empty, an {@link IllegalArgumentException} is thrown.
+     * If a file or folder with the sanitised name already exists, a
+     * {@link FileAlreadyExistsException} is thrown.</p>
+     *
+     * <p>An expectation is registered for the new folder before the operation.
+     * On success, the parent folder is refreshed in the UI. On failure, the
+     * expectation is cleared.</p>
+     *
+     * @param  parent the parent directory
+     * @param  name   the desired folder name (may contain invalid characters)
+     * 
+     * @return the created {@link File} object
+     * 
+     * @throws IllegalArgumentException      if the sanitised name is empty
+     * @throws FileAlreadyExistsException   if the target already exists
+     * @throws IOException                   if the creation fails for any other
+     *                                       reason
+     */
     public File createDirectory(File parent, String name) throws IOException
     {
         String sanitized = sanitizeFolderName(name);
@@ -425,10 +159,21 @@ public class InstrumentedFileIO
         }
     }
 
-    /** Attempts to move a file/folder to the OS trash. Marks the change and triggers refresh on success. */
+    /**
+     * Attempts to move the given file or folder to the OS trash/recycle bin.
+     *
+     * <p>An expectation is registered before the operation. On success, the
+     * parent folder is refreshed. On failure (including unsupported platform),
+     * the expectation is cleared.</p>
+     *
+     * @param file the file or directory to move to trash
+     * @return {@code true} if successfully moved to trash,
+     *         {@code false} if trash is not supported or the operation failed
+     */
     public boolean moveToTrash(File file)
     {
         expectChange(file);
+
         boolean moved = fileIO.moveToTrash(file);
         if (moved)
         {
@@ -441,14 +186,40 @@ public class InstrumentedFileIO
         return moved;
     }
 
-    /** Permanently deletes a file/folder (recursively for directories). Marks the change and triggers refresh. */
+    /**
+     * Permanently deletes a file or directory recursively.
+     *
+     * <p>An expectation is registered and the parent folder is refreshed on
+     * success. On failure, the expectation is cleared.</p>
+     *
+     * <p>This method is a convenience that calls
+     * {@link #deleteRecursive(File, boolean, boolean)} with
+     * {@code registerExpectation = true} and {@code triggerRefresh = true}.</p>
+     *
+     * @param file the file or directory to delete
+     * @throws IOException if deletion fails
+     */
     public void deleteRecursive(File file) throws IOException
     {
         deleteRecursive(file, true, true);
     }
 
-    /** 
-     * Deletes a file/folder with explicit control over watcher expectations and refresh notifications.
+    /**
+     * Permanently deletes a file or directory with explicit control over
+     * expectation registration and refresh triggering.
+     *
+     * <p>This overload is useful when combining deletions in a batch
+     * (e.g., after a cut operation) where the caller wants to manage
+     * expectations and refreshes manually.</p>
+     *
+     * @param file                 the file or directory to delete
+     * @param registerExpectation  if {@code true}, an expectation is registered
+     *                             before deletion; if {@code false}, no
+     *                             expectation is set (used when the caller
+     *                             has already registered it)
+     * @param triggerRefresh       if {@code true}, the parent folder is
+     *                             refreshed after successful deletion
+     * @throws IOException         if deletion fails
      */
     public void deleteRecursive(File file, boolean registerExpectation, boolean triggerRefresh) throws IOException
     {
@@ -468,17 +239,52 @@ public class InstrumentedFileIO
         }
     }
 
+    /**
+     * Recursively counts all regular files inside the given folder.
+     *
+     * <p>This is a read‑only operation and does not involve expectations or
+     * refreshes. It simply delegates to {@link FileIO#countFilesRecursive(File)}.</p>
+     *
+     * @param  folder the folder to count
+     * @return total number of files (not directories) in the folder and its
+     *         subfolders
+     */
     public long countFilesRecursive(File folder)
     {
         return fileIO.countFilesRecursive(folder);
     }
 
+    /**
+     * Renames a file or folder within its parent directory.
+     *
+     * <p>The new name is sanitised; if the sanitised name is empty, an
+     * {@link IllegalArgumentException} is thrown. If the target already
+     * exists, a {@link FileAlreadyExistsException} is thrown.</p>
+     *
+     * <p>Expectations are registered for both the old and new paths.
+     * On success, the parent folder is refreshed. On failure, both
+     * expectations are cleared.</p>
+     *
+     * @param file    the file or directory to rename
+     * @param newName the desired new name (may contain invalid characters)
+     * 
+     * @return the renamed {@link File} object
+     * 
+     * @throws IllegalArgumentException      if the sanitised name is empty
+     * @throws FileAlreadyExistsException    if the target already exists
+     * @throws IOException                   if the rename fails for any other
+     *                                       reason
+     */
     public File rename(File file, String newName) throws IOException
     {
         String sanitized = sanitizeFolderName(newName.trim());
         if (sanitized.isEmpty()) throw new IllegalArgumentException("Invalid directory name");
 
         File newFile = new File(file.getParentFile(), sanitized);
+        if (newFile.exists())
+        {
+            throw new FileAlreadyExistsException("File already exists in :" + newFile.getAbsolutePath());
+        }
 
         expectChange(file);    // old path (ENTRY_DELETE)
         expectChange(newFile); // new path (ENTRY_CREATE)
@@ -497,7 +303,23 @@ public class InstrumentedFileIO
         }
     }
 
-    /** Moves a single file or directory into the destination folder. */
+    /**
+     * Moves a single file or directory to another folder.
+     *
+     * <p><b>Note:</b> This method is {@code private} and should not be called
+     * directly. Use {@link #moveBatch(List, File)} for all move operations,
+     * as it ensures both source and destination folders are refreshed
+     * correctly.</p>
+     *
+     * <p>Expectations are registered for both source and destination paths.
+     * On success, no refresh is performed here - that is handled by the caller
+     * ({@code moveBatch}). On failure, expectations are cleared.</p>
+     *
+     * @param  file       the source file to move
+     * @param  destDir    the destination folder
+     * @return the moved file (now located in {@code destDir})
+     * @throws IOException if the move operation fails
+     */
     private File move(File file, File destDir) throws IOException
     {
         if (file == null || destDir == null || !file.exists())
@@ -523,7 +345,25 @@ public class InstrumentedFileIO
         }
     }
 
-    /** Moves a batch of files or directories into the destination folder. */
+    /**
+     * Moves a batch of files and/or directories to a destination folder.
+     *
+     * <p>This is the <b>primary API for moves</b> in the application.
+     * It attempts to move each file individually; if one fails, the operation
+     * continues with the remaining files. The result contains the number of
+     * successes and a list of files that could not be moved.</p>
+     *
+     * <p>Expectations are registered for each source and destination pair
+     * inside {@code move()}. After all moves are attempted, the UI is
+     * refreshed for <b>both</b> the source parents (if any files were
+     * successfully moved out) and the destination folder (which gained
+     * new files).</p>
+     *
+     * @param files   the list of files/directories to move
+     * @param destDir the target folder (must be a directory)
+     * @return a {@link BatchResult} containing the number of successes and
+     *         any failed files
+     */
     public BatchResult moveBatch(List<File> files, File destDir)
     {
         int movedCount = 0;
@@ -566,7 +406,15 @@ public class InstrumentedFileIO
         return new BatchResult(movedCount, failedFiles);
     }
 
-    /** Strips characters that are invalid in folder names on Windows/macOS/Linux. */
+    /**
+     * Sanitises a folder/file name by removing characters invalid on
+     * Windows, macOS, and Linux.
+     *
+     * <p>This is a pass‑through to {@link FileIO#sanitizeFolderName(String)}.</p>
+     *
+     * @param name the raw name to sanitise
+     * @return the sanitised name (may be empty)
+     */
     public String sanitizeFolderName(String name)
     {
         return fileIO.sanitizeFolderName(name);
