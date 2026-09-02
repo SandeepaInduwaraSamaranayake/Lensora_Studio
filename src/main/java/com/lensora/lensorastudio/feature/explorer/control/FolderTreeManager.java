@@ -4,6 +4,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TreeView;
 import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
 
 import java.io.File;
 import java.util.List;
@@ -67,6 +68,7 @@ public class FolderTreeManager
     public void setOnFilesDropped(TriConsumer<List<File>, File, Boolean> callback) { treeViewManager.setOnFilesDropped(callback); }
     public void setOnPasteRequested(Runnable callback) { contextMenuManager.setOnPasteRequested(callback); }
     public void setOnNavigationPersisted(Consumer<File> callback) { navigationManager.setOnNavigationPersisted(callback); }
+    public void setStage(Stage stage) { contextMenuManager.setOwnerStage(stage); }
 
     public File getCurrentFolder() { return navigationManager.getCurrentFolder(); }
     public File getProjectRoot() { return projectContext.getProjectRoot(); }
@@ -102,8 +104,12 @@ public class FolderTreeManager
     public void goBack() { navigationManager.goBack(); }
     public void goForward() { navigationManager.goForward(); }
 
+    // expose passthroughs
     public File getSelectedFolder() { return treeViewManager.getSelectedFolder(); }
     public void copySelectedFolder() { contextMenuManager.copySelectedFolder(); }
+    public void deleteSelectedFolder() { contextMenuManager.deleteSelectedFolder(); }
+    public void createNewFolder()      { contextMenuManager.createNewFolder(); }
+    public void renameSelectedFolder()  { contextMenuManager.renameFolder(); }
 
     /**
      * Expands every ancestor of the given relative path (relative to the

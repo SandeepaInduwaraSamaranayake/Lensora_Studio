@@ -167,7 +167,7 @@ public class FileManager
 
     // ─── Public API ─────────────────────────────────────────────────────────
 
-    public void setStage(Stage stage) { fileOperationsManager.setStage(stage); }
+    public void setStage(Stage stage) { fileOperationsManager.setStage(stage); folderTreeManager.setStage(stage); }
     public void setSnapFX(SnapFX snapFX) { fileOperationsManager.setSnapFX(snapFX); fileListingManager.setSnapFX(snapFX); }
     public void setOnPathChanged(Consumer<String> callback) { folderTreeManager.setOnPathChanged(callback); }
 
@@ -195,38 +195,8 @@ public class FileManager
         folderWatchService.stop();
     }
 
-    public void setupCopyPasteShortcuts(Scene scene)
+    public void setupKeyboardShortcuts(Scene scene)
     {
-        scene.addEventFilter(KeyEvent.KEY_PRESSED, e -> {
-            if (e.isControlDown() && e.getCode() == KeyCode.C)
-            {
-                if (folderTreeManager.isFocused())
-                {
-                    folderTreeManager.copySelectedFolder();
-                    e.consume();
-                }
-                else if (fileListingManager.isFocused())
-                {
-                    fileOperationsManager.copyFilesToClipboard(fileListingManager.getSelectedFiles());
-                    e.consume();
-                }
-            }
-            else if (e.isControlDown() && e.getCode() == KeyCode.X)
-            {
-                if (fileListingManager.isFocused())
-                {
-                    fileOperationsManager.cutFilesToClipboard(fileListingManager.getSelectedFiles());
-                    e.consume();
-                }
-            }
-            else if (e.isControlDown() && e.getCode() == KeyCode.V)
-            {
-                if (folderTreeManager.isFocused())
-                {
-                    fileOperationsManager.pasteInto(folderTreeManager.getSelectedFolder());
-                    e.consume();
-                }
-            }
-        });
+        new FileExplorerShortcutHandler(folderTreeManager, fileListingManager, fileOperationsManager).attach(scene);
     }
 }

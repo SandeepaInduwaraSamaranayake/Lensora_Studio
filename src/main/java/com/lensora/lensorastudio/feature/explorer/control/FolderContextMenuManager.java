@@ -5,8 +5,7 @@ import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
+import javafx.stage.Stage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,10 +14,12 @@ import com.lensora.lensorastudio.core.io.InstrumentedFileIO;
 import com.lensora.lensorastudio.core.threading.BackgroundExecutor;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
+import com.lensora.lensorastudio.ui.util.FileExplorerShortcuts;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
 
 /**
@@ -33,6 +34,7 @@ public class FolderContextMenuManager
     private final FolderTreeViewManager treeViewManager;
     private final FolderNavigationManager navigationManager;
     private final InstrumentedFileIO fileIO;
+    private Stage ownerStage;
 
     /** Paste is delegated out - FileOperationsManager owns the actual copy-with-progress logic. */
     private Runnable pasteRequested = () -> {};
@@ -46,26 +48,34 @@ public class FolderContextMenuManager
         this.fileIO = fileIO;
 
         setupContextMenu();
-        setupKeyboardShortcuts();
     }
 
     public void setOnPasteRequested(Runnable callback) { this.pasteRequested = callback; }
+    public void setOwnerStage(Stage stage) { this.ownerStage = stage; }
 
     // ─── Context menu (copy/paste/open/copy-path) ──────────────────────────
 
     private void setupContextMenu()
     {
         ContextMenu contextMenu = new ContextMenu();
-        MenuItem newFolderItem = new MenuItem("New Folder");
-        MenuItem copyItem = new MenuItem("Copy");
-        MenuItem pasteItem = new MenuItem("Paste");
-        MenuItem deleteFolderItem = new MenuItem("Delete Folder\tDelete");
-        MenuItem openItem = new MenuItem("Open in Explorer");
-        MenuItem copyPathItem = new MenuItem("Copy Directory Path");
+        MenuItem newFolderItem = new MenuItem("_New Folder");
+        MenuItem copyItem = new MenuItem("_Copy");
+        MenuItem pasteItem = new MenuItem("_Paste");
+        MenuItem renameItem = new MenuItem("_Rename");
+        MenuItem deleteFolderItem = new MenuItem("_Delete Folder");
+        MenuItem openItem = new MenuItem("_Open in Explorer");
+        MenuItem copyPathItem = new MenuItem("Copy Direc_tory Path");
+
+        newFolderItem.setAccelerator(FileExplorerShortcuts.NEW_FOLDER);
+        copyItem.setAccelerator(FileExplorerShortcuts.COPY);
+        pasteItem.setAccelerator(FileExplorerShortcuts.PASTE);
+        renameItem.setAccelerator(FileExplorerShortcuts.RENAME);
+        deleteFolderItem.setAccelerator(FileExplorerShortcuts.DELETE);
 
         newFolderItem.setOnAction(e -> createNewFolder());
         copyItem.setOnAction(e -> copySelectedFolder());
         pasteItem.setOnAction(e -> pasteRequested.run());
+        renameItem.setOnAction(e -> renameFolder());
         deleteFolderItem.setOnAction(e -> deleteSelectedFolder());
         openItem.setOnAction(e -> openSelectedFolderInExplorer());
         copyPathItem.setOnAction(e -> copySelectedFolderPath());
@@ -74,26 +84,12 @@ public class FolderContextMenuManager
                                         newFolderItem, copyItem,
                                         new SeparatorMenuItem(),
                                         pasteItem,
+                                        renameItem,
                                         deleteFolderItem,
                                         openItem,
                                         copyPathItem
                                     );
         folderTree.setContextMenu(contextMenu);
-    }
-
-    private void setupKeyboardShortcuts()
-    {
-        folderTree.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
-            // Only act if the tree is focused
-            if (!folderTree.isFocused()) return;
-
-            if (event.getCode() == KeyCode.DELETE)
-            {
-                deleteSelectedFolder();
-                event.consume();
-            }
-            // Additional shortcuts can be added here.
-        });
     }
 
     public void copySelectedFolder()
@@ -133,7 +129,7 @@ public class FolderContextMenuManager
             catch (IOException e)
             {
                 Platform.runLater(() ->
-                    ErrorHandler.show(null, "Could not open folder", e)
+                    ErrorHandler.show(ownerStage, "Could not open folder", e)
                 );
             }
         });
@@ -149,7 +145,7 @@ public class FolderContextMenuManager
         NotificationUtil.showToast(folderTree, "Path copied to clipboard");
     }
 
-    private void createNewFolder()
+    public void createNewFolder()
     {
         File parentFolder = treeViewManager.getSelectedFolder();
         if (parentFolder == null)
@@ -195,14 +191,58 @@ public class FolderContextMenuManager
             }
             catch (IOException ex)
             {
-                ErrorHandler.show(null, "Failed to create folder", ex);
+                ErrorHandler.show(ownerStage, "Failed to create folder", ex);
+            }
+        });
+    }
+
+    /**
+     * Renames a folder
+     */
+    public void renameFolder()
+    {
+        File folder = treeViewManager.getSelectedFolder();
+        if (folder == null) 
+        {
+            NotificationUtil.showToast(folderTree, "Please select a folder to rename", "fas-exclamation-circle");
+            return;
+        }
+        if (!folder.exists())
+        {
+            NotificationUtil.showToast(folderTree, "Folder no longer exists", "fas-exclamation-circle");
+            return;
+        }
+
+        TextInputDialog dialog = new TextInputDialog(folder.getName());
+        dialog.setTitle("Rename Folder");
+        dialog.setHeaderText(null);
+        dialog.setContentText("New Folder Name:");
+        dialog.showAndWait().ifPresent(newName -> {
+            if (newName == null || newName.trim().isEmpty()) return;
+
+            try
+            {
+                File newFolder = fileIO.rename(folder, newName);
+                navigationManager.navigateTo(newFolder);
+            }
+            catch (FileAlreadyExistsException ex)
+            {
+                NotificationUtil.showToast(folderTree, ex.getMessage(), "fas-exclamation-circle");
+            }
+            catch (IllegalArgumentException ex)
+            {
+                NotificationUtil.showToast(folderTree, ex.getMessage(), "fas-exclamation-circle");
+            }
+            catch (IOException ex)
+            {
+                ErrorHandler.show(ownerStage, "Failed to rename file", ex);
             }
         });
     }
 
     // ============================== Delete Folder ==============================
 
-    private void deleteSelectedFolder() 
+    public void deleteSelectedFolder() 
     {
         File folder = treeViewManager.getSelectedFolder();
         File projectRoot = treeViewManager.getProjectRoot();
@@ -331,7 +371,7 @@ public class FolderContextMenuManager
             catch (IOException ex) 
             {
                 Platform.runLater(() ->
-                    ErrorHandler.show(null, "Failed to delete folder", ex)
+                    ErrorHandler.show(ownerStage, "Failed to delete folder", ex)
                 );
             }
         });

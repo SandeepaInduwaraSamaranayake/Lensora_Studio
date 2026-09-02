@@ -7,7 +7,7 @@
 <?import org.kordamp.ikonli.javafx.FontIcon?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17"
-    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.ui.controller.MainController">  
+    xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.lensora.lensorastudio.ui.controller.MainController">
     <top>
         <VBox>
             <HBox fx:id="headerBar">
@@ -74,7 +74,15 @@
                         <Tooltip text="Backup &amp; Restore Center"/>
                     </tooltip>
                 </Button>
-                <Separator/>
+                <Separator orientation="VERTICAL"/>
+                <Button fx:id="btnPreferences">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-cog" iconSize="16"/>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="Preferences"/>
+                    </tooltip>
+                </Button>
                 <ToggleButton fx:id="btnLockLayout">
                     <graphic>
                         <FontIcon fx:id="lockLayoutIcon" iconLiteral="fas-lock-open" styleClass="icon-size-16"/>

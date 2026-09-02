@@ -318,7 +318,7 @@ public class FileExplorerController
 
     public void setupCopyPasteShortcuts(Scene scene)
     {
-        if (fileManager != null) fileManager.setupCopyPasteShortcuts(scene);
+        if (fileManager != null) fileManager.setupKeyboardShortcuts(scene);
     }
 
     public void setOnNavigationPersisted(Consumer<File> callback)
