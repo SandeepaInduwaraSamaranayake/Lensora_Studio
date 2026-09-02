@@ -81,7 +81,6 @@ public class FileListViewManager
 
         return cell;
     }
-
     
     public void setOnDoubleClick(Consumer<File> handler) { this.doubleClickHandler = handler; }
 

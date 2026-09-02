@@ -9,8 +9,6 @@ import com.lensora.lensorastudio.util.ExternalAppLauncher;
 
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
@@ -125,6 +123,9 @@ public class FileManager
         projectContext.projectRootProperty().addListener((obs, oldRoot, newRoot) -> {
             if (newRoot != null) folderWatchService.watch(newRoot);
         });
+
+        // set folder watch service to fileIO so that it can be used for file operations (e.g. pause watching during move/rename)
+        fileIO.setFolderWatchService(folderWatchService);
     }
 
     private void handleDoubleClickOpen(File file)

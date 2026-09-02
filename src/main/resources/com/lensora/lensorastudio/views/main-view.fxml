@@ -80,7 +80,7 @@
                         <FontIcon iconLiteral="fas-cog" iconSize="16"/>
                     </graphic>
                     <tooltip>
-                        <Tooltip text="Preferences"/>
+                        <Tooltip text="Preferences (CTRL + P)"/>
                     </tooltip>
                 </Button>
                 <ToggleButton fx:id="btnLockLayout">

@@ -10,6 +10,8 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.lensora.lensorastudio.core.watch.FolderWatchService;
+
 import javafx.application.Platform;
 
 /**
@@ -48,7 +50,10 @@ public class InstrumentedFileIO
 
     private final Consumer<File> refreshCallback;
     private final Supplier<File> watchRootSupplier;
+    private FolderWatchService folderWatchService; // injected via setter
     private final FileIO fileIO;
+
+    public void setFolderWatchService(FolderWatchService service) { this.folderWatchService = service; }
 
     /**
      * Creates a new instance using a default {@link FileIO} backend.
@@ -174,18 +179,28 @@ public class InstrumentedFileIO
      */
     public boolean moveToTrash(File file)
     {
+        // Pause watching if it's a directory
+        pauseWatching(file);
         expectChange(file);
 
-        boolean moved = fileIO.moveToTrash(file);
-        if (moved)
+        try 
         {
-            refreshUI(file.getParentFile());
+            boolean moved = fileIO.moveToTrash(file);
+            if (moved)
+            {
+                refreshUI(file.getParentFile());
+            }
+            else
+            {
+                clearExpectation(file);
+            }
+            return moved;
         }
-        else
+        finally 
         {
-            clearExpectation(file);
+            // Resume watching after the operation
+            resumeWatching();
         }
-        return moved;
     }
 
     /**
@@ -225,6 +240,9 @@ public class InstrumentedFileIO
      */
     public void deleteRecursive(File file, boolean registerExpectation, boolean triggerRefresh) throws IOException
     {
+        // Pause watching if it's a directory
+        pauseWatching(file);
+
         if (registerExpectation) { expectChange(file); }
         try
         {
@@ -238,6 +256,11 @@ public class InstrumentedFileIO
         {
             if (registerExpectation) { clearExpectation(file); }
             throw e;
+        }
+        finally 
+        {
+            // Resume watching after the operation
+            resumeWatching();
         }
     }
 
@@ -288,6 +311,9 @@ public class InstrumentedFileIO
             throw new FileAlreadyExistsException("File already exists in :" + newFile.getAbsolutePath());
         }
 
+        // Pause watching if it's a directory
+        pauseWatching(file);
+
         expectChange(file);    // old path (ENTRY_DELETE)
         expectChange(newFile); // new path (ENTRY_CREATE)
 
@@ -302,6 +328,11 @@ public class InstrumentedFileIO
             clearExpectation(file);
             clearExpectation(newFile);
             throw e;
+        }
+        finally 
+        {
+            // Resume watching after the operation
+            resumeWatching();
         }
     }
 
@@ -331,6 +362,9 @@ public class InstrumentedFileIO
 
         File destFile = new File(destDir, file.getName());
 
+        // Pause watching if it's a directory
+        pauseWatching(file);
+
         expectChange(file);     // source path
         expectChange(destFile); // destination path
 
@@ -344,6 +378,11 @@ public class InstrumentedFileIO
             clearExpectation(file);
             clearExpectation(destFile);
             throw e;
+        }
+        finally 
+        {
+            // Resume watching after the operation
+            resumeWatching();
         }
     }
 
@@ -434,6 +473,34 @@ public class InstrumentedFileIO
         if (folder != null)
         {
             Platform.runLater(() -> refreshCallback.accept(folder));
+        }
+    }
+
+    /**
+     * Pauses watching for the given file and all its descendants.
+     * Only applies if the file is a directory and the watch service is available.
+     */
+    private void pauseWatching(File file) 
+    {
+        if (file != null && file.exists() && file.isDirectory() && folderWatchService != null) 
+        {
+            folderWatchService.pauseWatchingSubtree(file);
+        }
+    }
+
+    /**
+     * Resumes watching the entire project root after a structural change.
+     * Only applies if the watch service is available.
+     */
+    private void resumeWatching() 
+    {
+        if (folderWatchService != null && watchRootSupplier != null) 
+        {
+            File root = watchRootSupplier.get();
+            if (root != null && root.exists() && root.isDirectory())
+            {
+                folderWatchService.resumeWatching(root);
+            }
         }
     }
 }

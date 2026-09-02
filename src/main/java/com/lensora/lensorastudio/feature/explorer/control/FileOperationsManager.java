@@ -135,9 +135,9 @@ public class FileOperationsManager
         actionService.setShowMetadataHandler(handler);
     }
 
-    // Clipboard passthrough
+    // FileTransferService passthrough
     public void copyFilesToClipboard(List<File> files) { clipboardService.copyFilesToClipboard(files); }
-    public void cutFilesToClipboard(List<File> files) { clipboardService.cutFilesToClipboard(files); }
+    public void cutFilesToClipboard(List<File> files)  { clipboardService.cutFilesToClipboard(files); }
 
     public void pasteInto(File targetFolder) 
     {
@@ -151,7 +151,7 @@ public class FileOperationsManager
         transferService.dropFilesInto(files, targetFolder, move);
     }
 
-    // actionservice passthrough
+    // FileActionService passthrough
     public void openSelectedFiles()    { actionService.openSelectedFiles(); }
     public void renameSelectedFile()   { actionService.renameSelectedFile(); }
     public void deleteSelectedFiles()  { actionService.deleteSelectedFiles(); }

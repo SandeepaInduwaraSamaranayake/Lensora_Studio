@@ -105,10 +105,10 @@ public class FolderTreeManager
     public void goForward() { navigationManager.goForward(); }
 
     // expose passthroughs
-    public File getSelectedFolder() { return treeViewManager.getSelectedFolder(); }
-    public void copySelectedFolder() { contextMenuManager.copySelectedFolder(); }
-    public void deleteSelectedFolder() { contextMenuManager.deleteSelectedFolder(); }
-    public void createNewFolder()      { contextMenuManager.createNewFolder(); }
+    public File getSelectedFolder()     { return treeViewManager.getSelectedFolder(); }
+    public void copySelectedFolder()    { contextMenuManager.copySelectedFolder(); }
+    public void deleteSelectedFolder()  { contextMenuManager.deleteSelectedFolder(); }
+    public void createNewFolder()       { contextMenuManager.createNewFolder(); }
     public void renameSelectedFolder()  { contextMenuManager.renameFolder(); }
 
     /**

@@ -2,5 +2,5 @@ Manifest-Version: 1.0
 Implementation-Title: Lensora Studio
 Implementation-Version: 1.2.3
 Implementation-Build: 20250611-1030
-Built-By: Lensora Inc.
+Built-By: Lensora Foundation
 Build-Jdk: 17

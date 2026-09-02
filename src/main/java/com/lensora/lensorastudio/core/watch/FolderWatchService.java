@@ -199,4 +199,43 @@ public class FolderWatchService
             return futureHolder[0];
         });
     }
+
+    /**
+     * Cancels every WatchKey registered at or beneath the given folder.
+     * Must be called before renaming/moving/deleting a directory that may
+     * have children - Windows refuses to rename/delete a directory tree
+     * that has open ReadDirectoryChangesW handles on any nested
+     * subdirectory (surfaces as "folder is open in another program"),
+     * which only affects non-leaf folders since only they have nested
+     * handles to begin with.
+     */
+    public void pauseWatchingSubtree(File folder)
+    {
+        if (folder == null) return;
+        Path target = folder.toPath();
+
+        keyToPath.entrySet().removeIf(entry -> {
+            Path watchedPath = entry.getValue();
+            if (watchedPath.equals(target) || watchedPath.startsWith(target))
+            {
+                entry.getKey().cancel();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /** Re-registers watching for the current project root after a structural change. */
+    public void resumeWatching(File projectRoot)
+    {
+        if (projectRoot == null || watchService == null) return;
+        try
+        {
+            registerRecursively(projectRoot.toPath());
+        }
+        catch (IOException e)
+        {
+            logger.warn("[FolderWatchService] Failed to resume watching after structural change", e);
+        }
+    }
 }
