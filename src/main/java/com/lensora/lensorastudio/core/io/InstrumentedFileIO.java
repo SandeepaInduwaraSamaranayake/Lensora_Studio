@@ -138,7 +138,7 @@ public class InstrumentedFileIO
      * @return the created {@link File} object
      * 
      * @throws IllegalArgumentException      if the sanitised name is empty
-     * @throws FileAlreadyExistsException   if the target already exists
+     * @throws FileAlreadyExistsException    if the target already exists
      * @throws IOException                   if the creation fails for any other
      *                                       reason
      */

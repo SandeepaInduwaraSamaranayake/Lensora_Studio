@@ -76,7 +76,7 @@ public class MainController
     @FXML private Menu mnu_view;
     @FXML private MenuItem mnu_btn_exit, mnu_btn_about, mnu_btn_new_project, mnu_btn_backup_center,
                         mnu_btn_preferences, mnu_btn_view_logs, mnu_btn_reset_layout, mnu_btn_new_template;
-    @FXML private Button btnNewProject, btnNewTemplate, btnBackupCenter, btnPreferences;
+    @FXML private Button btnNewProject, btnNewTemplate, btnBackupCenter, btnPreferences, btnViewLogs;
     @FXML private ToggleButton btnLockLayout;
     @FXML private FontIcon lockLayoutIcon;
     @FXML private Tooltip lockLayoutTooltip;
@@ -265,6 +265,7 @@ public class MainController
         if (mnu_btn_backup_center != null) mnu_btn_backup_center.setOnAction(e -> showBackupRestoreCenter());
         if (btnBackupCenter != null) btnBackupCenter.setOnAction(e -> showBackupRestoreCenter());
         if (btnPreferences != null) btnPreferences.setOnAction(e -> showPreferencesWindow());
+        if (btnViewLogs != null) btnViewLogs.setOnAction(e -> showLogViewer());
         if (mnu_btn_view_logs != null) mnu_btn_view_logs.setOnAction(e -> showLogViewer());
         if (mnu_btn_reset_layout != null)
         {

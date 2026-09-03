@@ -9,6 +9,7 @@ import javafx.scene.input.DataFormat;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
@@ -110,16 +111,14 @@ public class FileClipboardService
     }
 
     /** Checks if a paste operation would recursively copy a folder into itself. */
-    public boolean isRecursivePaste(File source, File target) 
+    public boolean isRecursivePaste(File source, File target)
     {
-        if (!source.isDirectory()) return false;
-        if (source.equals(target)) return true;
+        if (source == null || target == null || !source.isDirectory()) return false;
 
-        String srcPath = source.getAbsolutePath();
-        String tgtPath = target.getAbsolutePath();
+        Path src = source.toPath().toAbsolutePath().normalize();
+        Path tgt = target.toPath().toAbsolutePath().normalize();
 
-        if (tgtPath.startsWith(srcPath) && !tgtPath.equals(srcPath)) return true;
-        return srcPath.startsWith(tgtPath) && !srcPath.equals(tgtPath);
+        return tgt.equals(src) || tgt.startsWith(src);
     }
 
     public void setOwnerStage(Stage stage) { this.ownerStage = stage; }

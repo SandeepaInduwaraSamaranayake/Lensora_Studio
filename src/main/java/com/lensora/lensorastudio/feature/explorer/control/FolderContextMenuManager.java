@@ -1,6 +1,7 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
 import javafx.application.Platform;
+import javafx.beans.binding.BooleanBinding;
 import javafx.scene.control.*;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
@@ -64,6 +65,8 @@ public class FolderContextMenuManager
 
     private void setupContextMenu()
     {
+        BooleanBinding multiSelect = treeViewManager.moreThanOneSelectedBinding();
+
         ContextMenu contextMenu = new ContextMenu();
         MenuItem newFolderItem = new MenuItem("_New Folder");
         MenuItem copyItem = new MenuItem("_Copy");
@@ -82,6 +85,14 @@ public class FolderContextMenuManager
         pasteItem.setAccelerator(FileExplorerShortcuts.PASTE);
         renameItem.setAccelerator(FileExplorerShortcuts.RENAME);
         deleteFolderItem.setAccelerator(FileExplorerShortcuts.DELETE);
+
+        // Disable single‑folder actions when multiple folders are selected
+        newFolderItem.disableProperty().bind(multiSelect);
+        pasteItem.disableProperty().bind(multiSelect);
+        renameItem.disableProperty().bind(multiSelect);
+        copyPathItem.disableProperty().bind(multiSelect);
+        expandItem.disableProperty().bind(multiSelect);
+        collapseItem.disableProperty().bind(multiSelect);
 
         newFolderItem.setOnAction(e -> createNewFolder());
         copyItem.setOnAction(e -> copySelectedFolders());

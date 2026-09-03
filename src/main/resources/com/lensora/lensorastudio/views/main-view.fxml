@@ -83,6 +83,14 @@
                         <Tooltip text="Preferences (CTRL + P)"/>
                     </tooltip>
                 </Button>
+                <Button fx:id="btnViewLogs">
+                    <graphic>
+                        <FontIcon iconLiteral="fas-file-alt" iconSize="16"/>
+                    </graphic>
+                    <tooltip>
+                        <Tooltip text="View Logs (CTRL + SHIFT + L)"/>
+                    </tooltip>
+                </Button>
                 <ToggleButton fx:id="btnLockLayout">
                     <graphic>
                         <FontIcon fx:id="lockLayoutIcon" iconLiteral="fas-lock-open" styleClass="icon-size-16"/>

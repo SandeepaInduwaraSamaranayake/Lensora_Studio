@@ -103,9 +103,9 @@ public class FileTransferService
             return;
         }
 
-        for (File src : files) 
+        for (File src : files)
         {
-            if (clipboardService.isRecursivePaste(src, targetFolder)) 
+            if (clipboardService.isRecursivePaste(src, targetFolder))
             {
                 NotificationUtil.showToast(ownerStage, "Cannot move/copy a folder into itself or its subfolder", "fas-exclamation-circle");
                 return;
@@ -152,6 +152,8 @@ public class FileTransferService
 
                     try
                     {
+                        // onSucceeded runs on the JavaFX thread
+                        // TODO:: This delete recursive runs on fx thread, migrate this to background thread as soon as possible
                         fileIO.deleteRecursive(src, false, false);
                     }
                     catch (IOException ex)
@@ -163,11 +165,11 @@ public class FileTransferService
                 // Refresh all source directories that lost files
                 for (File sourceParent : sourceParents)
                 {
-                    Platform.runLater(() -> refreshCallback.accept(sourceParent));
+                    refreshCallback.accept(sourceParent);
                 }
             }
             // Refresh destination directory that gained files
-            Platform.runLater(() -> refreshCallback.accept(targetFolder));
+            refreshCallback.accept(targetFolder);
         });
 
         currentCopyTask.setOnFailed(e -> {

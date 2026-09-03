@@ -62,7 +62,7 @@ public class FolderNavigationManager
 
     public void navigateTo(File folder)
     {
-        if (folder == null) return;
+        if (folder == null || !folder.exists()) return;
         if (!isNavigatingHistory && currentFolder != null && !currentFolder.equals(folder))
         {
             backStack.push(currentFolder);
@@ -73,10 +73,8 @@ public class FolderNavigationManager
         updateButtonStates();
         //lblFolderHeader.setText("Folders  [" + folder.getAbsolutePath() + "]");
 
-        if (!isNavigatingHistory)
-        {
-            treeViewManager.selectFolderInTree(folder);
-        }
+        // visit folder
+        treeViewManager.selectFolderInTree(folder);
 
         if (onFolderSelected != null)
         {
@@ -108,7 +106,6 @@ public class FolderNavigationManager
             forwardStack.push(currentFolder);
             File target = backStack.pop();
             navigateTo(target);
-            treeViewManager.selectFolderInTree(target);
         }
         finally
         {
@@ -126,7 +123,6 @@ public class FolderNavigationManager
             backStack.push(currentFolder);
             File target = forwardStack.pop();
             navigateTo(target);
-            treeViewManager.selectFolderInTree(target);
         }
         finally
         {

@@ -1,5 +1,8 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
+import javafx.beans.binding.BooleanBinding;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeCell;
@@ -27,6 +30,7 @@ public class FolderTreeViewManager
     private File projectRoot;
 
     private Consumer<File> onTreeSelectionChanged;
+    private boolean suppressSelectionListener = false;
     /** (files, targetFolder, isMove) - isMove is true for internal drags, false for external OS drag-ins. */
     private FolderTreeManager.TriConsumer<List<File>, File, Boolean> onFilesDropped = (files, folder, move) -> {};
 
@@ -93,22 +97,25 @@ public class FolderTreeViewManager
         }
     }
 
-    public void refreshFolder(File folder) 
+    public void refreshFolder(File folder)
     {
         System.out.println("refreshFolder(File folder)  called on folder : " + folder.getAbsolutePath() );
         TreeItem<File> root = folderTree.getRoot();
-        if (root == null || folder == null) return;
+        if (root == null || folder == null || !folder.exists()) return;
 
         TreeItem<File> item = findTreeItem(root, folder);
         if (item != null) 
         {
             File previouslySelected = getSelectedFolder(); // capture before rebuild
 
+            // Clear selection before modifying children
+            folderTree.getSelectionModel().clearSelection();
+
             item.getChildren().clear();
             addChildren(item);
             item.setExpanded(true);
 
-            if (previouslySelected != null)
+            if (previouslySelected != null && previouslySelected.exists())
             {
                 selectFolderInTree(previouslySelected); // re-locate & reselect if it still exists
             }
@@ -146,18 +153,32 @@ public class FolderTreeViewManager
                 .collect(Collectors.toList());
     }
 
+    public BooleanBinding moreThanOneSelectedBinding()
+    {
+        return Bindings.size(folderTree.getSelectionModel().getSelectedItems()).greaterThan(1);
+    }
+
     public void selectFolderInTree(File folder)
     {
         TreeItem<File> root = folderTree.getRoot();
         if (root == null) return;
 
         TreeItem<File> target = findTreeItem(root, folder);
-        if (target != null)
-        {
-            folderTree.getSelectionModel().clearSelection();
-            folderTree.getSelectionModel().select(target);
-            target.setExpanded(true);
-        }
+        if (target == null) return;
+
+        Platform.runLater(() -> {
+            suppressSelectionListener = true;
+            try 
+            {
+                folderTree.getSelectionModel().clearSelection();
+                folderTree.getSelectionModel().select(target);
+                target.setExpanded(true);
+            } 
+            finally
+            {
+                suppressSelectionListener = false;
+            }
+        });
     }
 
     private TreeItem<File> findTreeItem(TreeItem<File> node, File target)
@@ -251,7 +272,7 @@ public class FolderTreeViewManager
             TreeItem<File> newItem = findTreeItem(parentItem, newFolder);
             if (newItem != null)
             {
-                folderTree.getSelectionModel().select(newItem);
+                selectFolderInTree(newFolder);
             }
         }
     }
@@ -270,7 +291,7 @@ public class FolderTreeViewManager
             parentItem.getChildren().clear();
             addChildren(parentItem);
             parentItem.setExpanded(true);
-            folderTree.getSelectionModel().select(parentItem);
+            selectFolderInTree(parentFolder);
         }
         else if (parentFolder.equals(projectRoot))
         {
@@ -346,6 +367,10 @@ public class FolderTreeViewManager
     private void setupTreeSelectionListener()
     {
         folderTree.getSelectionModel().getSelectedItems().addListener((ListChangeListener<TreeItem<File>>) change -> {
+
+            // Ignore selection changes that were triggered programmatically
+            if (suppressSelectionListener) return;
+
             var selectedItems = folderTree.getSelectionModel().getSelectedItems();
 
             // Only auto-navigate when exactly one folder is selected, with
@@ -354,9 +379,10 @@ public class FolderTreeViewManager
             if (selectedItems.size() == 1)
             {
                 TreeItem<File> item = selectedItems.get(0);
-                if (item != null && item.getValue() != null && item.getValue().isDirectory() && onTreeSelectionChanged != null)
+                File folder = item.getValue();
+                if (item != null && folder != null && folder.isDirectory() && onTreeSelectionChanged != null)
                 {
-                    onTreeSelectionChanged.accept(item.getValue());
+                    onTreeSelectionChanged.accept(folder);
                 }
             }
         });
