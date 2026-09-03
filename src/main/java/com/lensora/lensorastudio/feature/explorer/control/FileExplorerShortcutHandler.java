@@ -41,12 +41,13 @@ public class FileExplorerShortcutHandler
     {
         if (FileExplorerShortcuts.COPY.match(e))
         {
-            if (folderTreeManager.isFocused())              { folderTreeManager.copySelectedFolder(); e.consume(); }
+            if (folderTreeManager.isFocused())              { folderTreeManager.copySelectedFolders(); e.consume(); }
             else if (fileListingManager.isFocused())        { fileOperationsManager.copyFilesToClipboard(fileListingManager.getSelectedFiles()); e.consume(); }
         }
         else if (FileExplorerShortcuts.CUT.match(e))
         {
             if (fileListingManager.isFocused())             { fileOperationsManager.cutFilesToClipboard(fileListingManager.getSelectedFiles()); e.consume(); }
+            else if(folderTreeManager.isFocused())          { folderTreeManager.cutSelectedFolders(); e.consume(); }
         }
         else if (FileExplorerShortcuts.PASTE.match(e))
         {
@@ -55,7 +56,7 @@ public class FileExplorerShortcutHandler
         }
         else if (FileExplorerShortcuts.DELETE.match(e))
         {
-            if (folderTreeManager.isFocused())              { folderTreeManager.deleteSelectedFolder(); e.consume(); }
+            if (folderTreeManager.isFocused())              { folderTreeManager.deleteSelectedFolders(); e.consume(); }
             else if (fileListingManager.isFocused())        { fileOperationsManager.deleteSelectedFiles(); e.consume(); }
         }
         else if (FileExplorerShortcuts.RENAME.match(e))

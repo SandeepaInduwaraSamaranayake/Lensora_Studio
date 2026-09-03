@@ -35,14 +35,15 @@ public class FolderTreeManager
                                 Button btnForward,
                                 Label lblFolderHeader,
                                 ProjectContext projectContext,
-                                InstrumentedFileIO fileIO)
+                                InstrumentedFileIO fileIO,
+                                FileClipboardService clipboardService)
     {
         this.projectContext = projectContext;
         this.fileIO = fileIO;
 
         this.treeViewManager = new FolderTreeViewManager(folderTree);
         this.navigationManager = new FolderNavigationManager(breadcrumbContainer, btnBack, btnForward, lblFolderHeader, treeViewManager);
-        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager, fileIO);
+        this.contextMenuManager = new FolderContextMenuManager(folderTree, treeViewManager, navigationManager, fileIO, clipboardService);
 
         // Tree selection -> navigation, with the same re-entry guard the
         // original single-class implementation had (don't navigate again
@@ -105,11 +106,17 @@ public class FolderTreeManager
     public void goForward() { navigationManager.goForward(); }
 
     // expose passthroughs
-    public File getSelectedFolder()     { return treeViewManager.getSelectedFolder(); }
-    public void copySelectedFolder()    { contextMenuManager.copySelectedFolder(); }
-    public void deleteSelectedFolder()  { contextMenuManager.deleteSelectedFolder(); }
-    public void createNewFolder()       { contextMenuManager.createNewFolder(); }
-    public void renameSelectedFolder()  { contextMenuManager.renameFolder(); }
+    public File getSelectedFolder()             { return treeViewManager.getSelectedFolder(); }
+    public List<File> getSelectedFolders()      { return treeViewManager.getSelectedFolders(); }
+    public void expandAll()                     { treeViewManager.expandAll(null); }
+    public void expandSelected()                { treeViewManager.expandAll(getSelectedFolder()); }
+    public void collapseAll()                   { treeViewManager.collapseAll(null); }
+
+    public void copySelectedFolders()            { contextMenuManager.copySelectedFolders(); }
+    public void cutSelectedFolders()             { contextMenuManager.cutSelectedFolders(); }
+    public void deleteSelectedFolders()          { contextMenuManager.deleteSelectedFolders(); }
+    public void createNewFolder()               { contextMenuManager.createNewFolder(); }
+    public void renameSelectedFolder()          { contextMenuManager.renameFolder(); }
 
     /**
      * Expands every ancestor of the given relative path (relative to the

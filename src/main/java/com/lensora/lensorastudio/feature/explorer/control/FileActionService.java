@@ -189,7 +189,15 @@ public class FileActionService
                         NotificationUtil.showToast(ownerStage, "Failed to delete " + file.getName(), "fas-exclamation-circle");
                     }
                 }
-                Platform.runLater(() -> refreshCallback.accept(null));
+
+                if (Platform.isFxApplicationThread()) 
+                { 
+                    refreshCallback.accept(null); 
+                }
+                else 
+                {
+                    Platform.runLater(() -> refreshCallback.accept(null)); 
+                }
             });
         });
     }

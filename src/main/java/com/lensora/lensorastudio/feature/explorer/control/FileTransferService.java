@@ -6,6 +6,7 @@ import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 import com.lensora.lensorastudio.ui.dialogs.NotificationUtil;
 import com.lensora.lensorastudio.util.FileSizeFormatter;
 
+import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressBar;
@@ -162,11 +163,11 @@ public class FileTransferService
                 // Refresh all source directories that lost files
                 for (File sourceParent : sourceParents)
                 {
-                    refreshCallback.accept(sourceParent);
+                    Platform.runLater(() -> refreshCallback.accept(sourceParent));
                 }
             }
             // Refresh destination directory that gained files
-            refreshCallback.accept(targetFolder);
+            Platform.runLater(() -> refreshCallback.accept(targetFolder));
         });
 
         currentCopyTask.setOnFailed(e -> {

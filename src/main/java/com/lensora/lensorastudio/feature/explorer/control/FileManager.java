@@ -69,10 +69,6 @@ public class FileManager
         // I/O layer binds directly to context (Zero UI coupling)
         this.fileIO = new InstrumentedFileIO(this::handleRefreshCallback, projectContext::getProjectRoot);
 
-        this.folderTreeManager = new FolderTreeManager(
-                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader, projectContext, fileIO
-        );
-
         this.fileListingManager = new FileListingManager(
                 fileTable, 
                 colFileName, colFileType, colFileSize, colFileDimensions, colFileModified,
@@ -90,6 +86,10 @@ public class FileManager
                 fileListingManager.moreThanOneSelectedBinding(),
                 projectContext::getProjectRoot,
                 fileIO
+        );
+
+        this.folderTreeManager = new FolderTreeManager(
+                folderTree, breadcrumbContainer, btnBack, btnForward, lblFolderHeader, projectContext, fileIO, fileOperationsManager.getClipboardService()
         );
 
         this.folderWatchService = new FolderWatchService();

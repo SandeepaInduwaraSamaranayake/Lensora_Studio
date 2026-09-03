@@ -468,10 +468,18 @@ public class InstrumentedFileIO
      * 
      * @param folder the folder need to be refreshed
      */
-    private void refreshUI(File folder)
+    public void refreshUI(File folder)
     {
-        if (folder != null)
+        if(folder == null) return;
+        if (Platform.isFxApplicationThread())
         {
+            // Already on the FX thread
+            refreshCallback.accept(folder);
+        }
+        else
+        {
+            // Called from a background thread (BackgroundExecutor, etc.)
+            // must marshal to the FX thread.
             Platform.runLater(() -> refreshCallback.accept(folder));
         }
     }

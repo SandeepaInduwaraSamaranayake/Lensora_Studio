@@ -1,5 +1,7 @@
 package com.lensora.lensorastudio.feature.explorer.control;
 
+import javafx.collections.ListChangeListener;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TreeCell;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeView;
@@ -12,6 +14,7 @@ import com.lensora.lensorastudio.util.ClipboardFormats;
 import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Owns the folder TreeView itself: cell rendering, drag-and-drop onto
@@ -30,6 +33,7 @@ public class FolderTreeViewManager
     public FolderTreeViewManager(TreeView<File> folderTree)
     {
         this.folderTree = folderTree;
+        this.folderTree.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
         setupTreeCellFactory();
         setupTreeSelectionListener();
@@ -126,19 +130,31 @@ public class FolderTreeViewManager
 
     // ─── Selection / lookup ─────────────────────────────────────────────────
 
+    /** Return selected folder */
     public File getSelectedFolder()
     {
         TreeItem<File> selected = folderTree.getSelectionModel().getSelectedItem();
         return selected != null ? selected.getValue() : null;
     }
 
+    /** All currently selected folders in tree order. */
+    public List<File> getSelectedFolders()
+    {
+        return folderTree.getSelectionModel().getSelectedItems().stream()
+                .filter(item -> item != null && item.getValue() != null)
+                .map(TreeItem::getValue)
+                .collect(Collectors.toList());
+    }
+
     public void selectFolderInTree(File folder)
     {
         TreeItem<File> root = folderTree.getRoot();
         if (root == null) return;
+
         TreeItem<File> target = findTreeItem(root, folder);
         if (target != null)
         {
+            folderTree.getSelectionModel().clearSelection();
             folderTree.getSelectionModel().select(target);
             target.setExpanded(true);
         }
@@ -170,6 +186,50 @@ public class FolderTreeViewManager
         {
             walker.setExpanded(true);
             walker = walker.getParent();
+        }
+    }
+
+    /** Recursively expands the given tree item and every descendant. Pass null to expand the whole tree from its root. */
+    public void expandAll(File startFrom)
+    {
+        TreeItem<File> root = folderTree.getRoot();
+        if (root == null) return;
+
+        TreeItem<File> startItem = (startFrom == null) ? root : findTreeItem(root, startFrom);
+        if (startItem != null)
+        {
+            expandRecursively(startItem);
+        }
+    }
+
+    private void expandRecursively(TreeItem<File> item)
+    {
+        item.setExpanded(true);
+        for (TreeItem<File> child : item.getChildren())
+        {
+            expandRecursively(child);
+        }
+    }
+
+    /** Collapses everything back to just the root level, pairs naturally with Expand All. */
+    public void collapseAll(File startFrom) 
+    {
+        TreeItem<File> root = folderTree.getRoot();
+        if (root == null) return;
+
+        TreeItem<File> startItem = (startFrom == null) ? root : findTreeItem(root, startFrom);
+        if (startItem != null) 
+        {
+            collapseRecursively(startItem);
+        }
+    }
+
+    private void collapseRecursively(TreeItem<File> item)
+    {
+        item.setExpanded(false);
+        for (TreeItem<File> child : item.getChildren())
+        {
+            collapseRecursively(child);
         }
     }
 
@@ -285,17 +345,19 @@ public class FolderTreeViewManager
 
     private void setupTreeSelectionListener()
     {
-        folderTree.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal == null || newVal.getValue() == null || !newVal.getValue().isDirectory())
-            {
-                return;
-            }
+        folderTree.getSelectionModel().getSelectedItems().addListener((ListChangeListener<TreeItem<File>>) change -> {
+            var selectedItems = folderTree.getSelectionModel().getSelectedItems();
 
-            File folder = newVal.getValue();
-
-            if (onTreeSelectionChanged != null)
+            // Only auto-navigate when exactly one folder is selected, with
+            // multiple selected, the user is picking a target for an
+            // operation (copy/cut/delete), not asking to browse into one.
+            if (selectedItems.size() == 1)
             {
-                onTreeSelectionChanged.accept(folder);
+                TreeItem<File> item = selectedItems.get(0);
+                if (item != null && item.getValue() != null && item.getValue().isDirectory() && onTreeSelectionChanged != null)
+                {
+                    onTreeSelectionChanged.accept(item.getValue());
+                }
             }
         });
     }

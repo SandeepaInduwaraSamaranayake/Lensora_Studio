@@ -34,10 +34,24 @@ public class FileClipboardService
         putFilesOnClipboard(selectedFilesSupplier.get(), "Copy", false);
     }
 
+    /** overload to accept list of files */
+    public void copySelectedFiles(List<File> files)
+    {
+        if (files == null || files.isEmpty()) return;
+        putFilesOnClipboard(files,"Copy" ,false);
+    }
+
     /** Cuts the selected files to the clipboard (marks for Move on Paste). */
     public void cutSelectedFiles() 
     {
         putFilesOnClipboard(selectedFilesSupplier.get(), "Cut", true);
+    }
+
+    /** overload to accept list of files */
+    public void cutSelectedFiles(List<File> files)
+    {
+        if (files == null || files.isEmpty()) return;
+        putFilesOnClipboard(files, "Cut", true);
     }
 
     /** Places arbitrary files on the clipboard. */

@@ -115,6 +115,7 @@ public class FileOperationsManager
     // ─── Public API (delegated to services) ─────────────────────────────────
 
     public ContextMenu getContextMenu() { return ctx.menu(); }
+    public FileClipboardService getClipboardService() { return clipboardService; }
 
     public void setStage(Stage stage)
     {
@@ -125,15 +126,9 @@ public class FileOperationsManager
         collectionService.setOwnerStage(stage);
     }
 
-    public void setSnapFX(SnapFX snapFX) 
-    {
-        actionService.setSnapFX(snapFX);
-    }
+    public void setSnapFX(SnapFX snapFX) { actionService.setSnapFX(snapFX); }
 
-    public void setShowMetadataHandler(Consumer<File> handler) 
-    {
-        actionService.setShowMetadataHandler(handler);
-    }
+    public void setShowMetadataHandler(Consumer<File> handler) { actionService.setShowMetadataHandler(handler); }
 
     // FileTransferService passthrough
     public void copyFilesToClipboard(List<File> files) { clipboardService.copyFilesToClipboard(files); }
