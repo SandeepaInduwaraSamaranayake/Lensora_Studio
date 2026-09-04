@@ -25,7 +25,6 @@ import java.nio.file.FileAlreadyExistsException;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Executes core file actions (Open, Rename, Move, Delete, Show in Explorer,
@@ -167,14 +166,14 @@ public class FileActionService
         List<File> files = selectedFilesSupplier.get();
         if (files == null || files.isEmpty()) return;
 
+        // Build a concise file list for the confirmation message
+        String fileSampleList = buildFileSampleMessage(files);
+
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.initOwner(ownerStage);
-        String fileList = files.stream()
-                            .map(File::getName)
-                            .collect(Collectors.joining("\n• ", "• ", ""));
-        confirm.setTitle("Delete File");
+        confirm.setTitle("Delete File(s)");
         confirm.setHeaderText("Are you sure you want to delete the following " + files.size() + " file(s)?");
-        confirm.setContentText(fileList);
+        confirm.setContentText(fileSampleList);
         confirm.showAndWait().ifPresent(response -> {
             if (response != ButtonType.OK) return;
 
@@ -258,5 +257,27 @@ public class FileActionService
                 error -> ErrorHandler.show(ownerStage, "Failed to read metadata", error)
             );
         }
+    }
+
+    /**
+     * Builds a concise message listing the selected files.
+     * Shows up to 10 names; if more, shows "… and X more".
+     */
+    private String buildFileSampleMessage(List<File> files)
+    {
+        int total = files.size();
+        if (total == 0) return "";
+
+        int maxDisplay = Math.min(total, 20);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < maxDisplay; i++) 
+        {
+            sb.append("• ").append(files.get(i).getName().trim()).append("\n");
+        }
+        if (total > maxDisplay) 
+        {
+            sb.append("… and ").append(total - maxDisplay).append(" more");
+        }
+        return sb.toString();
     }
 }

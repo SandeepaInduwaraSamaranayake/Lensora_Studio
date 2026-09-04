@@ -13,10 +13,11 @@ import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
-import javafx.scene.text.Font;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+
+import org.kordamp.ikonli.javafx.FontIcon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +37,7 @@ public class DialogBuilder
     private final Stage owner;
 
     private Consumer<Object> controllerConsumer;
-    private String icon = "🗔";
+    private String iconLiteral = "fas-window-restore";
     private boolean resizable = false;
     private Modality modality = Modality.APPLICATION_MODAL;
     private double minWidth = 300;
@@ -67,9 +68,9 @@ public class DialogBuilder
     }
 
     /** Sets the header icon glyph/emoji shown to the left of the title. Defaults to "🗔". */
-    public DialogBuilder icon(String icon)
+    public DialogBuilder icon(String iconLiteral)
     {
-        this.icon = icon;
+        this.iconLiteral = iconLiteral;
         return this;
     }
 
@@ -189,14 +190,14 @@ public class DialogBuilder
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER_LEFT);
         header.setSpacing(8);
-        header.setPadding(new Insets(0, 8, 0, 8));
+        header.setPadding(new Insets(8));
 
-        Label iconLabel = new Label(icon);
-        iconLabel.setFont(Font.font(25));
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(25);
 
         Label titleLabel = new Label(title);
 
-        header.getChildren().addAll(iconLabel, titleLabel);
+        header.getChildren().addAll(icon, titleLabel);
         return header;
     }
 

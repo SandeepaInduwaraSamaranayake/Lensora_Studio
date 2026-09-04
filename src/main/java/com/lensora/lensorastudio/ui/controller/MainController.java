@@ -394,7 +394,7 @@ public class MainController
     private void showPreferencesWindow()
     {
         DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
-                .icon("⚙")
+                .icon("fas-cog")
                 .resizable(false)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof SettingsController sc)
@@ -412,7 +412,7 @@ public class MainController
     private void showAboutWindow()
     {
         DialogBuilder.of(Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
-                .icon("🛈")
+                .icon("fas-info-circle")
                 .resizable(false)
                 .build();
     }
@@ -420,7 +420,7 @@ public class MainController
     private void showNewProjectDialog()
     {
         DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
-                .icon("📁")
+                .icon("fas-folder-plus")
                 .resizable(false)
                 .withControllerConsumer(controller -> {
                     if (controller instanceof NewProjectController npc)
@@ -438,7 +438,7 @@ public class MainController
     private void showLogViewer()
     {
         DialogBuilder.of(Resources.LOG_VIEWER_VIEW.url(), "Lensora Studio Log", mainStage)
-                .icon("📄")
+                .icon("fas-file-alt")
                 .resizable(true)
                 .modality(Modality.NONE)
                 .withControllerConsumer(controller -> {
@@ -453,7 +453,7 @@ public class MainController
     private void showTemplateManager()
     {
         DialogBuilder.of(Resources.FOLDER_TEMPLATE_MANAGER_VIEW.url(), "Manage Folder Templates", mainStage)
-                .icon("📐")
+                .icon("fas-sitemap")
                 .resizable(true)
                 .minSize(640, 460)
                 .withControllerConsumer(controller -> {
@@ -475,7 +475,7 @@ public class MainController
     private void showBackupRestoreCenterForProjects(List<Project> projects)
     {
         DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
-                .icon("🛡")
+                .icon("fas-shield-alt")
                 .resizable(true)
                 .minSize(1000, 750)
                 .withControllerConsumer(controller -> {
