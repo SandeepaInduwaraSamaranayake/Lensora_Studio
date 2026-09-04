@@ -168,6 +168,7 @@ public class FileActionService
         if (files == null || files.isEmpty()) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(ownerStage);
         String fileList = files.stream()
                             .map(File::getName)
                             .collect(Collectors.joining("\n• ", "• ", ""));

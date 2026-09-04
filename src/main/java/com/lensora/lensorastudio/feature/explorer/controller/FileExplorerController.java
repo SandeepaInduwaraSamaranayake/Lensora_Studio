@@ -1,9 +1,11 @@
 package com.lensora.lensorastudio.feature.explorer.controller;
 
+import com.drew.lang.annotations.Nullable;
 import com.lensora.lensorastudio.feature.explorer.control.FileListingManager;
 import com.lensora.lensorastudio.feature.explorer.control.FileManager;
 import com.lensora.lensorastudio.feature.project.model.Collection;
 import com.lensora.lensorastudio.feature.project.repository.CollectionRepository;
+import com.lensora.lensorastudio.ui.controller.MainController;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
 
 import javafx.application.Platform;
@@ -47,6 +49,9 @@ public class FileExplorerController
     @FXML private Button btnNewCollection;
 
     private FileManager fileManager;
+
+    /** Set by {@link MainController#setStage(Stage)} */
+    @Nullable private Stage mainStage;
 
     @FXML
     public void initialize()
@@ -229,7 +234,7 @@ public class FileExplorerController
         }
         catch (SQLException e)
         {
-            ErrorHandler.show(null, "Failed to load collections", e);
+            ErrorHandler.show(mainStage, "Failed to load collections", e);
         }
     }
 
@@ -243,13 +248,14 @@ public class FileExplorerController
         }
         catch (SQLException e)
         {
-            ErrorHandler.show(null, "Failed to load collection", e);
+            ErrorHandler.show(mainStage, "Failed to load collection", e);
         }
     }
 
     private void createCollection()
     {
         TextInputDialog dialog = new TextInputDialog();
+        dialog.initOwner(mainStage);
         dialog.setTitle("New Collection");
         dialog.setHeaderText(null);
         dialog.setContentText("Collection name:");
@@ -262,7 +268,7 @@ public class FileExplorerController
             }
             catch (SQLException e)
             {
-                ErrorHandler.show(null, "Failed to create collection", e);
+                ErrorHandler.show(mainStage, "Failed to create collection", e);
             }
         });
     }
@@ -272,6 +278,7 @@ public class FileExplorerController
         if (selected == null || selected.isBuiltin()) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(mainStage);
         confirm.setTitle("Delete Collection");
         confirm.setHeaderText(null);
         confirm.setContentText("Delete collection \"" + selected.getName() + "\"? Files themselves are not affected.");
@@ -284,7 +291,7 @@ public class FileExplorerController
             }
             catch (SQLException e)
             {
-                ErrorHandler.show(null, "Failed to delete collection", e);
+                ErrorHandler.show(mainStage, "Failed to delete collection", e);
             }
         });
     }
@@ -293,6 +300,7 @@ public class FileExplorerController
 
     public void setStage(Stage stage)
     {
+        this.mainStage = stage;
         if (fileManager != null) fileManager.setStage(stage);
     }
 
@@ -341,7 +349,7 @@ public class FileExplorerController
     public void goBack()    { if (fileManager != null) fileManager.goBack(); }
     public void goForward() { if (fileManager != null) fileManager.goForward(); }
 
-    public void setSnapFX(SnapFX snapFX) 
+    public void setSnapFX(SnapFX snapFX)
     {
         if (fileManager != null) fileManager.setSnapFX(snapFX);
     }

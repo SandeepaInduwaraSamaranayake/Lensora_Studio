@@ -199,6 +199,7 @@ public class FolderContextMenuManager
         }
 
         TextInputDialog dialog = new TextInputDialog("New Folder");
+        dialog.initOwner(ownerStage);
         dialog.setTitle("New Folder");
         dialog.setHeaderText(null);
         dialog.setContentText("Folder name:");
@@ -254,6 +255,7 @@ public class FolderContextMenuManager
         }
 
         TextInputDialog dialog = new TextInputDialog(folder.getName());
+        dialog.initOwner(ownerStage);
         dialog.setTitle("Rename Folder");
         dialog.setHeaderText(null);
         dialog.setContentText("New Folder Name:");
@@ -321,6 +323,7 @@ public class FolderContextMenuManager
         String message = buildDeleteMessage(existingFolders, fileCount);
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(ownerStage);
         confirm.setTitle("Move to Trash");
         confirm.setHeaderText(null);
         confirm.setContentText(message);
@@ -399,6 +402,7 @@ public class FolderContextMenuManager
         }
 
         Alert fallbackConfirm = new Alert(Alert.AlertType.CONFIRMATION);
+        fallbackConfirm.initOwner(ownerStage);
         fallbackConfirm.setTitle("Move to Trash Failed");
         fallbackConfirm.setHeaderText(null);
         fallbackConfirm.setContentText(

@@ -1,5 +1,6 @@
 package com.lensora.lensorastudio.feature.project.controller;
 
+import com.drew.lang.annotations.Nullable;
 import com.lensora.lensorastudio.core.config.Resources;
 import com.lensora.lensorastudio.feature.project.model.Project;
 import com.lensora.lensorastudio.feature.project.model.ProjectNote;
@@ -7,6 +8,7 @@ import com.lensora.lensorastudio.feature.project.repository.ProjectLastFolderRep
 import com.lensora.lensorastudio.feature.project.repository.ProjectNoteRepository;
 import com.lensora.lensorastudio.feature.project.repository.ProjectRepository;
 import com.lensora.lensorastudio.feature.project.viewmodel.ProjectsViewModel;
+import com.lensora.lensorastudio.ui.controller.MainController;
 import com.lensora.lensorastudio.ui.dialogs.DialogBuilder;
 import com.lensora.lensorastudio.ui.dialogs.Dialogs;
 import com.lensora.lensorastudio.ui.dialogs.ErrorHandler;
@@ -22,7 +24,6 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import javafx.stage.Window;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -70,6 +71,9 @@ public class ProjectDetailsController
     private Consumer<String> onProjectPathChanged;
     private Consumer<String> onRestoreLastFolder;
     private boolean editMode = false;
+
+    /** Set by {@link MainController#setStage(Stage)} */
+    @Nullable private Stage mainStage;
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy hh:mm a");
 
@@ -241,7 +245,7 @@ public class ProjectDetailsController
 
         if (detClientName.getText() == null || detClientName.getText().isBlank())
         {
-            Dialogs.showInfo(getWindow(), "Save Project", null, "Client name is required.");
+            Dialogs.showInfo(mainStage, "Save Project", null, "Client name is required.");
             return;
         }
 
@@ -253,7 +257,7 @@ public class ProjectDetailsController
         }
         catch (NumberFormatException e)
         {
-            Dialogs.showInfo(getWindow(), "Save Project", null, "Total and advance amounts must be valid numbers.");
+            Dialogs.showInfo(mainStage, "Save Project", null, "Total and advance amounts must be valid numbers.");
             return;
         }
 
@@ -275,12 +279,12 @@ public class ProjectDetailsController
             ProjectRepository.update(current);
             viewModel.refreshSelectedFromDb();
             exitEditMode(true);
-            NotificationUtil.showToast(getWindow(), "Project details saved.");
+            NotificationUtil.showToast(mainStage, "Project details saved.");
         }
         catch (SQLException e)
         {
             logger.error("Failed to save project {}", current.getProjectId(), e);
-            ErrorHandler.show(getWindow(), "Failed to save project", e);
+            ErrorHandler.show(mainStage, "Failed to save project", e);
         }
     }
 
@@ -290,9 +294,9 @@ public class ProjectDetailsController
         return new BigDecimal(text.replaceAll("[^\\d.]", ""));
     }
 
-    private Window getWindow()
+    public void setStage(Stage stage)
     {
-        return notesContainer.getScene() != null ? notesContainer.getScene().getWindow() : null;
+        this.mainStage = stage;
     }
 
     // ─── Folder ──────────────────────────────────────────────────────────────
@@ -419,8 +423,7 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        Stage owner = (Stage) getWindow();
-        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Add Note", owner)
+        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Add Note", mainStage)
                 .icon("📝")
                 .resizable(true)
                 .withControllerConsumer(controller -> {
@@ -435,7 +438,7 @@ public class ProjectDetailsController
                             catch (SQLException e)
                             {
                                 logger.error("Failed to save note", e);
-                                ErrorHandler.show(owner, "Failed to save note", e);
+                                ErrorHandler.show(mainStage, "Failed to save note", e);
                             }
                         });
                     }
@@ -448,8 +451,7 @@ public class ProjectDetailsController
         Project current = viewModel.getSelectedProject();
         if (current == null) return;
 
-        Stage owner = (Stage) getWindow();
-        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Edit Note", owner)
+        DialogBuilder.of(Resources.NOTE_EDIT_VIEW.url(), "Edit Note", mainStage)
                 .icon("📝")
                 .resizable(true)
                 .withControllerConsumer(controller -> {
@@ -464,7 +466,7 @@ public class ProjectDetailsController
                             catch (SQLException e)
                             {
                                 logger.error("Failed to update note", e);
-                                ErrorHandler.show(owner, "Failed to update note", e);
+                                ErrorHandler.show(mainStage, "Failed to update note", e);
                             }
                         });
                     }
@@ -478,6 +480,7 @@ public class ProjectDetailsController
         if (current == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(mainStage);
         confirm.setTitle("Delete Note");
         confirm.setHeaderText(null);
         confirm.setContentText("Delete this note? This cannot be undone.");

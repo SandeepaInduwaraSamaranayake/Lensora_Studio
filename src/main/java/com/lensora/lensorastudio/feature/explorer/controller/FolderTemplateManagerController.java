@@ -350,6 +350,7 @@ public class FolderTemplateManagerController implements DialogController
         if (selected == null) return;
 
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(getOwnerWindow());
         confirm.setTitle("Delete Template");
         confirm.setHeaderText(null);
         confirm.setContentText("Delete template \"" + selected.name()

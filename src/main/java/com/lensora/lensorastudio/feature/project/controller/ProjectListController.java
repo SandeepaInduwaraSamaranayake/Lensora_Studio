@@ -5,14 +5,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
+import com.drew.lang.annotations.Nullable;
 import com.lensora.lensorastudio.core.config.AppSettings;
 import com.lensora.lensorastudio.feature.project.model.Project;
 import com.lensora.lensorastudio.feature.project.viewmodel.ProjectsViewModel;
+import com.lensora.lensorastudio.ui.controller.MainController;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 public class ProjectListController
 {
@@ -34,6 +37,9 @@ public class ProjectListController
     private Runnable onRowClicked;
     private Consumer<List<Project>> onBackupRequested;
     private Consumer<Project> onArchiveRequested;
+
+    /** Set by {@link MainController#setStage(Stage)} */
+    @Nullable private Stage mainStage;
 
     public void bind(ProjectsViewModel viewModel)
     {
@@ -146,5 +152,10 @@ public class ProjectListController
     public void setOnArchiveRequested(Consumer<Project> callback)
     {
         this.onArchiveRequested = callback;
+    }
+
+    public void setStage(Stage stage)
+    {
+        this.mainStage = stage;
     }
 }

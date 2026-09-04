@@ -1,5 +1,7 @@
 package com.lensora.lensorastudio.ui.controller;
 
+import com.drew.lang.annotations.Nullable;
+import com.lensora.lensorastudio.app.App;
 import com.lensora.lensorastudio.core.config.AppSettings;
 import com.lensora.lensorastudio.core.config.Resources;
 import com.lensora.lensorastudio.feature.backup.engine.BackupScheduler;
@@ -36,6 +38,7 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
@@ -95,6 +98,11 @@ public class MainController
     private ProjectListController projectListController;
     private FileExplorerController fileExplorerController;
     private StatusBarController statusBarController;
+    ProjectDetailsController detailsController;
+
+    /** Set by {@link App#start(Stage)} before any dialogs are shown. */
+    @Nullable
+    private Stage mainStage;
 
     @FXML
     public void initialize()
@@ -133,12 +141,11 @@ public class MainController
         }
     }
 
-
     private void loadDockablePanels()
     {
         try
         {
-            // Projects Panel
+            // Projects list Panel
             FXMLLoader listLoader = new FXMLLoader(Resources.PROJECT_LIST_VIEW.url());
             Node listRoot = listLoader.load();
             projectListController = listLoader.getController();
@@ -149,7 +156,7 @@ public class MainController
             // Project details Panel
             FXMLLoader detailsLoader = new FXMLLoader(Resources.PROJECT_DETAILS_VIEW.url());
             Node detailsRoot = detailsLoader.load();
-            ProjectDetailsController detailsController = detailsLoader.getController();
+            detailsController = detailsLoader.getController();
             detailsController.bind(projectsViewModel);
             dockingService.register("projectDetails", detailsRoot, "Project Details");
 
@@ -249,10 +256,9 @@ public class MainController
         if (mnu_btn_exit != null)
         {
             mnu_btn_exit.setOnAction(e -> {
-                Stage stage = (Stage) headerBar.getScene().getWindow();
-                if (stage != null)
+                if (mainStage != null)
                 {
-                    stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
+                    mainStage.fireEvent(new WindowEvent(mainStage, WindowEvent.WINDOW_CLOSE_REQUEST));
                 }
             });
         }
@@ -363,7 +369,7 @@ public class MainController
     {
         BackupScheduler.getInstance().setOnJobTriggered((scheduleName, job) -> {
             NotificationUtil.showToast(
-                    (Stage) headerBar.getScene().getWindow(),
+                    mainStage,
                     "Scheduled backup \"" + scheduleName + "\" is running…");
 
             // submit job to track progress
@@ -371,7 +377,7 @@ public class MainController
 
             job.addEventHandler(WorkerStateEvent.WORKER_STATE_SUCCEEDED, e -> 
                 NotificationUtil.showToast(
-                    (Stage) headerBar.getScene().getWindow(),
+                    mainStage,
                     "Scheduled backup \"" + scheduleName + "\" completed.")
                 );
             });
@@ -387,7 +393,6 @@ public class MainController
 
     private void showPreferencesWindow()
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.SETTINGS_VIEW.url(), "Preferences", mainStage)
                 .icon("⚙")
                 .resizable(false)
@@ -406,7 +411,6 @@ public class MainController
 
     private void showAboutWindow()
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.ABOUT_VIEW.url(), "About Lensora Studio", mainStage)
                 .icon("🛈")
                 .resizable(false)
@@ -415,7 +419,6 @@ public class MainController
 
     private void showNewProjectDialog()
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.NEW_PROJECT_VIEW.url(), "New Project", mainStage)
                 .icon("📁")
                 .resizable(false)
@@ -434,7 +437,6 @@ public class MainController
 
     private void showLogViewer()
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.LOG_VIEWER_VIEW.url(), "Lensora Studio Log", mainStage)
                 .icon("📄")
                 .resizable(true)
@@ -450,7 +452,6 @@ public class MainController
 
     private void showTemplateManager()
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.FOLDER_TEMPLATE_MANAGER_VIEW.url(), "Manage Folder Templates", mainStage)
                 .icon("📐")
                 .resizable(true)
@@ -473,7 +474,6 @@ public class MainController
     /** Opens the center, optionally preselecting a project on the Backup tab (used by the Projects context menu). */
     private void showBackupRestoreCenterForProjects(List<Project> projects)
     {
-        Stage mainStage = (Stage) headerBar.getScene().getWindow();
         DialogBuilder.of(Resources.BACKUP_RESTORE_CENTER_VIEW.url(), "Lensora Backup & Restore Center", mainStage)
                 .icon("🛡")
                 .resizable(true)
@@ -491,7 +491,10 @@ public class MainController
     /** Called by App.start() so sub-controllers with file dialogs know their owner. */
     public void setStage(Stage stage)
     {
+        this.mainStage = stage;
         if (fileExplorerController != null) fileExplorerController.setStage(stage);
+        if (detailsController != null) detailsController.setStage(stage);
+        if (projectListController != null) projectListController.setStage(stage);
     }
 
     public WorkspaceDockingService getDockingService() 
@@ -605,23 +608,24 @@ public class MainController
     private void archiveProject(Project project)
     {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.initOwner(mainStage);
         confirm.setTitle("Archive Project");
         confirm.setHeaderText(null);
         confirm.setContentText("Archive \"" + project.getProjectNumber() + "\"? "
                 + "This sets its status to Closed. The project and its files are not deleted.");
         confirm.showAndWait().ifPresent(response -> {
-            if (response != javafx.scene.control.ButtonType.OK) return;
+            if (response != ButtonType.OK) return;
             try
             {
                 com.lensora.lensorastudio.feature.project.repository.ProjectRepository.setStatus(
                         project.getProjectId(), Project.STATUS_CLOSED);
                 projectsViewModel.refresh();
-                NotificationUtil.showToast((Stage) headerBar.getScene().getWindow(),
+                NotificationUtil.showToast(mainStage,
                         "Project archived: " + project.getProjectNumber());
             }
             catch (java.sql.SQLException e)
             {
-                ErrorHandler.show((Stage) headerBar.getScene().getWindow(), "Failed to archive project", e);
+                ErrorHandler.show(mainStage, "Failed to archive project", e);
             }
         });
     }

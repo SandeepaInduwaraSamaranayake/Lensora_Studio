@@ -719,7 +719,7 @@ public class VirtualizedThumbnailGrid
             }
             else
             {
-                iconNode = FileIconUtil.getFileIcon(file, ".icon-size-64");
+                iconNode = FileIconUtil.getFileIcon(file, ".icon-size-60");
             }
 
              // ── File name label ─────────────────────────────────────────────
