@@ -113,11 +113,13 @@
     -fx-background-color: derive(-color-accent-emphasis, 40%);
 }
 
+
 /* ─── Modena – use a slightly different blue to match its palette ────── */
-.root.theme-modena .thumbnail-card:selected 
+.root.theme-modena .thumbnail-card:selected
 {
     -fx-background-color: #0078d4; /* Windows‑style blue */
 }
+
 
 /* ─── Caspian – same as Modena, or anything you prefer ──────────────── */
 .root.theme-caspian .thumbnail-card:selected 
@@ -130,4 +132,23 @@
 .root.theme-modena .thumbnail-card .label 
 {
     -fx-text-fill: #2d3436;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+    NON-ATLANTAFX THEME ADAPTER (Modena & Caspian)
+   ════════════════════════════════════════════════════════════════════════ */
+
+.root.theme-modena,
+.root.theme-caspian
+{
+    /* Background & Surface Tokens */
+    -color-bg-default: -fx-background;
+    -color-bg-subtle: -fx-base;
+    
+    /* Border Tokens */
+    -color-border-default: -fx-box-border;
+    
+    /* Text & Accent Tokens */
+    -color-fg-default: -fx-text-background-color;
+    -color-accent-emphasis: #0078d4;
 }

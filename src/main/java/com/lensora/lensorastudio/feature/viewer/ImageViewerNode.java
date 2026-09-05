@@ -20,6 +20,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
@@ -33,7 +35,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.kordamp.ikonli.javafx.FontIcon;
 
@@ -63,6 +64,8 @@ public class ImageViewerNode
 
     private Button prevBtn;
     private Button nextBtn;
+    private Button fullScreenBtn;
+    private Label titleLabel;
 
     // Zoom-independent anchor: WHERE in the image (as a 0..1 fraction of
     // its current laid-out size) should stay under WHERE in the viewport
@@ -79,6 +82,8 @@ public class ImageViewerNode
 
     public ImageViewerNode(File imageFile)
     {
+        final double IMAGE_VIEWER_PADDING = 10;
+        
         imageView = new ImageView();
         imageView.setPreserveRatio(true);
         imageView.setSmooth(true);
@@ -96,19 +101,20 @@ public class ImageViewerNode
         scrollPane.setOnMouseClicked(e -> scrollPane.requestFocus());
 
         imageHolder = new StackPane(imageView);
-        imageHolder.setPadding(new Insets(10));
-        imageHolder.setStyle("-fx-background-color: -color-bg-default;");
+        imageHolder.setPadding(new Insets(IMAGE_VIEWER_PADDING));
+        imageHolder.getStyleClass().add("image-viewer-holder");
         scrollPane.setContent(imageHolder);
 
         imageView.fitWidthProperty().bind(Bindings.createDoubleBinding(() -> {
-                            double vw = scrollPane.getViewportBounds() != null
-                                    ? scrollPane.getViewportBounds().getWidth()
-                                    : scrollPane.getWidth();
-                            return Math.max(50, vw * zoom.get());
-                        },
-                        scrollPane.viewportBoundsProperty(),
-                        zoom
-                )
+                    // Use scrollPane.widthProperty() instead of viewportBoundsProperty() to prevent scrollbar feedback loops
+                    double availableWidth = Math.max(0, scrollPane.getWidth() - IMAGE_VIEWER_PADDING * 2);
+                    if (availableWidth <= 0) availableWidth = 500; // Fallback during initial layout pass
+                    
+                    return Math.max(50, availableWidth * zoom.get());
+                },
+                scrollPane.widthProperty(),
+                zoom
+            )
         );
 
         // Whenever the content's ACTUAL laid-out size changes (which
@@ -263,8 +269,7 @@ public class ImageViewerNode
         animateZoomTo(1.0);
     }
 
-    // ─── Image loading / navigation (unchanged) ─────────────────────────────
-
+    // ─── Image loading / navigation ─────────────────────────────
     private void loadImage(File file, boolean resolveSiblings)
     {
         if (zoomAnimation != null)
@@ -273,6 +278,11 @@ public class ImageViewerNode
         }
 
         currentFile.set(file);
+        if (titleLabel != null)
+        {
+            titleLabel.setText(file != null ? file.getName() : "");
+        }
+
         AppSettings.ImageQuality quality = AppSettings.getInstance().getImageViewerQuality();
         
         Image image = ImageCache.getOrLoad(file, quality.maxDimension, 0);
@@ -334,27 +344,30 @@ public class ImageViewerNode
     }
 
     // ─── Toolbar (unchanged aside from wiring above) ───────────────────────
-
     private HBox buildToolbar()
     {
         HBox toolbar = new HBox(10);
-        toolbar.setPadding(new Insets(4, 6, 4, 6));
+        toolbar.setPadding(new Insets(6, 10, 6, 10));
         toolbar.setAlignment(Pos.CENTER);
         toolbar.getStyleClass().add("viewer-toolbar");
 
         // Enable drag and drop specifically on the toolbar
         setupToolbarDropTarget(toolbar);
 
-        prevBtn = createIconButton("fas-chevron-left", "Previous Image");
+        prevBtn = createIconButton("fas-chevron-left", "Previous Image (Ctrl + Left Arrow)");
         prevBtn.setOnAction(e -> goToPrevious());
 
-        nextBtn = createIconButton("fas-chevron-right", "Next Image");
+        nextBtn = createIconButton("fas-chevron-right", "Next Image (Ctrl + Right Arrow)");
         nextBtn.setOnAction(e -> goToNext());
 
-        Button zoomInBtn = createIconButton("fas-search-plus", "Zoom In (Ctrl+Scroll)");
+        titleLabel = new Label();
+        titleLabel.setTextOverrun(OverrunStyle.ELLIPSIS);
+        titleLabel.setMaxWidth(220);
+
+        Button zoomInBtn = createIconButton("fas-search-plus", "Zoom In (Ctrl + Scroll)");
         zoomInBtn.setOnAction(e -> zoomTowardCenter(AppSettings.getInstance().getZoomSensitivity()));
 
-        Button zoomOutBtn = createIconButton("fas-search-minus", "Zoom Out (Ctrl+Scroll)");
+        Button zoomOutBtn = createIconButton("fas-search-minus", "Zoom Out (Ctrl + Scroll)");
         zoomOutBtn.setOnAction(e -> zoomTowardCenter(1.0 / AppSettings.getInstance().getZoomSensitivity()));
 
         Button zoomResetBtn = createIconButton("fas-compress", "Reset Zoom");
@@ -366,8 +379,8 @@ public class ImageViewerNode
         Button rotateRightBtn = createIconButton("fas-redo-alt", "Rotate Right");
         rotateRightBtn.setOnAction(e -> rotate.set(rotate.get() + 90));
 
-        Button fullScreenBtn = createIconButton("fas-expand", "Toggle Full Screen");
-        fullScreenBtn.setOnAction(e -> toggleFullScreen());
+        fullScreenBtn = createIconButton("fas-expand", "Maximize");
+        fullScreenBtn.setOnAction(e -> toggleMaximize());
 
         setupQualityCombo();
 
@@ -377,9 +390,11 @@ public class ImageViewerNode
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
 
         toolbar.getChildren().addAll(
-                prevBtn, leftSpacer, zoomOutBtn, zoomInBtn, zoomResetBtn,
+                prevBtn, titleLabel, leftSpacer,
+                zoomOutBtn, zoomInBtn, zoomResetBtn,
                 rotateLeftBtn, rotateRightBtn,
-                fullScreenBtn, qualityCombo, rightSpacer, nextBtn
+                fullScreenBtn, qualityCombo,
+                rightSpacer, nextBtn
         );
 
         return toolbar;
@@ -389,18 +404,31 @@ public class ImageViewerNode
     {
         Button btn = new Button();
         FontIcon icon = new FontIcon(iconLiteral);
-        icon.getStyleClass().add("icon-size-12");
+        icon.getStyleClass().add("icon-size-10");
         btn.setGraphic(icon);
         btn.setTooltip(new Tooltip(tooltipText));
-        btn.setStyle("-fx-background-color: transparent; -fx-padding: 1 2;");
         return btn;
     }
 
-    private void toggleFullScreen()
+    private void toggleMaximize()
     {
-        if (root.getScene() == null) return;
-        Stage stage = (Stage) root.getScene().getWindow();
-        stage.setFullScreen(!stage.isFullScreen());
+        ImageViewerWindowService.getInstance().toggleMaximize(this);
+    }
+
+    /** Updates button icon & tooltip when maximized state changes */
+    public void setMaximizedState(boolean isMaximized)
+    {
+        if (fullScreenBtn != null)
+        {
+            if (fullScreenBtn.getGraphic() instanceof FontIcon icon)
+            {
+                icon.setIconLiteral(isMaximized ? "fas-compress" : "fas-expand");
+            }
+            if (fullScreenBtn.getTooltip() != null)
+            {
+                fullScreenBtn.getTooltip().setText(isMaximized ? "Restore Layout" : "Maximize");
+            }
+        }
     }
 
     private void setupQualityCombo()
@@ -488,5 +516,16 @@ public class ImageViewerNode
                         .ifPresent(file -> Platform.runLater(() -> replaceImage(file)));
             }
         });
+    }
+
+    public void dispose() 
+    {
+        if (zoomAnimation != null)
+        {
+            zoomAnimation.stop();
+        }
+        imageView.fitWidthProperty().unbind();
+        imageView.rotateProperty().unbind();
+        imageView.setImage(null);
     }
 }

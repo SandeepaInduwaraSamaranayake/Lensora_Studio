@@ -8,10 +8,16 @@ import com.lensora.lensorastudio.ui.util.AppIconUtil;
 
 import javafx.application.Platform;
 import javafx.geometry.Orientation;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.TransferMode;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import org.slf4j.Logger;
@@ -46,6 +52,12 @@ public final class ImageViewerWindowService
 
     private DockNode lastDockedNode;
     private Parent currentLayoutNode;
+
+    // Maximization overlay state
+    private ImageViewerNode maximizedViewer;
+    private Pane originalParent;
+    private int originalIndex = -1;
+    private StackPane overlayPane;
 
     private static final int MAX_OPENED_IMAGES = 10;
 
@@ -100,6 +112,81 @@ public final class ImageViewerWindowService
 
         stage.toFront();
         stage.requestFocus();
+    }
+
+    /** Maximizes a single ImageViewerNode within the window host pane. */
+    public void toggleMaximize(ImageViewerNode viewer)
+    {
+        if (viewer == null || stage == null || stage.getScene() == null) return;
+
+        if (maximizedViewer == viewer)
+        {
+            restoreMaximized();
+        }
+        else
+        {
+            if (maximizedViewer != null)
+            {
+                restoreMaximized();
+            }
+
+            Node contentNode = viewer.getNode();
+            if (contentNode.getParent() instanceof Pane parent)
+            {
+                originalParent = parent;
+                originalIndex = parent.getChildren().indexOf(contentNode);
+
+                if (overlayPane == null)
+                {
+                    overlayPane = new StackPane();
+                    overlayPane.getStyleClass().add("image-viewer-overlay");
+                }
+
+                overlayPane.getChildren().setAll(contentNode);
+
+                StackPane host = (StackPane) stage.getScene().getRoot();
+                if (!host.getChildren().contains(overlayPane))
+                {
+                    host.getChildren().add(overlayPane);
+                }
+
+                maximizedViewer = viewer;
+                viewer.setMaximizedState(true);
+            }
+        }
+    }
+
+    /** Restores the currently maximized viewer node back to its original dock position. */
+    public void restoreMaximized()
+    {
+        if (maximizedViewer == null || stage == null || stage.getScene() == null) return;
+
+        StackPane host = (StackPane) stage.getScene().getRoot();
+        Node contentNode = maximizedViewer.getNode();
+
+        if (overlayPane != null)
+        {
+            overlayPane.getChildren().clear();
+            host.getChildren().remove(overlayPane);
+        }
+
+        if (originalParent != null)
+        {
+            if (originalIndex >= 0 && originalIndex <= originalParent.getChildren().size())
+            {
+                originalParent.getChildren().add(originalIndex, contentNode);
+            }
+            else
+            {
+                originalParent.getChildren().add(contentNode);
+            }
+            originalParent.requestLayout();
+        }
+
+        maximizedViewer.setMaximizedState(false);
+        maximizedViewer = null;
+        originalParent = null;
+        originalIndex = -1;
     }
 
     /**
@@ -157,7 +244,7 @@ public final class ImageViewerWindowService
             return lastDockedNode;
         }
 
-         // Otherwise, locate any active node directly from the dock tree structure
+        // Otherwise, locate any active node directly from the dock tree structure
         return findFirstDockNode(root);
     }
 
@@ -195,8 +282,28 @@ public final class ImageViewerWindowService
     {
         if (stage == null || stage.getScene() == null) return;
         
+        // Ensure any active maximization overlay is restored before rebuilding dock tree
+        if (maximizedViewer != null)
+        {
+            restoreMaximized();
+        }
+
         StackPane host = (StackPane) stage.getScene().getRoot();
         Parent newLayout = snapFX.buildLayout();
+
+        if (currentLayoutNode instanceof Region oldRegion)
+        {
+            oldRegion.prefWidthProperty().unbind();
+            oldRegion.prefHeightProperty().unbind();
+        }
+
+        if (newLayout instanceof Region region)
+        {
+            region.prefWidthProperty().bind(host.widthProperty());
+            region.prefHeightProperty().bind(host.heightProperty());
+            region.setMaxWidth(Double.MAX_VALUE);
+            region.setMaxHeight(Double.MAX_VALUE);
+        }
 
         if (currentLayoutNode != null && host.getChildren().contains(currentLayoutNode))
         {
@@ -213,6 +320,8 @@ public final class ImageViewerWindowService
         }
 
         currentLayoutNode = newLayout;
+        host.requestLayout();
+        Platform.runLater(host::requestLayout);
     }
 
     /**
@@ -240,6 +349,8 @@ public final class ImageViewerWindowService
     {
         stage = new Stage();
         stage.setTitle("Image Viewer - Lensora Studio");
+        stage.setWidth(1200);
+        stage.setHeight(800);
 
         try
         {
@@ -252,7 +363,19 @@ public final class ImageViewerWindowService
         snapFX.setDropVisualizationMode(org.snapfx.dnd.DockDropVisualizationMode.DEFAULT);
 
         StackPane host = new StackPane();
+        host.setStyle("-fx-background-color: -color-bg-default;");
         Scene scene = new Scene(host);
+        scene.setFill(Color.web("#1e1e1e"));
+
+        // Press ESC to exit node maximization mode
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.ESCAPE && maximizedViewer != null)
+            {
+                restoreMaximized();
+                event.consume();
+            }
+        });
+
         setupDropTarget(host);
         stage.setScene(scene);
         ThemeManager.initializeSceneStyling(scene);
@@ -274,6 +397,12 @@ public final class ImageViewerWindowService
             
             DockElement root = snapFX.getDockGraph().getRoot();
 
+            // Dispose viewer nodes that were closed and removed from the dock graph
+            viewers.stream()
+                    .filter(instance -> !isNodeInGraph(instance.dockNode(), root))
+                    .forEach(instance -> instance.viewerNode().dispose());
+
+            // Remove closed instances from the tracking list
             viewers.removeIf(instance -> !isNodeInGraph(instance.dockNode(), root));
             lastDockedNode = viewers.isEmpty() ? null : viewers.get(viewers.size() - 1).dockNode();
 
@@ -332,9 +461,28 @@ public final class ImageViewerWindowService
     {
         logger.info("[ImageViewerWindowService] Viewer window closed - resetting state.");
         ThemeManager.removeThemeChangeListener(themeListener);
+
+        if (maximizedViewer != null)
+        {
+            restoreMaximized();
+        }
+
+        if (currentLayoutNode instanceof Region region)
+        {
+            region.prefWidthProperty().unbind();
+            region.prefHeightProperty().unbind();
+        }
+
+        // Dispose all remaining viewer nodes
+        for (ViewerInstance instance : viewers)
+        {
+            instance.viewerNode().dispose();
+        }
+
         viewers.clear();
         lastDockedNode = null;
         currentLayoutNode = null;
+        overlayPane = null;
         snapFX = null;
         stage = null;
     }
